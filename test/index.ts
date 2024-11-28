@@ -72,26 +72,26 @@ const database = new Database.Database(ModelDatabase, "");
 database
 	.forTable("test", {
 		integer: {
-			type: 0,
+			type: Database.Types.INTEGER,
 			primaryKey: true,
 		},
 		float: {
-			type: 0.1,
+			type: Database.Types.FLOAT,
 		},
 		string: {
-			type: "",
+			type: Database.Types.TEXT,
 		},
 		boolean: {
-			type: true,
+			type: Database.Types.BOOLEAN,
 		},
 		null: {
-			type: null,
+			type: Database.Types.NULL,
 		},
 		date: {
-			type: new Date(),
+			type: Database.Types.DATETIME,
 		},
 		bigint: {
-			type: BigInt(0),
+			type: Database.Types.BIGINT,
 		},
 	})
 	.then((table) => {

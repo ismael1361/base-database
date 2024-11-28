@@ -364,13 +364,14 @@ class SQLite extends Database.Custom<sqlite3.Database> {
     createTable(table: string, columns: Database.SerializeDatatype<any>): Promise<void> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const columnClause = Object.entries(columns).map(([column, {type, primaryKey, autoIncrement, notNull, default}]) => {
+                const columnClause = Object.entries(columns).map(([column, {type, primaryKey, autoIncrement, notNull, default, unique}]) => {
                     let clause = `${column} ${type}`;
 
                     if (primaryKey) clause += " PRIMARY KEY";
                     if (autoIncrement) clause += " AUTOINCREMENT";
                     if (notNull) clause += " NOT NULL";
                     if (default) clause += ` DEFAULT ${default}`;
+                    if (unique) clause += " UNIQUE";
 
                     return clause;
                 }).join(", ");
@@ -446,12 +447,12 @@ Método que retorna uma instância de `Database.Table` para uma tabela específi
 
 ```ts
 const table = await db.forTable("my-table", {
-    id: { type: 0, primaryKey: true },
-    name: { type: "", notNull: true },
-    date: { type: new Date() },
-    amount: { type: 0.1 },
-    isValid: { type: true, default: false },
-    variant: { type: BigInt(0), notNull: true }
+    id: { type: Database.Types.INTEGER, primaryKey: true },
+    name: { type: Database.Types.TEXT, notNull: true },
+    date: { type: Database.Types.DATETIME },
+    amount: { type: Database.Types.FLOAT },
+    isValid: { type: Database.Types.BOOLEAN, default: false },
+    variant: { type: Database.Types.BIGINT, notNull: true }
 });
 ```
 
@@ -486,12 +487,12 @@ class MyDatabase extends Database.Custom<sqlite3.Database> {
 const db = new Database.Database(MyDatabase, "my-database");
 
 const table = await db.forTable("my-table", {
-    id: { type: 0, primaryKey: true },
-    name: { type: "", notNull: true },
-    date: { type: new Date() },
-    amount: { type: 0.1 },
-    isValid: { type: true, default: false },
-    variant: { type: BigInt(0), notNull: true }
+    id: { type: Database.Types.INTEGER, primaryKey: true },
+    name: { type: Database.Types.TEXT, notNull: true },
+    date: { type: Database.Types.DATETIME },
+    amount: { type: Database.Types.FLOAT },
+    isValid: { type: Database.Types.BOOLEAN, default: false },
+    variant: { type: Database.Types.BIGINT, notNull: true }
 });
 ```
 
@@ -666,3 +667,15 @@ O objeto `Database.Operators` contém os operadores disponíveis para a criaçã
 - ``BETWEEN``: Entre `BETWEEN`.
 - ``LIKE``: Semelhante a `LIKE`.
 - ``IN``: Em `IN`.
+
+## ``Database.Types``
+
+O objeto `Database.Types` contém os tipos de dados disponíveis para a criação de colunas. A seguir, a lista de tipos de dados disponíveis:
+
+- ``INTEGER``: Número inteiro.
+- ``FLOAT``: Número de ponto flutuante.
+- ``TEXT``: Texto.
+- ``BOOLEAN``: Booleano.
+- ``DATETIME``: Data e hora.
+- ``BIGINT``: Número inteiro grande.
+- ``NULL``: Nulo.

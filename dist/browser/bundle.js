@@ -1,7 +1,7 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.PocketSafe = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Database = exports.Table = exports.Custom = exports.serializeData = exports.verifyDatatype = exports.getDatatype = exports.Operators = void 0;
+exports.Database = exports.Table = exports.Custom = exports.serializeData = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -12,6 +12,15 @@ exports.Operators = {
     BETWEEN: "BETWEEN",
     LIKE: "LIKE",
     IN: "IN",
+};
+exports.Types = {
+    TEXT: "",
+    INTEGER: 0,
+    FLOAT: 0.1,
+    BOOLEAN: true,
+    DATETIME: new Date(),
+    BIGINT: BigInt(0),
+    NULL: null,
 };
 /**
  * Get the datatype of a value
@@ -101,16 +110,21 @@ const serializeData = (serialize, data, isPartial = false) => {
                 if (serialize[key].default !== undefined) {
                     data[key] = serialize[key].default;
                 }
-                else {
+                else if (!serialize[key].autoIncrement) {
                     return reject(new Error(`Missing column ${key}`));
                 }
             }
-            if (serialize[key].notNull && data[key] === null)
-                return reject(new Error(`Column ${key} cannot be null`));
-            if (data[key] !== null && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
-                return reject(new Error(`Invalid datatype for column ${key}`));
+            if (serialize[key].autoIncrement) {
+                delete data[key];
+            }
+            else {
+                if (serialize[key].notNull && (data[key] === null || data[key] === undefined))
+                    return reject(new Error(`Column ${key} cannot be null or undefined`));
+                if (data[key] !== null && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
+                    return reject(new Error(`Invalid datatype for column ${key}`));
+            }
         }
-        resolve();
+        resolve(data);
     });
 };
 exports.serializeData = serializeData;
@@ -190,9 +204,9 @@ class Table {
      * @param columns The columns
      * @example
      * const table = new Table(custom, "my-table", {
-     *    id: { type: 0, primaryKey: true },
-     *    name: { type: "", notNull: true },
-     *    date: { type: new Date() },
+     *    id: { type: Database.Types.INTEGER, primaryKey: true },
+     *    name: { type: Database.Types.TEXT, notNull: true },
+     *    date: { type: Database.Types.DATETIME },
      * });
      * table.selectAll();
      * table.insert({ id: 123, name: "hello" });
@@ -209,6 +223,7 @@ class Table {
                 autoIncrement: columns[key].autoIncrement ?? false,
                 notNull: columns[key].notNull ?? false,
                 default: columns[key].default,
+                unique: columns[key].unique ?? false,
             };
             return acc;
         }, {});
@@ -260,7 +275,7 @@ class Table {
      * @param where The where clause
      * @returns The where clause
      * @example
-     * table.wheres({ column: "id", operator: "=", value: 123 });
+     * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
      */
     wheres(...where) {
         return where;
@@ -271,7 +286,7 @@ class Table {
      * @param columns The columns to select
      * @returns The rows
      * @example
-     * await table.selectAll(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectAll(where, columns) {
         return this.ready(() => this.custom.selectAll(this.name, columns, where));
@@ -282,7 +297,7 @@ class Table {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectOne(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectOne(where, columns) {
         return this.ready(() => this.custom.selectOne(this.name, columns, where));
@@ -294,7 +309,7 @@ class Table {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectFirst("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectFirst(by, where, columns) {
         return this.ready(() => this.custom.selectFirst(this.name, by, columns, where));
@@ -306,7 +321,7 @@ class Table {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectLast("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectLast(by, where, columns) {
         return this.ready(() => this.custom.selectLast(this.name, by, columns, where));
@@ -316,7 +331,7 @@ class Table {
      * @param where The where clause
      * @returns If the row exists
      * @example
-     * await table.exists(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     exists(where) {
         return this.ready(async () => {
@@ -335,7 +350,7 @@ class Table {
      * await table.insert({ id: 123, name: "hello" });
      */
     async insert(data) {
-        await (0, exports.serializeData)(this.serialize, data);
+        data = await (0, exports.serializeData)(this.serialize, data);
         return this.ready(() => this.custom.insert(this.name, data));
     }
     /**
@@ -346,10 +361,10 @@ class Table {
      * @throws If a column is null and not nullable
      * @throws If a column has an invalid datatype
      * @example
-     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     async update(data, where) {
-        await (0, exports.serializeData)(this.serialize, data, true);
+        data = await (0, exports.serializeData)(this.serialize, data, true);
         return this.ready(() => this.custom.update(this.name, data, where));
     }
     /**
@@ -357,7 +372,7 @@ class Table {
      * @param where The where clause
      * @returns A promise
      * @example
-     * await table.delete(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     delete(where) {
         return this.ready(() => this.custom.delete(this.name, where));
@@ -367,7 +382,7 @@ class Table {
      * @param where The where clause
      * @returns The length
      * @example
-     * await table.length(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      * await table.length();
      */
     length(where) {
@@ -428,9 +443,9 @@ class Database {
      * @returns The table
      * @example
      * const table = await database.forTable("my-table", {
-     *    id: { type: 0, primaryKey: true },
-     *    name: { type: "", notNull: true },
-     *    date: { type: new Date() },
+     *    id: { type: Database.Types.INTEGER, primaryKey: true },
+     *    name: { type: Database.Types.TEXT, notNull: true },
+     *    date: { type: Database.Types.DATETIME },
      * });
      */
     forTable(name, columns) {

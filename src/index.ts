@@ -36,6 +36,7 @@ export type SerializeItem<T extends SerializeValueType> = {
 	autoIncrement?: boolean;
 	notNull?: boolean;
 	default?: T;
+	unique?: boolean;
 };
 
 export type Serialize<T extends Record<Indexers, SerializeItem<SerializeValueType>> = Record<Indexers, SerializeItem<SerializeValueType>>> = {
@@ -48,6 +49,7 @@ export type SerializeDatatypeItem<V extends SerializeValueType, T extends Option
 	autoIncrement?: boolean;
 	notNull?: boolean;
 	default?: T;
+	unique?: boolean;
 };
 
 export type SerializeDatatype<S extends Serialize = never> = {
@@ -65,6 +67,16 @@ export const Operators = {
 	LIKE: "LIKE",
 	IN: "IN",
 } as const;
+
+export const Types = {
+	TEXT: "",
+	INTEGER: 0,
+	FLOAT: 0.1,
+	BOOLEAN: true,
+	DATETIME: new Date(),
+	BIGINT: BigInt(0),
+	NULL: null,
+};
 
 /**
  * Get the datatype of a value
@@ -141,21 +153,25 @@ export const verifyDatatype = <T extends OptionsDatatype>(value: any, type: T): 
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export const serializeData = <S extends Serialize>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial: boolean = false): Promise<void> => {
+export const serializeData = <S extends Serialize>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial: boolean = false): Promise<Partial<Row<S>>> => {
 	return new Promise((resolve, reject) => {
 		for (const key in isPartial ? data : serialize) {
 			if (!(key in data)) {
 				if (serialize[key].default !== undefined) {
-					data[key] = serialize[key].default;
-				} else {
+					(data as any)[key] = serialize[key].default;
+				} else if (!serialize[key].autoIncrement) {
 					return reject(new Error(`Missing column ${key}`));
 				}
 			}
-			if (serialize[key].notNull && data[key] === null) return reject(new Error(`Column ${key} cannot be null`));
-			if (data[key] !== null && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
+			if (serialize[key].autoIncrement) {
+				delete data[key];
+			} else {
+				if (serialize[key].notNull && (data[key] === null || data[key] === undefined)) return reject(new Error(`Column ${key} cannot be null or undefined`));
+				if (data[key] !== null && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
+			}
 		}
 
-		resolve();
+		resolve(data as any);
 	});
 };
 
@@ -363,9 +379,9 @@ export class Table<S extends Serialize> {
 	 * @param columns The columns
 	 * @example
 	 * const table = new Table(custom, "my-table", {
-	 *    id: { type: 0, primaryKey: true },
-	 *    name: { type: "", notNull: true },
-	 *    date: { type: new Date() },
+	 *    id: { type: Database.Types.INTEGER, primaryKey: true },
+	 *    name: { type: Database.Types.TEXT, notNull: true },
+	 *    date: { type: Database.Types.DATETIME },
 	 * });
 	 * table.selectAll();
 	 * table.insert({ id: 123, name: "hello" });
@@ -380,6 +396,7 @@ export class Table<S extends Serialize> {
 				autoIncrement: columns[key].autoIncrement ?? false,
 				notNull: columns[key].notNull ?? false,
 				default: columns[key].default,
+				unique: columns[key].unique ?? false,
 			};
 			return acc;
 		}, {} as any);
@@ -436,7 +453,7 @@ export class Table<S extends Serialize> {
 	 * @param where The where clause
 	 * @returns The where clause
 	 * @example
-	 * table.wheres({ column: "id", operator: "=", value: 123 });
+	 * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
 	 */
 	wheres<W extends keyof S>(...where: Wheres<S, W>): Wheres<S, W> {
 		return where;
@@ -448,7 +465,7 @@ export class Table<S extends Serialize> {
 	 * @param columns The columns to select
 	 * @returns The rows
 	 * @example
-	 * await table.selectAll(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+	 * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
 	 */
 	selectAll<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Array<Row<S, K>>> {
 		return this.ready(() => this.custom.selectAll<K>(this.name, columns, where as any));
@@ -460,7 +477,7 @@ export class Table<S extends Serialize> {
 	 * @param columns The columns to select
 	 * @returns The row
 	 * @example
-	 * await table.selectOne(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+	 * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
 	 */
 	selectOne<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null> {
 		return this.ready(() => this.custom.selectOne<K>(this.name, columns, where as any));
@@ -473,7 +490,7 @@ export class Table<S extends Serialize> {
 	 * @param columns The columns to select
 	 * @returns The row
 	 * @example
-	 * await table.selectFirst("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+	 * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
 	 */
 	selectFirst<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null> {
 		return this.ready(() => this.custom.selectFirst<K>(this.name, by, columns, where as any));
@@ -486,7 +503,7 @@ export class Table<S extends Serialize> {
 	 * @param columns The columns to select
 	 * @returns The row
 	 * @example
-	 * await table.selectLast("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+	 * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
 	 */
 	selectLast<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null> {
 		return this.ready(() => this.custom.selectLast<K>(this.name, by, columns, where as any));
@@ -497,7 +514,7 @@ export class Table<S extends Serialize> {
 	 * @param where The where clause
 	 * @returns If the row exists
 	 * @example
-	 * await table.exists(table.wheres({ column: "id", operator: "=", value: 123 }));
+	 * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
 	 */
 	exists<W extends keyof S>(where: Wheres<S, W>): Promise<boolean> {
 		return this.ready(async () => {
@@ -516,8 +533,8 @@ export class Table<S extends Serialize> {
 	 * @example
 	 * await table.insert({ id: 123, name: "hello" });
 	 */
-	async insert(data: Row<S>): Promise<void> {
-		await serializeData(this.serialize, data);
+	async insert(data: Partial<Row<S>>): Promise<void> {
+		data = await serializeData(this.serialize, data);
 		return this.ready(() => this.custom.insert(this.name, data));
 	}
 
@@ -529,10 +546,10 @@ export class Table<S extends Serialize> {
 	 * @throws If a column is null and not nullable
 	 * @throws If a column has an invalid datatype
 	 * @example
-	 * await table.update({ name: "world" }, table.wheres({ column: "id", operator: "=", value: 123 }));
+	 * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
 	 */
 	async update<W extends keyof S>(data: Partial<Row<S>>, where: Wheres<S, W>): Promise<void> {
-		await serializeData(this.serialize, data, true);
+		data = await serializeData(this.serialize, data, true);
 		return this.ready(() => this.custom.update(this.name, data, where as any));
 	}
 
@@ -541,7 +558,7 @@ export class Table<S extends Serialize> {
 	 * @param where The where clause
 	 * @returns A promise
 	 * @example
-	 * await table.delete(table.wheres({ column: "id", operator: "=", value: 123 }));
+	 * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
 	 */
 	delete<W extends keyof S>(where: Wheres<S, W>): Promise<void> {
 		return this.ready(() => this.custom.delete(this.name, where as any));
@@ -552,7 +569,7 @@ export class Table<S extends Serialize> {
 	 * @param where The where clause
 	 * @returns The length
 	 * @example
-	 * await table.length(table.wheres({ column: "id", operator: "=", value: 123 }));
+	 * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
 	 * await table.length();
 	 */
 	length<W extends keyof S>(where?: Wheres<S, W>): Promise<number> {
@@ -620,9 +637,9 @@ export class Database<db = never> {
 	 * @returns The table
 	 * @example
 	 * const table = await database.forTable("my-table", {
-	 *    id: { type: 0, primaryKey: true },
-	 *    name: { type: "", notNull: true },
-	 *    date: { type: new Date() },
+	 *    id: { type: Database.Types.INTEGER, primaryKey: true },
+	 *    name: { type: Database.Types.TEXT, notNull: true },
+	 *    date: { type: Database.Types.DATETIME },
 	 * });
 	 */
 	forTable<S extends Serialize>(name: string, columns: S): Promise<Table<S>> {

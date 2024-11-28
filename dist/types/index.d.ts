@@ -17,6 +17,7 @@ export type SerializeItem<T extends SerializeValueType> = {
     autoIncrement?: boolean;
     notNull?: boolean;
     default?: T;
+    unique?: boolean;
 };
 export type Serialize<T extends Record<Indexers, SerializeItem<SerializeValueType>> = Record<Indexers, SerializeItem<SerializeValueType>>> = {
     [k in keyof T]: SerializeItem<T[k]["type"]>;
@@ -27,6 +28,7 @@ export type SerializeDatatypeItem<V extends SerializeValueType, T extends Option
     autoIncrement?: boolean;
     notNull?: boolean;
     default?: T;
+    unique?: boolean;
 };
 export type SerializeDatatype<S extends Serialize = never> = {
     [k in keyof S]: SerializeDatatypeItem<S[k]["type"]>;
@@ -41,6 +43,15 @@ export declare const Operators: {
     readonly BETWEEN: "BETWEEN";
     readonly LIKE: "LIKE";
     readonly IN: "IN";
+};
+export declare const Types: {
+    TEXT: string;
+    INTEGER: number;
+    FLOAT: number;
+    BOOLEAN: boolean;
+    DATETIME: Date;
+    BIGINT: bigint;
+    NULL: null;
 };
 /**
  * Get the datatype of a value
@@ -89,7 +100,7 @@ export declare const verifyDatatype: <T extends OptionsDatatype>(value: any, typ
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export declare const serializeData: <S extends Serialize>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial?: boolean) => Promise<void>;
+export declare const serializeData: <S extends Serialize>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial?: boolean) => Promise<Partial<Row<S>>>;
 /**
  * Custom database class
  */
@@ -266,9 +277,9 @@ export declare class Table<S extends Serialize> {
      * @param columns The columns
      * @example
      * const table = new Table(custom, "my-table", {
-     *    id: { type: 0, primaryKey: true },
-     *    name: { type: "", notNull: true },
-     *    date: { type: new Date() },
+     *    id: { type: Database.Types.INTEGER, primaryKey: true },
+     *    name: { type: Database.Types.TEXT, notNull: true },
+     *    date: { type: Database.Types.DATETIME },
      * });
      * table.selectAll();
      * table.insert({ id: 123, name: "hello" });
@@ -311,7 +322,7 @@ export declare class Table<S extends Serialize> {
      * @param where The where clause
      * @returns The where clause
      * @example
-     * table.wheres({ column: "id", operator: "=", value: 123 });
+     * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
      */
     wheres<W extends keyof S>(...where: Wheres<S, W>): Wheres<S, W>;
     /**
@@ -320,7 +331,7 @@ export declare class Table<S extends Serialize> {
      * @param columns The columns to select
      * @returns The rows
      * @example
-     * await table.selectAll(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectAll<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Array<Row<S, K>>>;
     /**
@@ -329,7 +340,7 @@ export declare class Table<S extends Serialize> {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectOne(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectOne<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null>;
     /**
@@ -339,7 +350,7 @@ export declare class Table<S extends Serialize> {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectFirst("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectFirst<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null>;
     /**
@@ -349,7 +360,7 @@ export declare class Table<S extends Serialize> {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectLast("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectLast<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null>;
     /**
@@ -357,7 +368,7 @@ export declare class Table<S extends Serialize> {
      * @param where The where clause
      * @returns If the row exists
      * @example
-     * await table.exists(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     exists<W extends keyof S>(where: Wheres<S, W>): Promise<boolean>;
     /**
@@ -370,7 +381,7 @@ export declare class Table<S extends Serialize> {
      * @example
      * await table.insert({ id: 123, name: "hello" });
      */
-    insert(data: Row<S>): Promise<void>;
+    insert(data: Partial<Row<S>>): Promise<void>;
     /**
      * Update rows in the table
      * @param data The data to update
@@ -379,7 +390,7 @@ export declare class Table<S extends Serialize> {
      * @throws If a column is null and not nullable
      * @throws If a column has an invalid datatype
      * @example
-     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     update<W extends keyof S>(data: Partial<Row<S>>, where: Wheres<S, W>): Promise<void>;
     /**
@@ -387,7 +398,7 @@ export declare class Table<S extends Serialize> {
      * @param where The where clause
      * @returns A promise
      * @example
-     * await table.delete(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     delete<W extends keyof S>(where: Wheres<S, W>): Promise<void>;
     /**
@@ -395,7 +406,7 @@ export declare class Table<S extends Serialize> {
      * @param where The where clause
      * @returns The length
      * @example
-     * await table.length(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      * await table.length();
      */
     length<W extends keyof S>(where?: Wheres<S, W>): Promise<number>;
@@ -448,9 +459,9 @@ export declare class Database<db = never> {
      * @returns The table
      * @example
      * const table = await database.forTable("my-table", {
-     *    id: { type: 0, primaryKey: true },
-     *    name: { type: "", notNull: true },
-     *    date: { type: new Date() },
+     *    id: { type: Database.Types.INTEGER, primaryKey: true },
+     *    name: { type: Database.Types.TEXT, notNull: true },
+     *    date: { type: Database.Types.DATETIME },
      * });
      */
     forTable<S extends Serialize>(name: string, columns: S): Promise<Table<S>>;

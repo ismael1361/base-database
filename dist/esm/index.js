@@ -9,6 +9,15 @@ export const Operators = {
     LIKE: "LIKE",
     IN: "IN",
 };
+export const Types = {
+    TEXT: "",
+    INTEGER: 0,
+    FLOAT: 0.1,
+    BOOLEAN: true,
+    DATETIME: new Date(),
+    BIGINT: BigInt(0),
+    NULL: null,
+};
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of
@@ -95,16 +104,21 @@ export const serializeData = (serialize, data, isPartial = false) => {
                 if (serialize[key].default !== undefined) {
                     data[key] = serialize[key].default;
                 }
-                else {
+                else if (!serialize[key].autoIncrement) {
                     return reject(new Error(`Missing column ${key}`));
                 }
             }
-            if (serialize[key].notNull && data[key] === null)
-                return reject(new Error(`Column ${key} cannot be null`));
-            if (data[key] !== null && !verifyDatatype(data[key], serialize[key].type))
-                return reject(new Error(`Invalid datatype for column ${key}`));
+            if (serialize[key].autoIncrement) {
+                delete data[key];
+            }
+            else {
+                if (serialize[key].notNull && (data[key] === null || data[key] === undefined))
+                    return reject(new Error(`Column ${key} cannot be null or undefined`));
+                if (data[key] !== null && !verifyDatatype(data[key], serialize[key].type))
+                    return reject(new Error(`Invalid datatype for column ${key}`));
+            }
         }
-        resolve();
+        resolve(data);
     });
 };
 /**
@@ -182,9 +196,9 @@ export class Table {
      * @param columns The columns
      * @example
      * const table = new Table(custom, "my-table", {
-     *    id: { type: 0, primaryKey: true },
-     *    name: { type: "", notNull: true },
-     *    date: { type: new Date() },
+     *    id: { type: Database.Types.INTEGER, primaryKey: true },
+     *    name: { type: Database.Types.TEXT, notNull: true },
+     *    date: { type: Database.Types.DATETIME },
      * });
      * table.selectAll();
      * table.insert({ id: 123, name: "hello" });
@@ -201,6 +215,7 @@ export class Table {
                 autoIncrement: columns[key].autoIncrement ?? false,
                 notNull: columns[key].notNull ?? false,
                 default: columns[key].default,
+                unique: columns[key].unique ?? false,
             };
             return acc;
         }, {});
@@ -252,7 +267,7 @@ export class Table {
      * @param where The where clause
      * @returns The where clause
      * @example
-     * table.wheres({ column: "id", operator: "=", value: 123 });
+     * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
      */
     wheres(...where) {
         return where;
@@ -263,7 +278,7 @@ export class Table {
      * @param columns The columns to select
      * @returns The rows
      * @example
-     * await table.selectAll(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectAll(where, columns) {
         return this.ready(() => this.custom.selectAll(this.name, columns, where));
@@ -274,7 +289,7 @@ export class Table {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectOne(table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectOne(where, columns) {
         return this.ready(() => this.custom.selectOne(this.name, columns, where));
@@ -286,7 +301,7 @@ export class Table {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectFirst("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectFirst(by, where, columns) {
         return this.ready(() => this.custom.selectFirst(this.name, by, columns, where));
@@ -298,7 +313,7 @@ export class Table {
      * @param columns The columns to select
      * @returns The row
      * @example
-     * await table.selectLast("id", table.wheres({ column: "id", operator: "=", value: 123 }), ["id", "name"]);
+     * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
      */
     selectLast(by, where, columns) {
         return this.ready(() => this.custom.selectLast(this.name, by, columns, where));
@@ -308,7 +323,7 @@ export class Table {
      * @param where The where clause
      * @returns If the row exists
      * @example
-     * await table.exists(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     exists(where) {
         return this.ready(async () => {
@@ -327,7 +342,7 @@ export class Table {
      * await table.insert({ id: 123, name: "hello" });
      */
     async insert(data) {
-        await serializeData(this.serialize, data);
+        data = await serializeData(this.serialize, data);
         return this.ready(() => this.custom.insert(this.name, data));
     }
     /**
@@ -338,10 +353,10 @@ export class Table {
      * @throws If a column is null and not nullable
      * @throws If a column has an invalid datatype
      * @example
-     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     async update(data, where) {
-        await serializeData(this.serialize, data, true);
+        data = await serializeData(this.serialize, data, true);
         return this.ready(() => this.custom.update(this.name, data, where));
     }
     /**
@@ -349,7 +364,7 @@ export class Table {
      * @param where The where clause
      * @returns A promise
      * @example
-     * await table.delete(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      */
     delete(where) {
         return this.ready(() => this.custom.delete(this.name, where));
@@ -359,7 +374,7 @@ export class Table {
      * @param where The where clause
      * @returns The length
      * @example
-     * await table.length(table.wheres({ column: "id", operator: "=", value: 123 }));
+     * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
      * await table.length();
      */
     length(where) {
@@ -419,9 +434,9 @@ export class Database {
      * @returns The table
      * @example
      * const table = await database.forTable("my-table", {
-     *    id: { type: 0, primaryKey: true },
-     *    name: { type: "", notNull: true },
-     *    date: { type: new Date() },
+     *    id: { type: Database.Types.INTEGER, primaryKey: true },
+     *    name: { type: Database.Types.TEXT, notNull: true },
+     *    date: { type: Database.Types.DATETIME },
      * });
      */
     forTable(name, columns) {
