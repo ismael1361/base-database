@@ -35,7 +35,7 @@ type SerializeItemProperties<T> = {
 	notNull?: boolean;
 	default?: T;
 	unique?: boolean;
-	validate?: (value: T) => Error | void | undefined;
+	check?: (value: T) => Error | void | undefined;
 };
 
 export type SerializeItemAny<T> = T extends { type: infer U } ? (U extends SerializeValueType ? SerializeItemProperties<U> : SerializeItemProperties<T>) : SerializeItemProperties<T>;
@@ -165,9 +165,9 @@ export const serializeData = <S extends Serialize>(serialize: SerializeDatatype<
 				if (serialize[key].notNull && (data[key] === null || data[key] === undefined)) return reject(new Error(`Column ${key} cannot be null or undefined`));
 				if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
 
-				if (data[key] !== null && data[key] !== undefined && typeof serialize[key].validate === "function") {
+				if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
 					try {
-						const isValid = (serialize as any)[key].validate(data[key]);
+						const isValid = (serialize as any)[key].check(data[key]);
 						if (isValid instanceof Error) return reject(isValid);
 					} catch (e) {
 						const message = "message" in (e as any) ? (e as any).message : "Invalid value, error thrown: " + String(e);
@@ -403,7 +403,7 @@ export class Table<S extends Serialize> {
 				notNull: columns[key].notNull ?? false,
 				default: columns[key].default,
 				unique: columns[key].unique ?? false,
-				validate: columns[key].validate,
+				check: columns[key].check,
 			};
 			return acc;
 		}, {} as any);

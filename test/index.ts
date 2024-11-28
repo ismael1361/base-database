@@ -81,7 +81,7 @@ database
 		string: {
 			type: Database.Types.TEXT,
 			default: "",
-			validate(value: string) {
+			check(value: string) {
 				if (typeof value !== "string") throw new Error("Invalid value");
 			},
 		},

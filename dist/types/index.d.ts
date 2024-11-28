@@ -17,7 +17,7 @@ type SerializeItemProperties<T> = {
     notNull?: boolean;
     default?: T;
     unique?: boolean;
-    validate?: (value: T) => Error | void | undefined;
+    check?: (value: T) => Error | void | undefined;
 };
 export type SerializeItemAny<T> = T extends {
     type: infer U;

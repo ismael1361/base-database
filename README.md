@@ -456,6 +456,35 @@ const table = await db.forTable("my-table", {
 });
 ```
 
+#### ``Database.Serialize``
+
+O objeto `Database.Serialize` contém métodos para serialização de dados, para que possam ser armazenados e recuperados de forma segura correspondendo ao tipo de dados original.
+
+Cada coluna da tabela deve ser definida com um objeto que contém as seguintes propriedades:
+
+- ``type``: Tipo de dado da coluna.
+- ``primaryKey``: Indica se a coluna é uma chave primária.
+- ``autoIncrement``: Indica se a coluna é autoincrementável.
+- ``notNull``: Indica se a coluna não pode ser nula.
+- ``default``: Valor padrão da coluna.
+- ``unique``: Indica se a coluna deve ser única.
+- ``check``: Uma função que valida o valor da coluna, caso o valor não seja válido, a função deve lançar um erro, retornando uma instância de Error ou emitindo um erro throw.
+
+```ts
+const columns = {
+    id: { type: Database.Types.INTEGER, primaryKey: true },
+    name: { type: Database.Types.TEXT, notNull: true },
+    date: { type: Database.Types.DATETIME },
+    amount: { type: Database.Types.FLOAT },
+    isValid: { type: Database.Types.BOOLEAN, default: false },
+    variant: { type: Database.Types.BIGINT, notNull: true },
+    email: { type: Database.Types.TEXT, unique: true, check: (value) => {
+        if (!value.includes("@")) throw new Error("Invalid email");
+    }},
+};
+```
+
+
 ### ``deleteTable``
 
 Método que deleta uma tabela.
