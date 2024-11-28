@@ -26,11 +26,11 @@ class ModelDatabase extends Database.Custom<localDB> {
 		throw new Error("Method not implemented.");
 	}
 
-	selectFirst<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+	selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
 		throw new Error("Method not implemented.");
 	}
 
-	selectLast<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+	selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
 		throw new Error("Method not implemented.");
 	}
 
@@ -80,6 +80,10 @@ database
 		},
 		string: {
 			type: Database.Types.TEXT,
+			default: "",
+			validate(value: string) {
+				if (typeof value !== "string") throw new Error("Invalid value");
+			},
 		},
 		boolean: {
 			type: Database.Types.BOOLEAN,

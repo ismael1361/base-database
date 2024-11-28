@@ -118,22 +118,22 @@ selectOne<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promis
 }
 ```
 
-### ``selectFirst<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
+### ``selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
 
 Método responsável por selecionar o primeiro registro de uma tabela. Deve retornar uma `Promise` que resolve com um registro ou `null`.
 
 ```ts
-selectFirst<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
   // Implementação da seleção
 }
 ```
 
-### ``selectLast<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
+### ``selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
 
 Método responsável por selecionar o último registro de uma tabela. Deve retornar uma `Promise` que resolve com um registro ou `null`.
 
 ```ts
-selectLast<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
   // Implementação da seleção
 }
 ```
@@ -277,7 +277,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    selectFirst<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+    selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
@@ -292,7 +292,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    selectLast<C>(table: string, by?: Database.Indexers, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+    selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";

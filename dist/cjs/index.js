@@ -119,8 +119,19 @@ const serializeData = (serialize, data, isPartial = false) => {
             else {
                 if (serialize[key].notNull && (data[key] === null || data[key] === undefined))
                     return reject(new Error(`Column ${key} cannot be null or undefined`));
-                if (data[key] !== null && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
+                if (data[key] !== null && data[key] === undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
                     return reject(new Error(`Invalid datatype for column ${key}`));
+                if (data[key] !== null && data[key] === undefined && typeof serialize[key].validate === "function") {
+                    try {
+                        const isValid = serialize[key].validate(data[key]);
+                        if (isValid instanceof Error)
+                            return reject(isValid);
+                    }
+                    catch (e) {
+                        const message = "message" in e ? e.message : "Invalid value, error thrown: " + String(e);
+                        return reject(new Error(message));
+                    }
+                }
             }
         }
         resolve(data);

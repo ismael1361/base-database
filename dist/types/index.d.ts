@@ -1,4 +1,3 @@
-export type Indexers = string | number | symbol;
 export type WheresItem<C extends Serialize, K extends keyof C> = {
     column: K;
     operator: "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
@@ -11,25 +10,23 @@ export type Row<C extends Serialize = any, K extends string | number | symbol = 
     [k in K]: C[k]["type"];
 };
 export type Datatype<T extends SerializeValueType> = T extends null ? "NULL" : T extends string ? "TEXT" : T extends bigint ? "BIGINT" : T extends number ? "INTEGER" | "FLOAT" : T extends boolean ? "BOOLEAN" : T extends Date ? "DATETIME" : "TEXT";
-export type SerializeItem<T extends SerializeValueType> = {
+type SerializeItemProperties<T> = {
     type: T;
     primaryKey?: boolean;
     autoIncrement?: boolean;
     notNull?: boolean;
     default?: T;
     unique?: boolean;
+    validate?: (value: T) => Error | void | undefined;
 };
-export type Serialize<T extends Record<Indexers, SerializeItem<SerializeValueType>> = Record<Indexers, SerializeItem<SerializeValueType>>> = {
+export type SerializeItemAny<T> = T extends {
+    type: infer U;
+} ? (U extends SerializeValueType ? SerializeItemProperties<U> : SerializeItemProperties<T>) : SerializeItemProperties<T>;
+export type SerializeItem<T extends SerializeValueType> = SerializeItemAny<T>;
+export type Serialize<T extends Record<PropertyKey, SerializeItem<SerializeValueType>> = Record<PropertyKey, SerializeItem<SerializeValueType>>> = {
     [k in keyof T]: SerializeItem<T[k]["type"]>;
 };
-export type SerializeDatatypeItem<V extends SerializeValueType, T extends OptionsDatatype = Datatype<V>> = {
-    type: T;
-    primaryKey?: boolean;
-    autoIncrement?: boolean;
-    notNull?: boolean;
-    default?: T;
-    unique?: boolean;
-};
+export type SerializeDatatypeItem<V extends SerializeValueType, T extends OptionsDatatype = Datatype<V>> = SerializeItemAny<T>;
 export type SerializeDatatype<S extends Serialize = never> = {
     [k in keyof S]: SerializeDatatypeItem<S[k]["type"]>;
 };
@@ -181,7 +178,7 @@ export declare abstract class Custom<db = never> {
      * @example
      * await custom.selectFirst("my-table", "id", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
      */
-    abstract selectFirst<C>(table: string, by?: Indexers, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+    abstract selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
     /**
      * Select the last row from a table
      * @param table The table name
@@ -192,7 +189,7 @@ export declare abstract class Custom<db = never> {
      * @example
      * await custom.selectLast("my-table", "id", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
      */
-    abstract selectLast<C>(table: string, by?: Indexers, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+    abstract selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
     /**
      * Insert a row into a table
      * @param table The table name
@@ -483,4 +480,5 @@ export declare class Database<db = never> {
      */
     deleteDatabase(): Promise<void>;
 }
+export {};
 //# sourceMappingURL=index.d.ts.map

@@ -1,5 +1,3 @@
-export type Indexers = string | number | symbol;
-
 export type WheresItem<C extends Serialize, K extends keyof C> = {
 	column: K;
 	operator: "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
@@ -30,27 +28,25 @@ export type Datatype<T extends SerializeValueType> = T extends null
 	? "DATETIME"
 	: "TEXT";
 
-export type SerializeItem<T extends SerializeValueType> = {
+type SerializeItemProperties<T> = {
 	type: T;
 	primaryKey?: boolean;
 	autoIncrement?: boolean;
 	notNull?: boolean;
 	default?: T;
 	unique?: boolean;
+	validate?: (value: T) => Error | void | undefined;
 };
 
-export type Serialize<T extends Record<Indexers, SerializeItem<SerializeValueType>> = Record<Indexers, SerializeItem<SerializeValueType>>> = {
+export type SerializeItemAny<T> = T extends { type: infer U } ? (U extends SerializeValueType ? SerializeItemProperties<U> : SerializeItemProperties<T>) : SerializeItemProperties<T>;
+
+export type SerializeItem<T extends SerializeValueType> = SerializeItemAny<T>;
+
+export type Serialize<T extends Record<PropertyKey, SerializeItem<SerializeValueType>> = Record<PropertyKey, SerializeItem<SerializeValueType>>> = {
 	[k in keyof T]: SerializeItem<T[k]["type"]>;
 };
 
-export type SerializeDatatypeItem<V extends SerializeValueType, T extends OptionsDatatype = Datatype<V>> = {
-	type: T;
-	primaryKey?: boolean;
-	autoIncrement?: boolean;
-	notNull?: boolean;
-	default?: T;
-	unique?: boolean;
-};
+export type SerializeDatatypeItem<V extends SerializeValueType, T extends OptionsDatatype = Datatype<V>> = SerializeItemAny<T>;
 
 export type SerializeDatatype<S extends Serialize = never> = {
 	[k in keyof S]: SerializeDatatypeItem<S[k]["type"]>;
@@ -167,7 +163,17 @@ export const serializeData = <S extends Serialize>(serialize: SerializeDatatype<
 				delete data[key];
 			} else {
 				if (serialize[key].notNull && (data[key] === null || data[key] === undefined)) return reject(new Error(`Column ${key} cannot be null or undefined`));
-				if (data[key] !== null && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
+				if (data[key] !== null && data[key] === undefined && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
+
+				if (data[key] !== null && data[key] === undefined && typeof serialize[key].validate === "function") {
+					try {
+						const isValid = serialize[key].validate(data[key]);
+						if (isValid instanceof Error) return reject(isValid);
+					} catch (e) {
+						const message = "message" in (e as any) ? (e as any).message : "Invalid value, error thrown: " + String(e);
+						return reject(new Error(message));
+					}
+				}
 			}
 		}
 
@@ -275,7 +281,7 @@ export abstract class Custom<db = never> {
 	 * @example
 	 * await custom.selectFirst("my-table", "id", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
 	 */
-	abstract selectFirst<C>(table: string, by?: Indexers, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+	abstract selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
 
 	/**
 	 * Select the last row from a table
@@ -287,7 +293,7 @@ export abstract class Custom<db = never> {
 	 * @example
 	 * await custom.selectLast("my-table", "id", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
 	 */
-	abstract selectLast<C>(table: string, by?: Indexers, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+	abstract selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
 
 	/**
 	 * Insert a row into a table
@@ -435,7 +441,7 @@ export class Table<S extends Serialize> {
 	 * table.getColumnType("id"); // "INTEGER"
 	 */
 	getColumnType<C extends keyof S>(key: C): Datatype<S[C]["type"]> {
-		return this.serialize[key].type;
+		return this.serialize[key].type as any;
 	}
 
 	/**
