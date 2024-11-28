@@ -114,9 +114,9 @@ export const serializeData = (serialize, data, isPartial = false) => {
             else {
                 if (serialize[key].notNull && (data[key] === null || data[key] === undefined))
                     return reject(new Error(`Column ${key} cannot be null or undefined`));
-                if (data[key] !== null && data[key] === undefined && !verifyDatatype(data[key], serialize[key].type))
+                if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type))
                     return reject(new Error(`Invalid datatype for column ${key}`));
-                if (data[key] !== null && data[key] === undefined && typeof serialize[key].validate === "function") {
+                if (data[key] !== null && data[key] !== undefined && typeof serialize[key].validate === "function") {
                     try {
                         const isValid = serialize[key].validate(data[key]);
                         if (isValid instanceof Error)
@@ -227,6 +227,7 @@ export class Table {
                 notNull: columns[key].notNull ?? false,
                 default: columns[key].default,
                 unique: columns[key].unique ?? false,
+                validate: columns[key].validate,
             };
             return acc;
         }, {});
