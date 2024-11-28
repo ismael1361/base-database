@@ -412,6 +412,10 @@ export declare class Table<S extends Serialize> {
  * Define type for custom database constructor
  */
 export type CustomConstructor<db = never> = new (database: string) => Custom<db>;
+type TableReady<S extends Serialize> = {
+    table: Promise<Table<S> | undefined>;
+    ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
+};
 /**
  * Database class
  */
@@ -462,6 +466,51 @@ export declare class Database<db = never> {
      * });
      */
     forTable<S extends Serialize>(name: string, columns: S): Promise<Table<S>>;
+    /**
+     * Get a ready table
+     * @param table The table promise
+     * @returns The table ready
+     * @example
+     * const table = database.readyTable("my-table", {
+     *   id: { type: Database.Types.INTEGER, primaryKey: true },
+     *   name: { type: Database.Types.TEXT, notNull: true },
+     *   date: { type: Database.Types.DATETIME },
+     * });
+     *
+     * await table.ready(async (table) => {
+     *   // Code here will run when the table is ready
+     * });
+     *
+     * @example
+     * const table = database.forTable("my-table", {
+     *   id: { type: Database.Types.INTEGER, primaryKey: true },
+     *   name: { type: Database.Types.TEXT, notNull: true },
+     *   date: { type: Database.Types.DATETIME },
+     * });
+     *
+     * database.readyTable(table).ready(async (table) => {
+     *   // Code here will run when the table is ready
+     * });
+     */
+    readyTable<S extends Serialize>(table: Promise<Table<S>>): TableReady<S>;
+    readyTable<S extends Serialize>(name: string, columns: S): TableReady<S>;
+    /**
+     * Get a table
+     * @param name The table name
+     * @param columns The columns
+     * @returns The table
+     * @example
+     * const table = database.table("my-table", {
+     *   id: { type: Database.Types.INTEGER, primaryKey: true },
+     *   name: { type: Database.Types.TEXT, notNull: true },
+     *   date: { type: Database.Types.DATETIME },
+     * });
+     *
+     * table.ready(async (table) => {
+     *   // Code here will run when the table is ready
+     * });
+     */
+    table<S extends Serialize>(name: string, columns: S): TableReady<S>;
     /**
      * Delete a table
      * @param name The table name

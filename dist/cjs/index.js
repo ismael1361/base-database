@@ -471,6 +471,43 @@ class Database {
             return Promise.resolve(table);
         });
     }
+    readyTable(name, columns) {
+        const table = typeof name === "string" && this.tables.has(name)
+            ? Promise.resolve(this.tables.get(name))
+            : typeof name === "string" && columns
+                ? this.forTable(name, columns)
+                : name instanceof Promise
+                    ? name
+                    : Promise.reject(new Error("Invalid arguments"));
+        return {
+            table,
+            async ready(callback) {
+                const t = await table;
+                if (!t)
+                    throw new Error("Table not found");
+                return t.ready(callback);
+            },
+        };
+    }
+    /**
+     * Get a table
+     * @param name The table name
+     * @param columns The columns
+     * @returns The table
+     * @example
+     * const table = database.table("my-table", {
+     *   id: { type: Database.Types.INTEGER, primaryKey: true },
+     *   name: { type: Database.Types.TEXT, notNull: true },
+     *   date: { type: Database.Types.DATETIME },
+     * });
+     *
+     * table.ready(async (table) => {
+     *   // Code here will run when the table is ready
+     * });
+     */
+    table(name, columns) {
+        return this.readyTable(name, columns);
+    }
     /**
      * Delete a table
      * @param name The table name

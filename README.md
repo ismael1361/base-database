@@ -484,6 +484,60 @@ const columns = {
 };
 ```
 
+### ``readyTable``
+
+Método que prepara uma tabela para ser utilizada. Deve ser utilizado para garantir que a tabela esteja pronta para operações.
+
+```ts
+const table = db.readyTable("my-table", {
+    id: { type: Database.Types.INTEGER, primaryKey: true },
+    name: { type: Database.Types.TEXT, notNull: true },
+    date: { type: Database.Types.DATETIME },
+    amount: { type: Database.Types.FLOAT },
+    isValid: { type: Database.Types.BOOLEAN, default: false },
+    variant: { type: Database.Types.BIGINT, notNull: true }
+});
+
+table.ready(async (table) => {
+    // Operações dentro da transação
+});
+```
+
+Ou, inserindo uma promisse de instância de tabela:
+
+```ts
+const table = db.forTable("my-table", {
+    id: { type: Database.Types.INTEGER, primaryKey: true },
+    name: { type: Database.Types.TEXT, notNull: true },
+    date: { type: Database.Types.DATETIME },
+    amount: { type: Database.Types.FLOAT },
+    isValid: { type: Database.Types.BOOLEAN, default: false },
+    variant: { type: Database.Types.BIGINT, notNull: true }
+});
+
+db.readyTable(table).ready(async (table) => {
+    // Operações dentro da transação
+});
+```
+
+### ``table``
+
+O mesmo que ``readyTable``, porém, aceita apenas parâmetros de string e um objeto de serialização.
+
+```ts
+const table = db.table("my-table", {
+    id: { type: Database.Types.INTEGER, primaryKey: true },
+    name: { type: Database.Types.TEXT, notNull: true },
+    date: { type: Database.Types.DATETIME },
+    amount: { type: Database.Types.FLOAT },
+    isValid: { type: Database.Types.BOOLEAN, default: false },
+    variant: { type: Database.Types.BIGINT, notNull: true }
+});
+
+table.ready(async (table) => {
+    // Operações dentro da transação
+});
+```
 
 ### ``deleteTable``
 

@@ -69,46 +69,46 @@ class ModelDatabase extends Database.Custom<localDB> {
 }
 
 const database = new Database.Database(ModelDatabase, "");
-database
-	.forTable("test", {
-		integer: {
-			type: Database.Types.INTEGER,
-			primaryKey: true,
+const table = database.readyTable("test", {
+	integer: {
+		type: Database.Types.INTEGER,
+		primaryKey: true,
+	},
+	float: {
+		type: Database.Types.FLOAT,
+	},
+	string: {
+		type: Database.Types.TEXT,
+		default: "",
+		check(value: string) {
+			if (typeof value !== "string") throw new Error("Invalid value");
 		},
-		float: {
-			type: Database.Types.FLOAT,
-		},
-		string: {
-			type: Database.Types.TEXT,
-			default: "",
-			check(value: string) {
-				if (typeof value !== "string") throw new Error("Invalid value");
-			},
-		},
-		boolean: {
-			type: Database.Types.BOOLEAN,
-		},
-		null: {
-			type: Database.Types.NULL,
-		},
-		date: {
-			type: Database.Types.DATETIME,
-		},
-		bigint: {
-			type: Database.Types.BIGINT,
-		},
-	})
-	.then((table) => {
-		console.log("table:", table.wheres({ column: "integer", operator: "=", value: 0 }));
-		table
-			.insert({
-				integer: 0,
-				float: 0.1,
-				string: "",
-				boolean: true,
-				null: null,
-				date: new Date(),
-				bigint: BigInt(0),
-			})
-			.then();
-	});
+	},
+	boolean: {
+		type: Database.Types.BOOLEAN,
+	},
+	null: {
+		type: Database.Types.NULL,
+	},
+	date: {
+		type: Database.Types.DATETIME,
+	},
+	bigint: {
+		type: Database.Types.BIGINT,
+	},
+});
+
+table.ready((table) => {
+	console.log("table:", table.wheres({ column: "integer", operator: "=", value: 0 }));
+	table
+		.insert({
+			integer: 0,
+			float: 0.1,
+			string: "",
+			boolean: true,
+			null: null,
+			date: new Date(),
+			bigint: BigInt(0),
+		})
+		.then();
+});
