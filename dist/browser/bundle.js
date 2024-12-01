@@ -696,10 +696,10 @@ class BasicEventEmitter {
             return Promise.resolve(response);
         }
         return new Promise((resolve) => {
-            this.once("internal_ready", async () => {
+            this.once("internal_ready", (async () => {
                 const response = await callback?.();
                 resolve(response);
-            });
+            }));
         });
     }
     /**
@@ -738,7 +738,10 @@ class BasicEventEmitter {
      * // Output: Emitter is ready
      */
     set prepared(value) {
-        this.emit("internal_ready");
+        if (value === true) {
+            this.emit("internal_ready");
+        }
+        this._ready = value;
     }
     /**
      * Clear all events
@@ -834,8 +837,8 @@ class BasicEventEmitter {
     once(event, callback) {
         return new Promise((resolve) => {
             const ourCallback = (...arg) => {
-                resolve();
-                callback?.(...arg);
+                const r = callback?.(...arg);
+                resolve(r);
             };
             if (this[_oneTimeEvents].has(event)) {
                 runCallback(ourCallback, ...(this[_oneTimeEvents].get(event) ?? []));
