@@ -1,4 +1,4 @@
-import * as Database from "../src";
+import Database from "../src";
 
 type localDB = Map<string, any[]>;
 
