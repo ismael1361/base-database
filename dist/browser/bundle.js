@@ -80,6 +80,7 @@ const Table_1 = require("./Table");
 __exportStar(require("./Types"), exports);
 __exportStar(require("./Utils"), exports);
 __exportStar(require("./Custom"), exports);
+__exportStar(require("./Table"), exports);
 /**
  * Database class
  */

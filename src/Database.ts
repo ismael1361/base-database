@@ -6,6 +6,7 @@ import { Table } from "./Table";
 export * from "./Types";
 export * from "./Utils";
 export * from "./Custom";
+export * from "./Table";
 
 /**
  * Define type for custom database constructor

@@ -3,6 +3,7 @@ import { Table } from "./Table";
 export * from "./Types";
 export * from "./Utils";
 export * from "./Custom";
+export * from "./Table";
 /**
  * Database class
  */
