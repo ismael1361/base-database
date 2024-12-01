@@ -10,7 +10,7 @@ export * from "./Table";
  * Define type for custom database constructor
  */
 export type CustomConstructor<db = never> = new (database: string) => Custom<db>;
-type TableReady<S extends Serialize> = {
+export type TableReady<S extends Serialize> = {
     table: Promise<Table<S> | undefined>;
     ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
 };
