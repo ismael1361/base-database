@@ -214,16 +214,13 @@ class Database extends basic_event_emitter_1.default {
      * @example
      * await database.deleteDatabase();
      */
-    deleteDatabase() {
-        return this.ready(async () => {
-            if (this.custom.disconnected)
-                throw new Error("Database is disconnected");
-            this.custom.disconnected = true;
-            await this.custom.deleteDatabase();
-            this.tables.forEach((table) => table.disconnect());
-            this.tables.clear();
-            this.emit("delete");
-        });
+    async deleteDatabase() {
+        // if (this.custom.disconnected) throw new Error("Database is disconnected");
+        this.custom.disconnected = true;
+        await this.custom.deleteDatabase();
+        this.tables.forEach((table) => table.disconnect());
+        this.tables.clear();
+        this.emit("delete");
     }
 }
 exports.Database = Database;

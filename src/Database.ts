@@ -190,14 +190,12 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * @example
 	 * await database.deleteDatabase();
 	 */
-	deleteDatabase(): Promise<void> {
-		return this.ready(async () => {
-			if (this.custom.disconnected) throw new Error("Database is disconnected");
-			this.custom.disconnected = true;
-			await this.custom.deleteDatabase();
-			this.tables.forEach((table) => table.disconnect());
-			this.tables.clear();
-			this.emit("delete");
-		});
+	async deleteDatabase(): Promise<void> {
+		// if (this.custom.disconnected) throw new Error("Database is disconnected");
+		this.custom.disconnected = true;
+		await this.custom.deleteDatabase();
+		this.tables.forEach((table) => table.disconnect());
+		this.tables.clear();
+		this.emit("delete");
 	}
 }
