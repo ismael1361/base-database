@@ -223,13 +223,13 @@ import * as Database from 'base-database';
 import * as sqlite3 from 'sqlite3';
 
 const parseQuery = (query?: Database.QueryOptions) => {
-    if (!query) return { columns: "", where: "", order: "", limit: "", offset: "" };
+    if (!query) return { columns: "*", where: "", order: "", limit: "", offset: "" };
 
-    const whereClause = Array.isArray(query.where) && query.where.length > 0 ? query.where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
+    const whereClause = Array.isArray(query.wheres) && query.wheres.length > 0 ? query.wheres.map((w) => `${w.column} ${w.operator} ${typeof w.compare === "string" ? `'${w.compare}'` : w.compare}`).join(" AND ") : "";
 
-    const columnClause = Array.isArray(query.where) && query.columns.length > 0 ? query.columns.join(", ") : "*";
+    const columnClause = Array.isArray(query.wheres) && query.columns.length > 0 ? query.columns.join(", ") : "*";
     
-    const orderClause = Array.isArray(query.order) && query.order.length > 0 ? order.map(({ column, ascending }) => `${String(column)} ${ascending ? 'ASC' : 'DESC'}`).join(', ') : "";
+    const orderClause = Array.isArray(query.order) && query.order.length > 0 ? query.order.map(({ column, ascending }) => `${String(column)} ${ascending ? 'ASC' : 'DESC'}`).join(', ') : "";
 
     return { 
         columns: columnClause, 
@@ -270,7 +270,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order, limit, offset } = parseQuery(query);
 
-                db.all(`SELECT ${columns} FROM ${table} ${where} ${order} ${limit} ${offset}`.then() + ";", (err, rows) => {
+                db.all(`SELECT ${columns} FROM ${table} ${where} ${order} ${limit} ${offset}`.trim() + ";", (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows);
                 });
@@ -283,7 +283,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order } = parseQuery(query);
 
-                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.then() + ";", (err, row) => {
+                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
                     if (err) reject(err);
                     else resolve(row);
                 });
@@ -296,7 +296,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order } = parseQuery(query);
 
-                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.then() + ";", (err, row) => {
+                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
                     if (err) reject(err);
                     else resolve(row);
                 });
@@ -332,7 +332,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
                 
                 const { where } = parseQuery(query);
 
-                db.run(`UPDATE ${table} SET ${setClause} ${where}`.then() + ";", (err) => {
+                db.run(`UPDATE ${table} SET ${setClause} ${where}`.trim() + ";", (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -345,7 +345,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { where } = parseQuery(query);
 
-                db.run(`DELETE FROM ${table} ${where}`.then() + ";", (err) => {
+                db.run(`DELETE FROM ${table} ${where}`.trim() + ";", (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -358,7 +358,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { where } = parseQuery(query);
 
-                db.get(`SELECT COUNT(*) AS count FROM ${table} ${where}`.then() + ";", (err, row) => {
+                db.get(`SELECT COUNT(*) AS count FROM ${table} ${where}`.trim() + ";", (err, row) => {
                     if (err) reject(err);
                     else resolve(row.count);
                 });
