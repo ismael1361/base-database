@@ -98,42 +98,42 @@ disconnect(): Promise<void> {
 }
 ```
 
-### ``selectAll<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Array<Database.Row>>``
+### ``selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>>``
 
 Método responsável por selecionar todos os registros de uma tabela. Deve retornar uma `Promise` que resolve com um array de registros.
 
 ```ts
-selectAll<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Array<Database.Row>> {
+selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>> {
   // Implementação da seleção
 }
 ```
 
-### ``selectOne<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
+### ``selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``
 
 Método responsável por selecionar um registro de uma tabela. Deve retornar uma `Promise` que resolve com um registro ou `null`.
 
 ```ts
-selectOne<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
   // Implementação da seleção
 }
 ```
 
-### ``selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
+### ``selectFirst(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``
 
 Método responsável por selecionar o primeiro registro de uma tabela. Deve retornar uma `Promise` que resolve com um registro ou `null`.
 
 ```ts
-selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+selectFirst(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
   // Implementação da seleção
 }
 ```
 
-### ``selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null>``
+### ``selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``
 
 Método responsável por selecionar o último registro de uma tabela. Deve retornar uma `Promise` que resolve com um registro ou `null`.
 
 ```ts
-selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
   // Implementação da seleção
 }
 ```
@@ -148,32 +148,32 @@ insert(table: string, data: Database.Row): Promise<void> {
 }
 ```
 
-### ``update(table: string, data: Partial<Database.Row>, where: Database.Wheres): Promise<void>``
+### ``update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void>``
 
 Método responsável por atualizar registros em uma tabela. Deve retornar uma `Promise` que resolve após a atualização.
 
 ```ts
-update(table: string, data: Partial<Database.Row>, where: Database.Wheres): Promise<void> {
+update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void> {
   // Implementação da atualização
 }
 ```
 
-### ``delete(table: string, where: Database.Wheres): Promise<void>``
+### ``delete(table: string, query: Database.QueryOptions): Promise<void>``
 
 Método responsável por deletar registros de uma tabela. Deve retornar uma `Promise` que resolve após a deleção.
 
 ```ts
-delete(table: string, where: Database.Wheres): Promise<void> {
+delete(table: string, query: Database.QueryOptions): Promise<void> {
   // Implementação da deleção
 }
 ```
 
-### ``length(table: string, where?: Database.Wheres): Promise<number>``
+### ``length(table: string, query?: Database.QueryOptions): Promise<number>``
 
 Método responsável por obter o número de registros de uma tabela. Deve retornar uma `Promise` que resolve com o número de registros.
 
 ```ts
-length(table: string, where?: Database.Wheres): Promise<number> {
+length(table: string, query?: Database.QueryOptions): Promise<number> {
   // Implementação do cálculo do número de registros
 }
 ```
