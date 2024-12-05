@@ -222,6 +222,24 @@ Em seguida, implemente a classe personalizada para SQLite:
 import * as Database from 'base-database';
 import * as sqlite3 from 'sqlite3';
 
+const parseQuery = (query?: Database.QueryOptions) => {
+    if (!query) return { columns: "", where: "", order: "", limit: "", offset: "" };
+
+    const whereClause = Array.isArray(query.where) && query.where.length > 0 ? query.where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
+
+    const columnClause = Array.isArray(query.where) && query.columns.length > 0 ? query.columns.join(", ") : "*";
+    
+    const orderClause = Array.isArray(query.order) && query.order.length > 0 ? order.map(({ column, ascending }) => `${String(column)} ${ascending ? 'ASC' : 'DESC'}`).join(', ') : "";
+
+    return { 
+        columns: columnClause, 
+        where: whereClause.trim() === "" ? "" : `WHERE ${whereClause}`, 
+        order: orderClause.trim() === "" ? "" : `ORDER BY ${orderClause.trim()}`, 
+        limit: query.take ? `LIMIT ${query.take}` : "", 
+        offset: query.skip ? `OFFSET ${query.skip}` : "" 
+    };
+};
+
 class SQLite extends Database.Custom<sqlite3.Database> {
 	private db: sqlite3.Database | undefined;
 
@@ -247,14 +265,12 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    selectAll<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Array<Database.Row>> {
+    selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
+                const { columns, where, order, limit, offset } = parseQuery(query);
 
-                const columnClause = columns ? columns.join(", ") : "*";
-
-                db.all(`SELECT ${columnClause} FROM ${table}${Array.isArray(where) ? ` WHERE ${whereClause}` : ""};`, (err, rows) => {
+                db.all(`SELECT ${columns} FROM ${table} ${where} ${order} ${limit} ${offset}`.then() + ";", (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows);
                 });
@@ -262,14 +278,12 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    selectOne<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+    selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
+                const { columns, where, order } = parseQuery(query);
 
-                const columnClause = columns ? columns.join(", ") : "*";
-
-                db.get(`SELECT ${columnClause} FROM ${table}${Array.isArray(where) ? ` WHERE ${whereClause}` : ""};`, (err, row) => {
+                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.then() + ";", (err, row) => {
                     if (err) reject(err);
                     else resolve(row);
                 });
@@ -277,14 +291,12 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+    selectFirst(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
+                const { columns, where, order } = parseQuery(query);
 
-                const columnClause = columns ? columns.join(", ") : "*";
-
-                db.get(`SELECT ${columnClause} FROM ${table}${Array.isArray(where) ? ` WHERE ${whereClause}` : ""}${by ? ` ORDER BY ${by} ASC` : ""};`, (err, row) => {
+                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.then() + ";", (err, row) => {
                     if (err) reject(err);
                     else resolve(row);
                 });
@@ -292,18 +304,10 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+    selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
         return this.ready(async (db) => {
-            return new Promise((resolve, reject) => {
-                const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
-
-                const columnClause = columns ? columns.join(", ") : "*";
-
-                db.get(`SELECT ${columnClause} FROM ${table}${Array.isArray(where) ? ` WHERE ${whereClause}` : ""}${by ? ` ORDER BY ${by} DESC` : ""};`, (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                });
-            });
+            const rows = await this.selectAll(table, query);
+            return rows[rows.length - 1];
         });
     }
 
@@ -321,13 +325,14 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    update(table: string, data: Partial<Database.Row>, where: Database.Wheres): Promise<void> {
+    update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 const setClause = Object.entries(data).map(([column, value]) => `${column} = '${value}'`).join(", ");
-                const whereClause = where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ");
+                
+                const { where } = parseQuery(query);
 
-                db.run(`UPDATE ${table} SET ${setClause} WHERE ${whereClause};`, (err) => {
+                db.run(`UPDATE ${table} SET ${setClause} ${where}`.then() + ";", (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -335,12 +340,12 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    delete(table: string, where: Database.Wheres): Promise<void> {
+    delete(table: string, query: Database.QueryOptions): Promise<void> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const whereClause = where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ");
+                const { where } = parseQuery(query);
 
-                db.run(`DELETE FROM ${table} WHERE ${whereClause};`, (err) => {
+                db.run(`DELETE FROM ${table} ${where}`.then() + ";", (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -348,12 +353,12 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    length(table: string, where?: Database.Wheres): Promise<number> {
+    length(table: string, query?: Database.QueryOptions): Promise<number> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const whereClause = Array.isArray(where) ? where.map((w) => `${w.column} ${w.operator} ${w.value}`).join(" AND ") : "";
+                const { where } = parseQuery(query);
 
-                db.get(`SELECT COUNT(*) AS count FROM ${table}${Array.isArray(where) ? ` WHERE ${whereClause}` : ""};`, (err, row) => {
+                db.get(`SELECT COUNT(*) AS count FROM ${table} ${where}`.then() + ";", (err, row) => {
                     if (err) reject(err);
                     else resolve(row.count);
                 });
