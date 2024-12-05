@@ -225,7 +225,178 @@ class Database extends basic_event_emitter_1.default {
 }
 exports.Database = Database;
 
-},{"./Custom":1,"./Table":3,"./Types":4,"./Utils":5,"basic-event-emitter":7}],3:[function(require,module,exports){
+},{"./Custom":1,"./Table":4,"./Types":5,"./Utils":6,"basic-event-emitter":8}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Query = void 0;
+const __private__ = Symbol("private");
+/**
+ * Query class
+ */
+class Query {
+    table;
+    [__private__] = {
+        wheres: [],
+        order: [],
+        columns: [],
+    };
+    /**
+     * Create a query
+     * @param table The table for consuming the query
+     */
+    constructor(table) {
+        this.table = table;
+    }
+    /**
+     * Get the query options
+     */
+    get options() {
+        return JSON.parse(JSON.stringify(this[__private__]));
+    }
+    where(column, operator, compare) {
+        this[__private__].wheres.push({ column, operator, compare });
+        return this;
+    }
+    filter(column, operator, compare) {
+        return this.where(column, operator, compare);
+    }
+    /**
+     * Take clause for the query
+     * @param take The number of rows to take
+     * @example
+     * query.take(10);
+     */
+    take(take) {
+        this[__private__].take = take;
+        return this;
+    }
+    /**
+     * Skip clause for the query
+     * @param skip The number of rows to skip
+     * @example
+     * query.skip(10);
+     */
+    skip(skip) {
+        this[__private__].skip = skip;
+        return this;
+    }
+    sort(column, ascending = true) {
+        this[__private__].order.push({ column, ascending });
+        return this;
+    }
+    order(column, ascending = true) {
+        return this.sort(column, ascending);
+    }
+    /**
+     * Columns should return in selection
+     * @param columns The columns to select
+     * @example
+     * query.columns("id", "name");
+     */
+    columns(...columns) {
+        this[__private__].columns = [...this[__private__].columns, ...columns];
+        return this;
+    }
+    /**
+     * Get the rows
+     * @param columns The columns to select
+     * @example
+     * query.get("id", "name");
+     */
+    get(...columns) {
+        this.columns(...columns);
+        return this.table.selectAll(this);
+    }
+    /**
+     * Get the first row
+     * @param columns The columns to select
+     * @example
+     * query.first("id", "name");
+     */
+    first(...columns) {
+        this.columns(...columns);
+        return this.table.selectFirst(this);
+    }
+    /**
+     * Get the last row
+     * @param columns The columns to select
+     * @example
+     * query.last("id", "name");
+     */
+    last(...columns) {
+        this.columns(...columns);
+        return this.table.selectLast(this);
+    }
+    /**
+     * Get one row
+     * @param columns The columns to select
+     * @example
+     * query.one("id", "name");
+     */
+    one(...columns) {
+        this.columns(...columns);
+        return this.table.selectOne(this);
+    }
+    /**
+     * Get the length of the rows
+     * @example
+     * query.length();
+     */
+    length() {
+        return this.table.length(this);
+    }
+    /**
+     * Get the count of the rows
+     * @example
+     * query.count();
+     */
+    count() {
+        return this.table.length(this);
+    }
+    /**
+     * Insert our update a row
+     * @param data The data to insert or update
+     * @example
+     * query.set({ id: 123, name: "hello" });
+     */
+    async set(data) {
+        const exists = await this.table.exists(this);
+        if (exists) {
+            await this.table.update(data, this);
+        }
+        else {
+            await this.table.insert(data);
+        }
+    }
+    /**
+     * Update rows
+     * @param data The data to update
+     * @example
+     * query.update({ name: "world" });
+     */
+    update(data) {
+        return this.table.update(data, this);
+    }
+    /**
+     * Delete rows
+     * @example
+     * query.delete();
+     */
+    delete() {
+        return this.table.delete(this);
+    }
+    /**
+     * Check if a row exists
+     * @example
+     * query.exists();
+     */
+    exists() {
+        return this.table.exists(this);
+    }
+}
+exports.Query = Query;
+
+},{}],4:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -234,6 +405,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Table = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Utils_1 = require("./Utils");
+const Query_1 = require("./Query");
 /**
  * Table class
  */
@@ -328,71 +500,68 @@ class Table extends basic_event_emitter_1.default {
         return this.serialize;
     }
     /**
-     * Prepare a where clause
-     * @param where The where clause
-     * @returns The where clause
+     * Create a query object
+     * @returns The query object
      * @example
-     * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
+     * table.query()
+     *  .where("id", Database.Operators.EQUAL, 123)
+     *  .sort("name")
+     *  .take(10)
+     *  .get("id", "name");
      */
-    wheres(...where) {
-        return where;
+    query() {
+        return new Query_1.Query(this);
     }
     /**
      * Select all rows from the table
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The rows
      * @example
-     * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll(where, columns) {
-        return this.ready(() => this.custom.selectAll(this.name, columns, where));
+    selectAll(query) {
+        return this.ready(() => this.custom.selectAll(this.name, query?.options));
     }
     /**
      * Select one row from the table
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne(where, columns) {
-        return this.ready(() => this.custom.selectOne(this.name, columns, where));
+    selectOne(query) {
+        return this.ready(() => this.custom.selectOne(this.name, query?.options));
     }
     /**
      * Select the first row from the table
-     * @param by The column to select
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst(by, where, columns) {
-        return this.ready(() => this.custom.selectFirst(this.name, by, columns, where));
+    selectFirst(query) {
+        return this.ready(() => this.custom.selectFirst(this.name, query?.options));
     }
     /**
      * Select the last row from the table
-     * @param by The column to select
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast(by, where, columns) {
-        return this.ready(() => this.custom.selectLast(this.name, by, columns, where));
+    selectLast(query) {
+        return this.ready(() => this.custom.selectLast(this.name, query?.options));
     }
     /**
      * Check if a row exists
-     * @param where The where clause
+     * @param query The query
      * @returns If the row exists
      * @example
-     * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    exists(where) {
+    exists(query) {
         return this.ready(async () => {
-            const data = await this.custom.selectOne(this.name, undefined, where);
+            const data = await this.custom.selectOne(this.name, query.options);
             return data !== null;
         });
     }
@@ -416,52 +585,52 @@ class Table extends basic_event_emitter_1.default {
     /**
      * Update rows in the table
      * @param data The data to update
-     * @param where The where clause
+     * @param query The query
      * @returns A promise
      * @throws If a column is null and not nullable
      * @throws If a column has an invalid datatype
      * @example
-     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    async update(data, where) {
+    async update(data, query) {
         data = await (0, Utils_1.serializeData)(this.serialize, data, true);
-        return this.ready(() => this.custom.update(this.name, data, where)).then(() => {
-            this.emit("update", data, where);
+        return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
+            this.emit("update", data, query.options);
             return Promise.resolve();
         });
     }
     /**
      * Delete rows from the table
-     * @param where The where clause
+     * @param query The query
      * @returns A promise
      * @example
-     * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    delete(where) {
-        return this.ready(() => this.custom.delete(this.name, where)).then(() => {
-            this.emit("delete", where);
+    async delete(query) {
+        return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
+            this.emit("delete", query.options);
             return Promise.resolve();
         });
     }
     /**
      * Get the length of the table
-     * @param where The where clause
+     * @param query The query
      * @returns The length
      * @example
-     * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
      * await table.length();
      */
-    length(where) {
-        return this.ready(() => this.custom.length(this.name, where));
+    length(query) {
+        return this.ready(() => this.custom.length(this.name, query?.options));
     }
 }
 exports.Table = Table;
 
-},{"./Utils":5,"basic-event-emitter":7}],4:[function(require,module,exports){
+},{"./Query":3,"./Utils":6,"basic-event-emitter":8}],5:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.serializeData = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
@@ -603,7 +772,7 @@ const serializeData = (serialize, data, isPartial = false) => {
 };
 exports.serializeData = serializeData;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -646,7 +815,7 @@ const Database = __importStar(require("./Database"));
 __exportStar(require("./Database"), exports);
 exports.default = Database;
 
-},{"./Database":2}],7:[function(require,module,exports){
+},{"./Database":2}],8:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasicEventEmitter = void 0;
@@ -999,5 +1168,5 @@ class BasicEventEmitter {
 exports.BasicEventEmitter = BasicEventEmitter;
 exports.default = BasicEventEmitter;
 
-},{}]},{},[6])(6)
+},{}]},{},[7])(7)
 });

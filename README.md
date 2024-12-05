@@ -613,20 +613,154 @@ Método que retorna as colunas da tabela.
 const columns = table.getColumns();
 ```
 
-### ``wheres``
+### ``query``
 
-Método que retorna um objeto de `Database.Wheres` para facilitar a criação de cláusulas `WHERE`.
+Método que retorna uma instância de `Database.Query` para a tabela.
 
 ```ts
-const where = table.wheres({
-    column: "id",
-    operator: Database.Operators.EQUAL,
-    value: "John"
-}, {
-    column: "date",
-    operator: Database.Operators.GREATER_THAN,
-    value: new Date()
-});
+const query = table.query();
+```
+
+#### ``where``
+
+Método que adiciona uma cláusula `WHERE` à consulta.
+
+```ts
+query.where("name", Database.Operators.EQUAL, "John");
+query.where("date", Database.Operators.GREATER_THAN, new Date());
+query.where("amount", Database.Operators.LESS_THAN_OR_EQUAL, 100.50);
+query.where("isValid", Database.Operators.EQUAL, true);
+query.where("variant", Database.Operators.BETWEEN, [100, 200]);
+```
+
+#### ``filter``
+
+Método que adiciona uma cláusula `WHERE` à consulta.
+
+```ts
+query.filter({ name: "John", amount: 100.50 });
+```
+
+#### ``take``
+
+Método que limita o número de registros retornados pela consulta.
+
+```ts
+query.take(10);
+```
+
+#### ``skip``
+
+Método que pula um número de registros na consulta.
+
+```ts
+query.skip(10);
+```
+
+#### ``sort``
+
+Método que ordena os registros da consulta.
+
+```ts
+query.sort("name");
+query.sort("date", false);
+```
+
+#### ``order``
+
+Método que ordena os registros da consulta.
+
+```ts
+query.order("name");
+query.order("date", false);
+```
+
+#### ``columns``
+
+Método que seleciona as colunas retornados pela consulta.
+
+```ts
+query.columns("name", "date");
+```
+
+#### ``get``
+
+Método que executa a consulta e retorna os registros.
+
+```ts
+const rows = await query.get();
+```
+
+#### ``first``
+
+Método que executa a consulta e retorna o primeiro registro.
+
+```ts
+const row = await query.first();
+```
+
+#### ``last``
+
+Método que executa a consulta e retorna o último registro.
+
+```ts
+const row = await query.last();
+```
+
+#### ``one``
+
+Método que executa a consulta e retorna um registro.
+
+```ts
+const row = await query.one();
+```
+
+#### ``exists``
+
+Método que executa a consulta e verifica se um registro existe.
+
+```ts
+const exists = await query.exists();
+```
+
+#### ``count``
+
+Método que executa a consulta e retorna o número de registros.
+
+```ts
+const count = await query.count();
+```
+
+#### ``length``
+
+Método que executa a consulta e retorna o número de registros.
+
+```ts
+const length = await query.length();
+```
+
+#### ``set``
+
+Método que executa a consulta e atualiza os registros se existirem, caso contrário, insere um novo registro.
+
+```ts
+await query.set({ name: "John" });
+```
+
+#### ``update``
+
+Método que executa a consulta e atualiza os registros.
+
+```ts
+await query.update({ name: "John" });
+```
+
+#### ``delete``
+
+Método que executa a consulta e deleta os registros.
+
+```ts
+await query.delete();
 ```
 
 ### ``selectAll``
@@ -636,11 +770,11 @@ Método que seleciona todos os registros da tabela.
 ```ts
 const rows = await table.selectAll();
 // ou
-const rows = await table.selectAll(where); // com cláusula WHERE
+const rows = await table.selectAll(table.query().where("name", Database.Operators.EQUAL, "John")); // com cláusula WHERE
 // ou
-const rows = await table.selectAll(where, ["name", "date"]); // com cláusula WHERE e colunas específicas
+const rows = await table.selectAll(table.query().where("name", Database.Operators.EQUAL, "John").columns("name", "date")); // com cláusula WHERE e colunas específicas
 // ou 
-const rows = await table.selectAll(undefined, ["name", "date"]); // com colunas específicas mas sem cláusula WHERE
+const rows = await table.selectAll(table.query().columns("name", "date")); // com colunas específicas mas sem cláusula WHERE
 ```
 
 ### ``selectOne``
@@ -650,11 +784,13 @@ Método que seleciona um registro da tabela.
 ```ts
 const row = await table.selectOne();
 // ou
-const row = await table.selectOne(where); // com cláusula WHERE
+const row = await table.selectOne(table.query().where("name", Database.Operators.EQUAL, "John")); // com cláusula WHERE
 // ou
-const row = await table.selectOne(where, ["name", "date"]); // com cláusula WHERE e colunas específicas
+const row = await table.selectOne(table.query().where("name", Database.Operators.EQUAL, "John").columns("name", "date")); // com cláusula WHERE e colunas específicas
 // ou
-const row = await table.selectOne(undefined, ["name", "date"]); // com colunas específicas mas sem cláusula WHERE
+const row = await table.selectOne(table.query().columns("name", "date")); // com colunas específicas mas sem cláusula WHERE
+// ou
+const row = await table.selectOne(table.query().order("name")); // com ordenação
 ```
 
 ### ``selectFirst``
@@ -664,11 +800,13 @@ Método que seleciona o primeiro registro da tabela.
 ```ts
 const row = await table.selectFirst();
 // ou
-const row = await table.selectFirst(where); // com cláusula WHERE
+const row = await table.selectFirst(table.query().where("name", Database.Operators.EQUAL, "John")); // com cláusula WHERE
 // ou
-const row = await table.selectFirst(where, ["name", "date"]); // com cláusula WHERE e colunas específicas
+const row = await table.selectFirst(table.query().where("name", Database.Operators.EQUAL, "John").columns("name", "date")); // com cláusula WHERE e colunas específicas
 // ou
-const row = await table.selectFirst(undefined, ["name", "date"]); // com colunas específicas mas sem cláusula WHERE
+const row = await table.selectFirst(table.query().columns("name", "date")); // com colunas específicas mas sem cláusula WHERE
+// ou
+const row = await table.selectFirst(table.query().order("name")); // com ordenação
 ```
 
 ### ``selectLast``
@@ -678,11 +816,13 @@ Método que seleciona o último registro da tabela.
 ```ts
 const row = await table.selectLast();
 // ou
-const row = await table.selectLast(where); // com cláusula WHERE
+const row = await table.selectLast(table.query().where("name", Database.Operators.EQUAL, "John")); // com cláusula WHERE
 // ou
-const row = await table.selectLast(where, ["name", "date"]); // com cláusula WHERE e colunas específicas
+const row = await table.selectLast(table.query().where("name", Database.Operators.EQUAL, "John").columns("name", "date")); // com cláusula WHERE e colunas específicas
 // ou
-const row = await table.selectLast(undefined, ["name", "date"]); // com colunas específicas mas sem cláusula WHERE
+const row = await table.selectLast(table.query().columns("name", "date")); // com colunas específicas mas sem cláusula WHERE
+// ou
+const row = await table.selectLast(table.query().order("name")); // com ordenação
 ```
 
 ### ``exists``
@@ -690,7 +830,7 @@ const row = await table.selectLast(undefined, ["name", "date"]); // com colunas 
 Método que verifica se um registro existe na tabela.
 
 ```ts
-const exists = await table.exists(where);
+const exists = await table.exists(table.query().where("name", Database.Operators.EQUAL, "John"));
 ```
 
 ### ``insert``
@@ -716,7 +856,7 @@ Método que atualiza registros na tabela.
 await table.update({
     name: "John Doe",
     amount: 200.50
-}, where);
+}, table.query().where("name", Database.Operators.EQUAL, "John"));
 ```
 
 ### ``delete``
@@ -724,7 +864,7 @@ await table.update({
 Método que deleta registros da tabela.
 
 ```ts
-await table.delete(where);
+await table.delete(table.query().where("name", Database.Operators.EQUAL, "John"));
 ```
 
 ### ``length``
@@ -734,7 +874,7 @@ Método que retorna o número de registros da tabela.
 ```ts
 const length = await table.length();
 // ou
-const length = await table.length(where); // com cláusula WHERE
+const length = await table.length(table.query().where("name", Database.Operators.EQUAL, "John")); // com cláusula WHERE
 ```
 
 ## ``Database.Operators``

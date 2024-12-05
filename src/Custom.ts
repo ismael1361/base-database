@@ -1,4 +1,4 @@
-import { Row, SerializeDatatype, Wheres } from "./Types";
+import { QueryOptions, Row, SerializeDatatype } from "./Types";
 
 /**
  * Custom database class
@@ -71,48 +71,56 @@ export abstract class Custom<db = never> {
 	/**
 	 * Select all rows from a table
 	 * @param table The table name
-	 * @param columns The columns to select
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns The rows
 	 * @example
-	 * await custom.selectAll("my-table", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.selectAll("my-table", {
+	 *    wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 *    columns: ["id", "name"],
+	 * });
 	 */
-	abstract selectAll<C>(table: string, columns?: Array<C>, where?: Wheres): Promise<Array<Row>>;
+	abstract selectAll(table: string, query?: QueryOptions): Promise<Array<Row>>;
 
 	/**
 	 * Select one row from a table
 	 * @param table The table name
-	 * @param columns The columns to select
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns The row
 	 * @example
-	 * await custom.selectOne("my-table", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.selectOne("my-table", {
+	 *    wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 *    columns: ["id", "name"],
+	 * });
 	 */
-	abstract selectOne<C>(table: string, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+	abstract selectOne(table: string, query?: QueryOptions): Promise<Row | null>;
 
 	/**
 	 * Select the first row from a table
 	 * @param table The table name
-	 * @param by The column to select
-	 * @param columns The columns to select
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns The row
 	 * @example
-	 * await custom.selectFirst("my-table", "id", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.selectFirst("my-table", {
+	 *    wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 *    columns: ["id", "name"],
+	 *    order: [{ column: "id", ascending: true }],
+	 * });
 	 */
-	abstract selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+	abstract selectFirst(table: string, query?: QueryOptions): Promise<Row | null>;
 
 	/**
 	 * Select the last row from a table
 	 * @param table The table name
-	 * @param by The column to select
-	 * @param columns The columns to select
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns The row
 	 * @example
-	 * await custom.selectLast("my-table", "id", ["id", "name"], [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.selectLast("my-table", {
+	 *    wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 *    columns: ["id", "name"],
+	 *    order: [{ column: "id", ascending: true }],
+	 * });
 	 */
-	abstract selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Wheres): Promise<Row | null>;
+	abstract selectLast(table: string, query?: QueryOptions): Promise<Row | null>;
 
 	/**
 	 * Insert a row into a table
@@ -127,30 +135,36 @@ export abstract class Custom<db = never> {
 	 * Update rows in a table
 	 * @param table The table name
 	 * @param data The data to update
-	 * @param where The where clause
+	 * @param query The query
 	 * @example
-	 * await custom.update("my-table", { name: "world" }, [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.update("my-table", { name: "world" }, {
+	 *   wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 * });
 	 */
-	abstract update(table: string, data: Partial<Row>, where: Wheres): Promise<void>;
+	abstract update(table: string, data: Partial<Row>, query: QueryOptions): Promise<void>;
 
 	/**
 	 * Delete rows from a table
 	 * @param table The table name
-	 * @param where The where clause
+	 * @param query The query
 	 * @example
-	 * await custom.delete("my-table", [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.delete("my-table", {
+	 *   wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 * });
 	 */
-	abstract delete(table: string, where: Wheres): Promise<void>;
+	abstract delete(table: string, query: QueryOptions): Promise<void>;
 
 	/**
 	 * Get the length of a table
 	 * @param table The table name
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns The length
 	 * @example
-	 * await custom.length("my-table", [{ column: "id", operator: "=", value: 123 }]);
+	 * await custom.length("my-table", {
+	 *   wheres: [{ column: "id", operator: "=", compare: 123 }],
+	 * });
 	 */
-	abstract length(table: string, where?: Wheres): Promise<number>;
+	abstract length(table: string, query?: QueryOptions): Promise<number>;
 
 	/**
 	 * Create a table

@@ -18,19 +18,19 @@ class ModelDatabase extends Database.Custom<localDB> {
 		throw new Error("Method not implemented.");
 	}
 
-	selectAll<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Array<Database.Row>> {
+	selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>> {
 		throw new Error("Method not implemented.");
 	}
 
-	selectOne<C>(table: string, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+	selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
 		throw new Error("Method not implemented.");
 	}
 
-	selectFirst<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+	selectFirst(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
 		throw new Error("Method not implemented.");
 	}
 
-	selectLast<C>(table: string, by?: PropertyKey, columns?: Array<C>, where?: Database.Wheres): Promise<Database.Row | null> {
+	selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
 		throw new Error("Method not implemented.");
 	}
 
@@ -41,15 +41,15 @@ class ModelDatabase extends Database.Custom<localDB> {
 		});
 	}
 
-	update(table: string, data: Partial<Database.Row>, where: Database.Wheres): Promise<void> {
+	update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void> {
 		throw new Error("Method not implemented.");
 	}
 
-	delete(table: string, where: Database.Wheres): Promise<void> {
+	delete(table: string, query: Database.QueryOptions): Promise<void> {
 		throw new Error("Method not implemented.");
 	}
 
-	length(table: string, where?: Database.Wheres): Promise<number> {
+	length(table: string, query?: Database.QueryOptions): Promise<number> {
 		throw new Error("Method not implemented.");
 	}
 
@@ -99,7 +99,7 @@ const table = database.readyTable("test", {
 });
 
 table.ready((table) => {
-	console.log("table:", table.wheres({ column: "integer", operator: "=", value: 0 }));
+	console.log("table:", table.query().where("integer", "=", 0));
 	table
 		.insert({
 			integer: 0,

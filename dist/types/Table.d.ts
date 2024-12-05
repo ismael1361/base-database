@@ -1,16 +1,17 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Datatype, Row, Serialize, SerializeDatatype, Wheres } from "./Types";
+import { Datatype, QueryOptions, Row, Serialize, SerializeDatatype } from "./Types";
 import { Custom } from "./Custom";
+import { Query } from "./Query";
 /**
  * Table class
  */
 export declare class Table<S extends Serialize> extends BasicEventEmitter<{
     insert: (data: Row<S>) => void;
-    update: (data: Partial<Row<S>>, where: Wheres<S>) => void;
-    delete: (where: Wheres<S>) => void;
+    update: (data: Partial<Row<S>>, query: QueryOptions<S>) => void;
+    delete: (query: QueryOptions<S>) => void;
 }> {
     readonly custom: Custom<any>;
-    private readonly name;
+    readonly name: string;
     /**
      * If the table is disconnected
      */
@@ -71,59 +72,56 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      */
     getColumns(): SerializeDatatype<S>;
     /**
-     * Prepare a where clause
-     * @param where The where clause
-     * @returns The where clause
+     * Create a query object
+     * @returns The query object
      * @example
-     * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
+     * table.query()
+     *  .where("id", Database.Operators.EQUAL, 123)
+     *  .sort("name")
+     *  .take(10)
+     *  .get("id", "name");
      */
-    wheres<W extends keyof S>(...where: Wheres<S, W>): Wheres<S, W>;
+    query(): Query<S>;
     /**
      * Select all rows from the table
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The rows
      * @example
-     * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Array<Row<S, K>>>;
+    selectAll<K extends keyof S>(query?: Query<S>): Promise<Array<Row<S, K>>>;
     /**
      * Select one row from the table
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null>;
+    selectOne<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null>;
     /**
      * Select the first row from the table
-     * @param by The column to select
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null>;
+    selectFirst<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null>;
     /**
      * Select the last row from the table
-     * @param by The column to select
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null>;
+    selectLast<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null>;
     /**
      * Check if a row exists
-     * @param where The where clause
+     * @param query The query
      * @returns If the row exists
      * @example
-     * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    exists<W extends keyof S>(where: Wheres<S, W>): Promise<boolean>;
+    exists(query: Query<S>): Promise<boolean>;
     /**
      * Insert a row into the table
      * @param data The data to insert
@@ -138,30 +136,30 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
     /**
      * Update rows in the table
      * @param data The data to update
-     * @param where The where clause
+     * @param query The query
      * @returns A promise
      * @throws If a column is null and not nullable
      * @throws If a column has an invalid datatype
      * @example
-     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    update<W extends keyof S>(data: Partial<Row<S>>, where: Wheres<S, W>): Promise<void>;
+    update(data: Partial<Row<S>>, query: Query<S>): Promise<void>;
     /**
      * Delete rows from the table
-     * @param where The where clause
+     * @param query The query
      * @returns A promise
      * @example
-     * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    delete<W extends keyof S>(where: Wheres<S, W>): Promise<void>;
+    delete(query: Query<S>): Promise<void>;
     /**
      * Get the length of the table
-     * @param where The where clause
+     * @param query The query
      * @returns The length
      * @example
-     * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
      * await table.length();
      */
-    length<W extends keyof S>(where?: Wheres<S, W>): Promise<number>;
+    length(query?: Query<S>): Promise<number>;
 }
 //# sourceMappingURL=Table.d.ts.map

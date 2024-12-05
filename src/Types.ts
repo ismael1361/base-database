@@ -1,10 +1,20 @@
+export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
+
 export type WheresItem<C extends Serialize, K extends keyof C> = {
 	column: K;
-	operator: "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
-	value: C[K]["type"];
+	operator: Operator;
+	compare: C[K]["type"];
 };
 
 export type Wheres<C extends Serialize = any, K extends keyof C = never> = Array<WheresItem<C, K>>;
+
+export interface QueryOptions<S extends Serialize = any> {
+	wheres: Wheres<S, any>;
+	skip?: number;
+	take?: number;
+	order: Array<{ column: keyof S; ascending: boolean }>;
+	columns: Array<keyof S>;
+}
 
 export type OptionsDatatype = "TEXT" | "INTEGER" | "FLOAT" | "BOOLEAN" | "DATETIME" | "BIGINT" | "NULL";
 

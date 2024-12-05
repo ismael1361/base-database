@@ -1,15 +1,16 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Datatype, Row, Serialize, SerializeDatatype, Wheres } from "./Types";
+import { Datatype, QueryOptions, Row, Serialize, SerializeDatatype } from "./Types";
 import { getDatatype, serializeData } from "./Utils";
 import { Custom } from "./Custom";
+import { Query } from "./Query";
 
 /**
  * Table class
  */
 export class Table<S extends Serialize> extends BasicEventEmitter<{
 	insert: (data: Row<S>) => void;
-	update: (data: Partial<Row<S>>, where: Wheres<S>) => void;
-	delete: (where: Wheres<S>) => void;
+	update: (data: Partial<Row<S>>, query: QueryOptions<S>) => void;
+	delete: (query: QueryOptions<S>) => void;
 }> {
 	/**
 	 * If the table is disconnected
@@ -40,7 +41,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * table.update({ name: "world" }, [{ column: "id", operator: "=", value: 123 }]);
 	 * table.delete([{ column: "id", operator: "=", value: 123 }]);
 	 */
-	constructor(readonly custom: Custom<any>, private readonly name: string, columns: S) {
+	constructor(readonly custom: Custom<any>, readonly name: string, columns: S) {
 		super();
 		this.serialize = Object.keys(columns).reduce((acc, key) => {
 			acc[key] = {
@@ -103,76 +104,73 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	}
 
 	/**
-	 * Prepare a where clause
-	 * @param where The where clause
-	 * @returns The where clause
+	 * Create a query object
+	 * @returns The query object
 	 * @example
-	 * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
+	 * table.query()
+	 *  .where("id", Database.Operators.EQUAL, 123)
+	 *  .sort("name")
+	 *  .take(10)
+	 *  .get("id", "name");
 	 */
-	wheres<W extends keyof S>(...where: Wheres<S, W>): Wheres<S, W> {
-		return where;
+	query(): Query<S> {
+		return new Query(this);
 	}
 
 	/**
 	 * Select all rows from the table
-	 * @param where The where clause
-	 * @param columns The columns to select
+	 * @param query The query
 	 * @returns The rows
 	 * @example
-	 * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+	 * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	selectAll<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Array<Row<S, K>>> {
-		return this.ready(() => this.custom.selectAll<K>(this.name, columns, where as any));
+	selectAll<K extends keyof S>(query?: Query<S>): Promise<Array<Row<S, K>>> {
+		return this.ready(() => this.custom.selectAll(this.name, query?.options));
 	}
 
 	/**
 	 * Select one row from the table
-	 * @param where The where clause
-	 * @param columns The columns to select
+	 * @param query The query
 	 * @returns The row
 	 * @example
-	 * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+	 * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	selectOne<K extends keyof S, W extends keyof S>(where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null> {
-		return this.ready(() => this.custom.selectOne<K>(this.name, columns, where as any));
+	selectOne<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null> {
+		return this.ready(() => this.custom.selectOne(this.name, query?.options));
 	}
 
 	/**
 	 * Select the first row from the table
-	 * @param by The column to select
-	 * @param where The where clause
-	 * @param columns The columns to select
+	 * @param query The query
 	 * @returns The row
 	 * @example
-	 * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+	 * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	selectFirst<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null> {
-		return this.ready(() => this.custom.selectFirst<K>(this.name, by, columns, where as any));
+	selectFirst<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null> {
+		return this.ready(() => this.custom.selectFirst(this.name, query?.options));
 	}
 
 	/**
 	 * Select the last row from the table
-	 * @param by The column to select
-	 * @param where The where clause
-	 * @param columns The columns to select
+	 * @param query The query
 	 * @returns The row
 	 * @example
-	 * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+	 * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	selectLast<K extends keyof S, W extends keyof S>(by?: keyof S, where?: Wheres<S, W>, columns?: Array<K>): Promise<Row<S, K> | null> {
-		return this.ready(() => this.custom.selectLast<K>(this.name, by, columns, where as any));
+	selectLast<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null> {
+		return this.ready(() => this.custom.selectLast(this.name, query?.options));
 	}
 
 	/**
 	 * Check if a row exists
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns If the row exists
 	 * @example
-	 * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+	 * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	exists<W extends keyof S>(where: Wheres<S, W>): Promise<boolean> {
+	exists(query: Query<S>): Promise<boolean> {
 		return this.ready(async () => {
-			const data = await this.custom.selectOne(this.name, undefined, where as any);
+			const data = await this.custom.selectOne(this.name, query.options);
 			return data !== null;
 		});
 	}
@@ -198,44 +196,44 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	/**
 	 * Update rows in the table
 	 * @param data The data to update
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns A promise
 	 * @throws If a column is null and not nullable
 	 * @throws If a column has an invalid datatype
 	 * @example
-	 * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async update<W extends keyof S>(data: Partial<Row<S>>, where: Wheres<S, W>): Promise<void> {
+	async update(data: Partial<Row<S>>, query: Query<S>): Promise<void> {
 		data = await serializeData(this.serialize, data, true);
-		return this.ready(() => this.custom.update(this.name, data, where as any)).then(() => {
-			this.emit("update", data as any, where as any);
+		return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
+			this.emit("update", data as any, query.options);
 			return Promise.resolve();
 		});
 	}
 
 	/**
 	 * Delete rows from the table
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns A promise
 	 * @example
-	 * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+	 * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	delete<W extends keyof S>(where: Wheres<S, W>): Promise<void> {
-		return this.ready(() => this.custom.delete(this.name, where as any)).then(() => {
-			this.emit("delete", where as any);
+	async delete(query: Query<S>): Promise<void> {
+		return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
+			this.emit("delete", query.options);
 			return Promise.resolve();
 		});
 	}
 
 	/**
 	 * Get the length of the table
-	 * @param where The where clause
+	 * @param query The query
 	 * @returns The length
 	 * @example
-	 * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+	 * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 * await table.length();
 	 */
-	length<W extends keyof S>(where?: Wheres<S, W>): Promise<number> {
-		return this.ready(() => this.custom.length(this.name, where as any));
+	length(query?: Query<S>): Promise<number> {
+		return this.ready(() => this.custom.length(this.name, query?.options));
 	}
 }

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Table = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Utils_1 = require("./Utils");
+const Query_1 = require("./Query");
 /**
  * Table class
  */
@@ -100,71 +101,68 @@ class Table extends basic_event_emitter_1.default {
         return this.serialize;
     }
     /**
-     * Prepare a where clause
-     * @param where The where clause
-     * @returns The where clause
+     * Create a query object
+     * @returns The query object
      * @example
-     * table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 });
+     * table.query()
+     *  .where("id", Database.Operators.EQUAL, 123)
+     *  .sort("name")
+     *  .take(10)
+     *  .get("id", "name");
      */
-    wheres(...where) {
-        return where;
+    query() {
+        return new Query_1.Query(this);
     }
     /**
      * Select all rows from the table
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The rows
      * @example
-     * await table.selectAll(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll(where, columns) {
-        return this.ready(() => this.custom.selectAll(this.name, columns, where));
+    selectAll(query) {
+        return this.ready(() => this.custom.selectAll(this.name, query?.options));
     }
     /**
      * Select one row from the table
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectOne(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne(where, columns) {
-        return this.ready(() => this.custom.selectOne(this.name, columns, where));
+    selectOne(query) {
+        return this.ready(() => this.custom.selectOne(this.name, query?.options));
     }
     /**
      * Select the first row from the table
-     * @param by The column to select
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectFirst("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst(by, where, columns) {
-        return this.ready(() => this.custom.selectFirst(this.name, by, columns, where));
+    selectFirst(query) {
+        return this.ready(() => this.custom.selectFirst(this.name, query?.options));
     }
     /**
      * Select the last row from the table
-     * @param by The column to select
-     * @param where The where clause
-     * @param columns The columns to select
+     * @param query The query
      * @returns The row
      * @example
-     * await table.selectLast("id", table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }), ["id", "name"]);
+     * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast(by, where, columns) {
-        return this.ready(() => this.custom.selectLast(this.name, by, columns, where));
+    selectLast(query) {
+        return this.ready(() => this.custom.selectLast(this.name, query?.options));
     }
     /**
      * Check if a row exists
-     * @param where The where clause
+     * @param query The query
      * @returns If the row exists
      * @example
-     * await table.exists(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    exists(where) {
+    exists(query) {
         return this.ready(async () => {
-            const data = await this.custom.selectOne(this.name, undefined, where);
+            const data = await this.custom.selectOne(this.name, query.options);
             return data !== null;
         });
     }
@@ -188,43 +186,43 @@ class Table extends basic_event_emitter_1.default {
     /**
      * Update rows in the table
      * @param data The data to update
-     * @param where The where clause
+     * @param query The query
      * @returns A promise
      * @throws If a column is null and not nullable
      * @throws If a column has an invalid datatype
      * @example
-     * await table.update({ name: "world" }, table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    async update(data, where) {
+    async update(data, query) {
         data = await (0, Utils_1.serializeData)(this.serialize, data, true);
-        return this.ready(() => this.custom.update(this.name, data, where)).then(() => {
-            this.emit("update", data, where);
+        return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
+            this.emit("update", data, query.options);
             return Promise.resolve();
         });
     }
     /**
      * Delete rows from the table
-     * @param where The where clause
+     * @param query The query
      * @returns A promise
      * @example
-     * await table.delete(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    delete(where) {
-        return this.ready(() => this.custom.delete(this.name, where)).then(() => {
-            this.emit("delete", where);
+    async delete(query) {
+        return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
+            this.emit("delete", query.options);
             return Promise.resolve();
         });
     }
     /**
      * Get the length of the table
-     * @param where The where clause
+     * @param query The query
      * @returns The length
      * @example
-     * await table.length(table.wheres({ column: "id", operator: Database.Operators.EQUAL, value: 123 }));
+     * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
      * await table.length();
      */
-    length(where) {
-        return this.ready(() => this.custom.length(this.name, where));
+    length(query) {
+        return this.ready(() => this.custom.length(this.name, query?.options));
     }
 }
 exports.Table = Table;
