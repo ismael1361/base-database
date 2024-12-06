@@ -113,7 +113,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 *  .take(10)
 	 *  .get("id", "name");
 	 */
-	query(): Query<S> {
+	query(): Query<S, keyof S> {
 		return new Query(this);
 	}
 
@@ -124,7 +124,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	selectAll<K extends keyof S>(query?: Query<S>): Promise<Array<Row<S, K>>> {
+	selectAll<K extends keyof S>(query?: Query<S, K>): Promise<Array<Row<S, K>>> {
 		return this.ready(() => this.custom.selectAll(this.name, query?.options));
 	}
 
@@ -135,7 +135,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	selectOne<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null> {
+	selectOne<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
 		return this.ready(() => this.custom.selectOne(this.name, query?.options));
 	}
 
@@ -146,7 +146,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	selectFirst<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null> {
+	selectFirst<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
 		return this.ready(() => this.custom.selectFirst(this.name, query?.options));
 	}
 
@@ -157,7 +157,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	selectLast<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null> {
+	selectLast<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
 		return this.ready(() => this.custom.selectLast(this.name, query?.options));
 	}
 
@@ -168,7 +168,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	exists(query: Query<S>): Promise<boolean> {
+	exists(query: Query<S, any>): Promise<boolean> {
 		return this.ready(async () => {
 			const data = await this.custom.selectOne(this.name, query.options);
 			return data !== null;
@@ -203,7 +203,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async update(data: Partial<Row<S>>, query: Query<S>): Promise<void> {
+	async update(data: Partial<Row<S>>, query: Query<S, any>): Promise<void> {
 		data = await serializeData(this.serialize, data, true);
 		return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
 			this.emit("update", data as any, query.options);
@@ -218,7 +218,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async delete(query: Query<S>): Promise<void> {
+	async delete(query: Query<S, any>): Promise<void> {
 		return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
 			this.emit("delete", query.options);
 			return Promise.resolve();
@@ -233,7 +233,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 * await table.length();
 	 */
-	length(query?: Query<S>): Promise<number> {
+	length(query?: Query<S, any>): Promise<number> {
 		return this.ready(() => this.custom.length(this.name, query?.options));
 	}
 }

@@ -81,7 +81,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      *  .take(10)
      *  .get("id", "name");
      */
-    query(): Query<S>;
+    query(): Query<S, keyof S>;
     /**
      * Select all rows from the table
      * @param query The query
@@ -89,7 +89,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll<K extends keyof S>(query?: Query<S>): Promise<Array<Row<S, K>>>;
+    selectAll<K extends keyof S>(query?: Query<S, K>): Promise<Array<Row<S, K>>>;
     /**
      * Select one row from the table
      * @param query The query
@@ -97,7 +97,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null>;
+    selectOne<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null>;
     /**
      * Select the first row from the table
      * @param query The query
@@ -105,7 +105,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null>;
+    selectFirst<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null>;
     /**
      * Select the last row from the table
      * @param query The query
@@ -113,7 +113,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast<K extends keyof S>(query?: Query<S>): Promise<Row<S, K> | null>;
+    selectLast<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null>;
     /**
      * Check if a row exists
      * @param query The query
@@ -121,7 +121,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    exists(query: Query<S>): Promise<boolean>;
+    exists(query: Query<S, any>): Promise<boolean>;
     /**
      * Insert a row into the table
      * @param data The data to insert
@@ -143,7 +143,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    update(data: Partial<Row<S>>, query: Query<S>): Promise<void>;
+    update(data: Partial<Row<S>>, query: Query<S, any>): Promise<void>;
     /**
      * Delete rows from the table
      * @param query The query
@@ -151,7 +151,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    delete(query: Query<S>): Promise<void>;
+    delete(query: Query<S, any>): Promise<void>;
     /**
      * Get the length of the table
      * @param query The query
@@ -160,6 +160,6 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
      * await table.length();
      */
-    length(query?: Query<S>): Promise<number>;
+    length(query?: Query<S, any>): Promise<number>;
 }
 //# sourceMappingURL=Table.d.ts.map

@@ -6,7 +6,7 @@ const __private__ = Symbol("private");
 /**
  * Query class
  */
-export class Query<S extends Serialize> {
+export class Query<S extends Serialize, K extends keyof S> {
 	private [__private__]: QueryOptions<S> = {
 		wheres: [],
 		order: [],
@@ -38,12 +38,12 @@ export class Query<S extends Serialize> {
 	 * query.where("active", Database.Operators.EQUAL, true);
 	 * query.where("price", Database.Operators.LESS_THAN, 100);
 	 */
-	where<C extends keyof S>(column: C, operator: "=" | "!=", compare: S[C]["type"]): Query<S>;
-	where<C extends keyof S>(column: C, operator: ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S>;
-	where<C extends keyof S>(column: C, operator: "BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S>;
-	where<C extends keyof S>(column: C, operator: "LIKE", compare: S[C]["type"]): Query<S>;
-	where<C extends keyof S>(column: C, operator: "IN", compare: Array<S[C]["type"]>): Query<S>;
-	where(column: string, operator: Operator, compare: any): Query<S> {
+	where<C extends keyof S>(column: C, operator: "=" | "!=", compare: S[C]["type"]): Query<S, K>;
+	where<C extends keyof S>(column: C, operator: ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, K>;
+	where<C extends keyof S>(column: C, operator: "BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, K>;
+	where<C extends keyof S>(column: C, operator: "LIKE", compare: S[C]["type"]): Query<S, K>;
+	where<C extends keyof S>(column: C, operator: "IN", compare: Array<S[C]["type"]>): Query<S, K>;
+	where(column: string, operator: Operator, compare: any): Query<S, K> {
 		this[__private__].wheres.push({ column, operator, compare });
 		return this;
 	}
@@ -60,12 +60,12 @@ export class Query<S extends Serialize> {
 	 * query.filter("active", Database.Operators.EQUAL, true);
 	 * query.filter("price", Database.Operators.LESS_THAN, 100);
 	 */
-	filter<C extends keyof S>(column: C, operator: "=" | "!=", compare: S[C]["type"]): Query<S>;
-	filter<C extends keyof S>(column: C, operator: ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S>;
-	filter<C extends keyof S>(column: C, operator: "BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S>;
-	filter<C extends keyof S>(column: C, operator: "LIKE", compare: S[C]["type"]): Query<S>;
-	filter<C extends keyof S>(column: C, operator: "IN", compare: Array<S[C]["type"]>): Query<S>;
-	filter(column: string, operator: Operator, compare: any): Query<S> {
+	filter<C extends keyof S>(column: C, operator: "=" | "!=", compare: S[C]["type"]): Query<S, K>;
+	filter<C extends keyof S>(column: C, operator: ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, K>;
+	filter<C extends keyof S>(column: C, operator: "BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, K>;
+	filter<C extends keyof S>(column: C, operator: "LIKE", compare: S[C]["type"]): Query<S, K>;
+	filter<C extends keyof S>(column: C, operator: "IN", compare: Array<S[C]["type"]>): Query<S, K>;
+	filter(column: string, operator: Operator, compare: any): Query<S, K> {
 		return this.where(column, operator as any, compare);
 	}
 
@@ -75,7 +75,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.take(10);
 	 */
-	take(take: number): Query<S> {
+	take(take: number): Query<S, K> {
 		this[__private__].take = take;
 		return this;
 	}
@@ -86,7 +86,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.skip(10);
 	 */
-	skip(skip: number): Query<S> {
+	skip(skip: number): Query<S, K> {
 		this[__private__].skip = skip;
 		return this;
 	}
@@ -98,9 +98,9 @@ export class Query<S extends Serialize> {
 	 * query.sort("name");
 	 * query.sort("name", false);
 	 */
-	sort(column: string): Query<S>;
-	sort(column: keyof S, ascending: boolean): Query<S>;
-	sort(column: keyof S | string, ascending: boolean = true): Query<S> {
+	sort(column: string): Query<S, K>;
+	sort(column: keyof S, ascending: boolean): Query<S, K>;
+	sort(column: keyof S | string, ascending: boolean = true): Query<S, K> {
 		this[__private__].order.push({ column, ascending });
 		return this;
 	}
@@ -112,9 +112,9 @@ export class Query<S extends Serialize> {
 	 * query.order("name");
 	 * query.order("name", false);
 	 */
-	order(column: keyof S): Query<S>;
-	order(column: keyof S, ascending: boolean): Query<S>;
-	order(column: keyof S | string, ascending: boolean = true): Query<S> {
+	order(column: keyof S): Query<S, K>;
+	order(column: keyof S, ascending: boolean): Query<S, K>;
+	order(column: keyof S | string, ascending: boolean = true): Query<S, K> {
 		return this.sort(column, ascending);
 	}
 
@@ -124,7 +124,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.columns("id", "name");
 	 */
-	columns<K extends keyof S>(...columns: Array<K>): Query<S> {
+	columns<C extends keyof S>(...columns: Array<C>): Query<S, K & C> {
 		this[__private__].columns = [...this[__private__].columns, ...columns];
 		return this;
 	}
@@ -135,7 +135,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.get("id", "name");
 	 */
-	get<K extends keyof S>(...columns: Array<K>): Promise<Array<Row<S, K>>> {
+	get<C extends keyof S>(...columns: Array<C>): Promise<Array<Row<S, K & C>>> {
 		this.columns(...columns);
 		return this.table.selectAll(this);
 	}
@@ -146,7 +146,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.first("id", "name");
 	 */
-	first<K extends keyof S>(...columns: Array<K>): Promise<Row<S, K> | null> {
+	first<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
 		this.columns(...columns);
 		return this.table.selectFirst(this);
 	}
@@ -157,7 +157,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.last("id", "name");
 	 */
-	last<K extends keyof S>(...columns: Array<K>): Promise<Row<S, K> | null> {
+	last<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
 		this.columns(...columns);
 		return this.table.selectLast(this);
 	}
@@ -168,7 +168,7 @@ export class Query<S extends Serialize> {
 	 * @example
 	 * query.one("id", "name");
 	 */
-	one<K extends keyof S>(...columns: Array<K>): Promise<Row<S, K> | null> {
+	one<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
 		this.columns(...columns);
 		return this.table.selectOne(this);
 	}
