@@ -114,7 +114,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 *  .get("id", "name");
 	 */
 	query(): Query<S, keyof S> {
-		return new Query(this);
+		return new Query(Promise.resolve(this));
 	}
 
 	/**

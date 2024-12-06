@@ -1,7 +1,8 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Serialize } from "./Types";
+import { Row, Serialize } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
+import { Query } from "./Query";
 export * from "./Types";
 export * from "./Utils";
 export * from "./Custom";
@@ -13,6 +14,8 @@ export type CustomConstructor<db = never> = new (database: string) => Custom<db>
 export type TableReady<S extends Serialize> = {
     table: Promise<Table<S> | undefined>;
     ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
+    query: () => Query<S, keyof S>;
+    insert: (data: Partial<Row<S>>) => Promise<void>;
 };
 /**
  * Database class
@@ -112,6 +115,8 @@ export declare class Database<db = never> extends BasicEventEmitter<{
      * table.ready(async (table) => {
      *   // Code here will run when the table is ready
      * });
+     *
+     * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
      */
     table<S extends Serialize>(name: string, columns: S): TableReady<S>;
     /**

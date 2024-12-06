@@ -746,7 +746,7 @@ const length = await query.length();
 
 #### ``set``
 
-Método que executa a consulta e atualiza os registros se existirem, caso contrário, insere um novo registro.
+Método que executa a consulta e atualiza os registros.
 
 ```ts
 await query.set({ name: "John" });

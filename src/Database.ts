@@ -1,7 +1,8 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Serialize } from "./Types";
+import { Row, Serialize } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
+import { Query } from "./Query";
 
 export * from "./Types";
 export * from "./Utils";
@@ -16,6 +17,8 @@ export type CustomConstructor<db = never> = new (database: string) => Custom<db>
 export type TableReady<S extends Serialize> = {
 	table: Promise<Table<S> | undefined>;
 	ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
+	query: () => Query<S, keyof S>;
+	insert: (data: Partial<Row<S>>) => Promise<void>;
 };
 
 /**
@@ -129,7 +132,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	readyTable<S extends Serialize>(name: string | Promise<Table<S>>, columns?: S): TableReady<S> {
 		const table =
 			typeof name === "string" && this.tables.has(name)
-				? Promise.resolve(this.tables.get(name))
+				? Promise.resolve(this.tables.get(name) as Table<S>)
 				: typeof name === "string" && columns
 				? this.forTable(name, columns!)
 				: name instanceof Promise
@@ -142,6 +145,14 @@ export class Database<db = never> extends BasicEventEmitter<{
 				const t = await table;
 				if (!t) throw new Error("Table not found");
 				return t.ready(callback);
+			},
+			query() {
+				if (!table) throw new Error("Table not found");
+				return new Query(table);
+			},
+			async insert(data) {
+				if (!table) throw new Error("Table not found");
+				return await table.then((t) => t.insert(data));
 			},
 		};
 	}
@@ -161,6 +172,8 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * table.ready(async (table) => {
 	 *   // Code here will run when the table is ready
 	 * });
+	 *
+	 * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
 	 */
 	table<S extends Serialize>(name: string, columns: S): TableReady<S> {
 		return this.readyTable(name, columns);

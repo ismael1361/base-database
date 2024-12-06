@@ -20,6 +20,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Database = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Table_1 = require("./Table");
+const Query_1 = require("./Query");
 __exportStar(require("./Types"), exports);
 __exportStar(require("./Utils"), exports);
 __exportStar(require("./Custom"), exports);
@@ -112,6 +113,16 @@ class Database extends basic_event_emitter_1.default {
                     throw new Error("Table not found");
                 return t.ready(callback);
             },
+            query() {
+                if (!table)
+                    throw new Error("Table not found");
+                return new Query_1.Query(table);
+            },
+            async insert(data) {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.insert(data));
+            },
         };
     }
     /**
@@ -129,6 +140,8 @@ class Database extends basic_event_emitter_1.default {
      * table.ready(async (table) => {
      *   // Code here will run when the table is ready
      * });
+     *
+     * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
      */
     table(name, columns) {
         return this.readyTable(name, columns);

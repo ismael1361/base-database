@@ -1,5 +1,6 @@
 import BasicEventEmitter from "basic-event-emitter";
 import { Table } from "./Table";
+import { Query } from "./Query";
 export * from "./Types";
 export * from "./Utils";
 export * from "./Custom";
@@ -92,6 +93,16 @@ export class Database extends BasicEventEmitter {
                     throw new Error("Table not found");
                 return t.ready(callback);
             },
+            query() {
+                if (!table)
+                    throw new Error("Table not found");
+                return new Query(table);
+            },
+            async insert(data) {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.insert(data));
+            },
         };
     }
     /**
@@ -109,6 +120,8 @@ export class Database extends BasicEventEmitter {
      * table.ready(async (table) => {
      *   // Code here will run when the table is ready
      * });
+     *
+     * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
      */
     table(name, columns) {
         return this.readyTable(name, columns);

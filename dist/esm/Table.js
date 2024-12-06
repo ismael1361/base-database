@@ -105,7 +105,7 @@ export class Table extends BasicEventEmitter {
      *  .get("id", "name");
      */
     query() {
-        return new Query(this);
+        return new Query(Promise.resolve(this));
     }
     /**
      * Select all rows from the table

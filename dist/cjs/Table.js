@@ -111,7 +111,7 @@ class Table extends basic_event_emitter_1.default {
      *  .get("id", "name");
      */
     query() {
-        return new Query_1.Query(this);
+        return new Query_1.Query(Promise.resolve(this));
     }
     /**
      * Select all rows from the table

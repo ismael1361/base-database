@@ -75,9 +75,9 @@ class Query {
      * @example
      * query.get("id", "name");
      */
-    get(...columns) {
+    async get(...columns) {
         this.columns(...columns);
-        return this.table.selectAll(this);
+        return await this.table.then((t) => t.selectAll(this));
     }
     /**
      * Get the first row
@@ -85,9 +85,9 @@ class Query {
      * @example
      * query.first("id", "name");
      */
-    first(...columns) {
+    async first(...columns) {
         this.columns(...columns);
-        return this.table.selectFirst(this);
+        return await this.table.then((t) => t.selectFirst(this));
     }
     /**
      * Get the last row
@@ -95,9 +95,9 @@ class Query {
      * @example
      * query.last("id", "name");
      */
-    last(...columns) {
+    async last(...columns) {
         this.columns(...columns);
-        return this.table.selectLast(this);
+        return await this.table.then((t) => t.selectLast(this));
     }
     /**
      * Get one row
@@ -105,40 +105,34 @@ class Query {
      * @example
      * query.one("id", "name");
      */
-    one(...columns) {
+    async one(...columns) {
         this.columns(...columns);
-        return this.table.selectOne(this);
+        return await this.table.then((t) => t.selectOne(this));
     }
     /**
      * Get the length of the rows
      * @example
      * query.length();
      */
-    length() {
-        return this.table.length(this);
+    async length() {
+        return await this.table.then((t) => t.length(this));
     }
     /**
      * Get the count of the rows
      * @example
      * query.count();
      */
-    count() {
-        return this.table.length(this);
+    async count() {
+        return await this.table.then((t) => t.length(this));
     }
     /**
-     * Insert our update a row
+     * Update a row
      * @param data The data to insert or update
      * @example
      * query.set({ id: 123, name: "hello" });
      */
     async set(data) {
-        const exists = await this.table.exists(this);
-        if (exists) {
-            await this.table.update(data, this);
-        }
-        else {
-            await this.table.insert(data);
-        }
+        await this.table.then((t) => t.update(data, this));
     }
     /**
      * Update rows
@@ -146,24 +140,24 @@ class Query {
      * @example
      * query.update({ name: "world" });
      */
-    update(data) {
-        return this.table.update(data, this);
+    async update(data) {
+        return await this.table.then((t) => t.update(data, this));
     }
     /**
      * Delete rows
      * @example
      * query.delete();
      */
-    delete() {
-        return this.table.delete(this);
+    async delete() {
+        return await this.table.then((t) => t.delete(this));
     }
     /**
      * Check if a row exists
      * @example
      * query.exists();
      */
-    exists() {
-        return this.table.exists(this);
+    async exists() {
+        return await this.table.then((t) => t.exists(this));
     }
 }
 exports.Query = Query;

@@ -77,6 +77,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Database = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Table_1 = require("./Table");
+const Query_1 = require("./Query");
 __exportStar(require("./Types"), exports);
 __exportStar(require("./Utils"), exports);
 __exportStar(require("./Custom"), exports);
@@ -169,6 +170,16 @@ class Database extends basic_event_emitter_1.default {
                     throw new Error("Table not found");
                 return t.ready(callback);
             },
+            query() {
+                if (!table)
+                    throw new Error("Table not found");
+                return new Query_1.Query(table);
+            },
+            async insert(data) {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.insert(data));
+            },
         };
     }
     /**
@@ -186,6 +197,8 @@ class Database extends basic_event_emitter_1.default {
      * table.ready(async (table) => {
      *   // Code here will run when the table is ready
      * });
+     *
+     * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
      */
     table(name, columns) {
         return this.readyTable(name, columns);
@@ -225,7 +238,7 @@ class Database extends basic_event_emitter_1.default {
 }
 exports.Database = Database;
 
-},{"./Custom":1,"./Table":4,"./Types":5,"./Utils":6,"basic-event-emitter":8}],3:[function(require,module,exports){
+},{"./Custom":1,"./Query":3,"./Table":4,"./Types":5,"./Utils":6,"basic-event-emitter":8}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Query = void 0;
@@ -303,9 +316,9 @@ class Query {
      * @example
      * query.get("id", "name");
      */
-    get(...columns) {
+    async get(...columns) {
         this.columns(...columns);
-        return this.table.selectAll(this);
+        return await this.table.then((t) => t.selectAll(this));
     }
     /**
      * Get the first row
@@ -313,9 +326,9 @@ class Query {
      * @example
      * query.first("id", "name");
      */
-    first(...columns) {
+    async first(...columns) {
         this.columns(...columns);
-        return this.table.selectFirst(this);
+        return await this.table.then((t) => t.selectFirst(this));
     }
     /**
      * Get the last row
@@ -323,9 +336,9 @@ class Query {
      * @example
      * query.last("id", "name");
      */
-    last(...columns) {
+    async last(...columns) {
         this.columns(...columns);
-        return this.table.selectLast(this);
+        return await this.table.then((t) => t.selectLast(this));
     }
     /**
      * Get one row
@@ -333,40 +346,34 @@ class Query {
      * @example
      * query.one("id", "name");
      */
-    one(...columns) {
+    async one(...columns) {
         this.columns(...columns);
-        return this.table.selectOne(this);
+        return await this.table.then((t) => t.selectOne(this));
     }
     /**
      * Get the length of the rows
      * @example
      * query.length();
      */
-    length() {
-        return this.table.length(this);
+    async length() {
+        return await this.table.then((t) => t.length(this));
     }
     /**
      * Get the count of the rows
      * @example
      * query.count();
      */
-    count() {
-        return this.table.length(this);
+    async count() {
+        return await this.table.then((t) => t.length(this));
     }
     /**
-     * Insert our update a row
+     * Update a row
      * @param data The data to insert or update
      * @example
      * query.set({ id: 123, name: "hello" });
      */
     async set(data) {
-        const exists = await this.table.exists(this);
-        if (exists) {
-            await this.table.update(data, this);
-        }
-        else {
-            await this.table.insert(data);
-        }
+        await this.table.then((t) => t.update(data, this));
     }
     /**
      * Update rows
@@ -374,24 +381,24 @@ class Query {
      * @example
      * query.update({ name: "world" });
      */
-    update(data) {
-        return this.table.update(data, this);
+    async update(data) {
+        return await this.table.then((t) => t.update(data, this));
     }
     /**
      * Delete rows
      * @example
      * query.delete();
      */
-    delete() {
-        return this.table.delete(this);
+    async delete() {
+        return await this.table.then((t) => t.delete(this));
     }
     /**
      * Check if a row exists
      * @example
      * query.exists();
      */
-    exists() {
-        return this.table.exists(this);
+    async exists() {
+        return await this.table.then((t) => t.exists(this));
     }
 }
 exports.Query = Query;
@@ -510,7 +517,7 @@ class Table extends basic_event_emitter_1.default {
      *  .get("id", "name");
      */
     query() {
-        return new Query_1.Query(this);
+        return new Query_1.Query(Promise.resolve(this));
     }
     /**
      * Select all rows from the table

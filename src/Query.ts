@@ -17,7 +17,7 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * Create a query
 	 * @param table The table for consuming the query
 	 */
-	constructor(private readonly table: Table<S>) {}
+	constructor(private readonly table: Promise<Table<S>>) {}
 
 	/**
 	 * Get the query options
@@ -135,9 +135,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.get("id", "name");
 	 */
-	get<C extends keyof S>(...columns: Array<C>): Promise<Array<Row<S, K & C>>> {
+	async get<C extends keyof S>(...columns: Array<C>): Promise<Array<Row<S, K & C>>> {
 		this.columns(...columns);
-		return this.table.selectAll(this);
+		return await this.table.then((t) => t.selectAll(this));
 	}
 
 	/**
@@ -146,9 +146,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.first("id", "name");
 	 */
-	first<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
+	async first<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
 		this.columns(...columns);
-		return this.table.selectFirst(this);
+		return await this.table.then((t) => t.selectFirst(this));
 	}
 
 	/**
@@ -157,9 +157,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.last("id", "name");
 	 */
-	last<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
+	async last<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
 		this.columns(...columns);
-		return this.table.selectLast(this);
+		return await this.table.then((t) => t.selectLast(this));
 	}
 
 	/**
@@ -168,9 +168,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.one("id", "name");
 	 */
-	one<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
+	async one<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
 		this.columns(...columns);
-		return this.table.selectOne(this);
+		return await this.table.then((t) => t.selectOne(this));
 	}
 
 	/**
@@ -178,8 +178,8 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.length();
 	 */
-	length(): Promise<number> {
-		return this.table.length(this);
+	async length(): Promise<number> {
+		return await this.table.then((t) => t.length(this));
 	}
 
 	/**
@@ -187,23 +187,18 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.count();
 	 */
-	count(): Promise<number> {
-		return this.table.length(this);
+	async count(): Promise<number> {
+		return await this.table.then((t) => t.length(this));
 	}
 
 	/**
-	 * Insert our update a row
+	 * Update a row
 	 * @param data The data to insert or update
 	 * @example
 	 * query.set({ id: 123, name: "hello" });
 	 */
 	async set(data: Partial<Row<S>>): Promise<void> {
-		const exists = await this.table.exists(this);
-		if (exists) {
-			await this.table.update(data, this);
-		} else {
-			await this.table.insert(data);
-		}
+		await this.table.then((t) => t.update(data, this));
 	}
 
 	/**
@@ -212,8 +207,8 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.update({ name: "world" });
 	 */
-	update(data: Partial<Row<S>>): Promise<void> {
-		return this.table.update(data, this);
+	async update(data: Partial<Row<S>>): Promise<void> {
+		return await this.table.then((t) => t.update(data, this));
 	}
 
 	/**
@@ -221,8 +216,8 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.delete();
 	 */
-	delete(): Promise<void> {
-		return this.table.delete(this);
+	async delete(): Promise<void> {
+		return await this.table.then((t) => t.delete(this));
 	}
 
 	/**
@@ -230,7 +225,7 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.exists();
 	 */
-	exists(): Promise<boolean> {
-		return this.table.exists(this);
+	async exists(): Promise<boolean> {
+		return await this.table.then((t) => t.exists(this));
 	}
 }

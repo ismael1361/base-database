@@ -11,7 +11,7 @@ export declare class Query<S extends Serialize, K extends keyof S> {
      * Create a query
      * @param table The table for consuming the query
      */
-    constructor(table: Table<S>);
+    constructor(table: Promise<Table<S>>);
     /**
      * Get the query options
      */
@@ -130,7 +130,7 @@ export declare class Query<S extends Serialize, K extends keyof S> {
      */
     count(): Promise<number>;
     /**
-     * Insert our update a row
+     * Update a row
      * @param data The data to insert or update
      * @example
      * query.set({ id: 123, name: "hello" });
