@@ -1,10 +1,12 @@
 import { QueryOptions, Row, Serialize } from "./Types";
 import { Table } from "./Table";
 declare const __private__: unique symbol;
+type IsNever<T> = [T] extends [never] ? true : false;
+type ResolveNever<T, K> = IsNever<K> extends true ? T : K;
 /**
  * Query class
  */
-export declare class Query<S extends Serialize, K extends keyof S> {
+export declare class Query<S extends Serialize, K extends keyof S = never> {
     private readonly table;
     private [__private__];
     /**
@@ -12,6 +14,7 @@ export declare class Query<S extends Serialize, K extends keyof S> {
      * @param table The table for consuming the query
      */
     constructor(table: Promise<Table<S>>);
+    insertQuery<C extends keyof S>(query: Query<S, C>): Query<S, K | C>;
     /**
      * Get the query options
      */
@@ -88,35 +91,35 @@ export declare class Query<S extends Serialize, K extends keyof S> {
      * @example
      * query.columns("id", "name");
      */
-    columns<C extends keyof S>(...columns: Array<C>): Query<S, K & C>;
+    columns<C extends keyof S>(...columns: C[]): Query<S, K | C>;
     /**
      * Get the rows
      * @param columns The columns to select
      * @example
      * query.get("id", "name");
      */
-    get<C extends keyof S>(...columns: Array<C>): Promise<Array<Row<S, K & C>>>;
+    get<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Array<Row<S, K | C>>>;
     /**
      * Get the first row
      * @param columns The columns to select
      * @example
      * query.first("id", "name");
      */
-    first<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null>;
+    first<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Row<S, K | C> | null>;
     /**
      * Get the last row
      * @param columns The columns to select
      * @example
      * query.last("id", "name");
      */
-    last<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null>;
+    last<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Row<S, K | C> | null>;
     /**
      * Get one row
      * @param columns The columns to select
      * @example
      * query.one("id", "name");
      */
-    one<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null>;
+    one<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Row<S, K | C> | null>;
     /**
      * Get the length of the rows
      * @example

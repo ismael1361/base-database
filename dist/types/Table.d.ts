@@ -81,7 +81,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      *  .take(10)
      *  .get("id", "name");
      */
-    query(): Query<S, keyof S>;
+    query(): Query<S>;
     /**
      * Select all rows from the table
      * @param query The query

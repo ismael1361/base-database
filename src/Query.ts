@@ -3,10 +3,14 @@ import { Table } from "./Table";
 
 const __private__ = Symbol("private");
 
+type IsNever<T> = [T] extends [never] ? true : false;
+
+type ResolveNever<T, K> = IsNever<K> extends true ? T : K;
+
 /**
  * Query class
  */
-export class Query<S extends Serialize, K extends keyof S> {
+export class Query<S extends Serialize, K extends keyof S = never> {
 	private [__private__]: QueryOptions<S> = {
 		wheres: [],
 		order: [],
@@ -18,6 +22,13 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @param table The table for consuming the query
 	 */
 	constructor(private readonly table: Promise<Table<S>>) {}
+
+	insertQuery<C extends keyof S>(query: Query<S, C>): Query<S, K | C> {
+		this[__private__].wheres = this[__private__].wheres.concat(query.options.wheres);
+		this[__private__].order = this[__private__].order.concat(query.options.order);
+		this[__private__].columns = this[__private__].columns.concat(query.options.columns);
+		return this as any;
+	}
 
 	/**
 	 * Get the query options
@@ -124,9 +135,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.columns("id", "name");
 	 */
-	columns<C extends keyof S>(...columns: Array<C>): Query<S, K & C> {
+	columns<C extends keyof S>(...columns: C[]): Query<S, K | C> {
 		this[__private__].columns = [...this[__private__].columns, ...columns];
-		return this;
+		return this as any;
 	}
 
 	/**
@@ -135,9 +146,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.get("id", "name");
 	 */
-	async get<C extends keyof S>(...columns: Array<C>): Promise<Array<Row<S, K & C>>> {
+	async get<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Array<Row<S, K | C>>> {
 		this.columns(...columns);
-		return await this.table.then((t) => t.selectAll(this));
+		return (await this.table.then((t) => t.selectAll(this))) as any;
 	}
 
 	/**
@@ -146,9 +157,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.first("id", "name");
 	 */
-	async first<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
+	async first<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Row<S, K | C> | null> {
 		this.columns(...columns);
-		return await this.table.then((t) => t.selectFirst(this));
+		return (await this.table.then((t) => t.selectFirst(this))) as any;
 	}
 
 	/**
@@ -157,9 +168,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.last("id", "name");
 	 */
-	async last<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
+	async last<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Row<S, K | C> | null> {
 		this.columns(...columns);
-		return await this.table.then((t) => t.selectLast(this));
+		return (await this.table.then((t) => t.selectLast(this))) as any;
 	}
 
 	/**
@@ -168,9 +179,9 @@ export class Query<S extends Serialize, K extends keyof S> {
 	 * @example
 	 * query.one("id", "name");
 	 */
-	async one<C extends keyof S>(...columns: Array<C>): Promise<Row<S, K & C> | null> {
+	async one<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Row<S, K | C> | null> {
 		this.columns(...columns);
-		return await this.table.then((t) => t.selectOne(this));
+		return (await this.table.then((t) => t.selectOne(this))) as any;
 	}
 
 	/**

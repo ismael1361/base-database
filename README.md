@@ -225,18 +225,21 @@ import * as sqlite3 from 'sqlite3';
 const parseQuery = (query?: Database.QueryOptions) => {
     if (!query) return { columns: "*", where: "", order: "", limit: "", offset: "" };
 
-    const whereClause = Array.isArray(query.wheres) && query.wheres.length > 0 ? query.wheres.map((w) => `${w.column} ${w.operator} ${typeof w.compare === "string" ? `'${w.compare}'` : w.compare}`).join(" AND ") : "";
+    const whereClause =
+        Array.isArray(query.wheres) && query.wheres.length > 0
+            ? query.wheres.map((w) => `${w.column} ${w.operator} ${typeof w.compare === "string" ? `'${w.compare}'` : w.compare}`).join(" AND ")
+            : "";
 
     const columnClause = Array.isArray(query.wheres) && query.columns.length > 0 ? query.columns.join(", ") : "*";
-    
-    const orderClause = Array.isArray(query.order) && query.order.length > 0 ? query.order.map(({ column, ascending }) => `${String(column)} ${ascending ? 'ASC' : 'DESC'}`).join(', ') : "";
 
-    return { 
-        columns: columnClause, 
-        where: whereClause.trim() === "" ? "" : `WHERE ${whereClause}`, 
-        order: orderClause.trim() === "" ? "" : `ORDER BY ${orderClause.trim()}`, 
-        limit: query.take ? `LIMIT ${query.take}` : "", 
-        offset: query.skip ? `OFFSET ${query.skip}` : "" 
+    const orderClause = Array.isArray(query.order) && query.order.length > 0 ? query.order.map(({ column, ascending }) => `${String(column)} ${ascending ? "ASC" : "DESC"}`).join(", ") : "";
+
+    return {
+        columns: columnClause,
+        where: whereClause.trim() === "" ? "" : `WHERE ${whereClause}`,
+        order: orderClause.trim() === "" ? "" : `ORDER BY ${orderClause.trim()}`,
+        limit: query.take ? `LIMIT ${query.take}` : "",
+        offset: query.skip ? `OFFSET ${query.skip}` : "",
     };
 };
 
@@ -306,8 +309,16 @@ class SQLite extends Database.Custom<sqlite3.Database> {
 
     selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
         return this.ready(async (db) => {
-            const rows = await this.selectAll(table, query);
-            return rows[rows.length - 1];
+            return new Promise((resolve, reject) => {
+                let { columns, where, order } = parseQuery(query);
+
+                where = (where.trim() + (where.trim() === "" ? "WHERE" : " AND ") + ` rowid = (SELECT MAX(rowid) FROM ${table})`).trim();
+
+                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
+                    else resolve(row ?? null);
+                });
+            });
         });
     }
 

@@ -16,6 +16,12 @@ export class Query {
     constructor(table) {
         this.table = table;
     }
+    insertQuery(query) {
+        this[__private__].wheres = this[__private__].wheres.concat(query.options.wheres);
+        this[__private__].order = this[__private__].order.concat(query.options.order);
+        this[__private__].columns = this[__private__].columns.concat(query.options.columns);
+        return this;
+    }
     /**
      * Get the query options
      */
@@ -74,7 +80,7 @@ export class Query {
      */
     async get(...columns) {
         this.columns(...columns);
-        return await this.table.then((t) => t.selectAll(this));
+        return (await this.table.then((t) => t.selectAll(this)));
     }
     /**
      * Get the first row
@@ -84,7 +90,7 @@ export class Query {
      */
     async first(...columns) {
         this.columns(...columns);
-        return await this.table.then((t) => t.selectFirst(this));
+        return (await this.table.then((t) => t.selectFirst(this)));
     }
     /**
      * Get the last row
@@ -94,7 +100,7 @@ export class Query {
      */
     async last(...columns) {
         this.columns(...columns);
-        return await this.table.then((t) => t.selectLast(this));
+        return (await this.table.then((t) => t.selectLast(this)));
     }
     /**
      * Get one row
@@ -104,7 +110,7 @@ export class Query {
      */
     async one(...columns) {
         this.columns(...columns);
-        return await this.table.then((t) => t.selectOne(this));
+        return (await this.table.then((t) => t.selectOne(this)));
     }
     /**
      * Get the length of the rows

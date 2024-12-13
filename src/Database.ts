@@ -17,7 +17,7 @@ export type CustomConstructor<db = never> = new (database: string) => Custom<db>
 export type TableReady<S extends Serialize> = {
 	table: Promise<Table<S> | undefined>;
 	ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
-	query: () => Query<S, keyof S>;
+	query: () => Query<S>;
 	insert: (data: Partial<Row<S>>) => Promise<void>;
 	on: Table<S>["on"];
 	once: Table<S>["once"];
