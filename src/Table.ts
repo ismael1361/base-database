@@ -1,6 +1,6 @@
 import BasicEventEmitter from "basic-event-emitter";
 import { Datatype, QueryOptions, Row, Serialize, SerializeDatatype } from "./Types";
-import { getDatatype, serializeData } from "./Utils";
+import { getDatatype, serializeDataForGet, serializeDataForSet } from "./Utils";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
 
@@ -124,8 +124,11 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	selectAll<K extends keyof S>(query?: Query<S, K>): Promise<Array<Row<S, K>>> {
-		return this.ready(() => this.custom.selectAll(this.name, query?.options));
+	async selectAll<K extends keyof S>(query?: Query<S, K>): Promise<Array<Row<S, K>>> {
+		return await this.ready(async () => {
+			const data = await this.custom.selectAll(this.name, query?.options);
+			return await serializeDataForGet(this.serialize, data);
+		});
 	}
 
 	/**
@@ -135,8 +138,11 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	selectOne<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
-		return this.ready(() => this.custom.selectOne(this.name, query?.options));
+	async selectOne<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
+		return await this.ready(async () => {
+			const data = await this.custom.selectOne(this.name, query?.options);
+			return data ? await serializeDataForGet(this.serialize, data) : null;
+		});
 	}
 
 	/**
@@ -146,8 +152,11 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	selectFirst<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
-		return this.ready(() => this.custom.selectFirst(this.name, query?.options));
+	async selectFirst<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
+		return await this.ready(async () => {
+			const data = await this.custom.selectFirst(this.name, query?.options);
+			return data ? await serializeDataForGet(this.serialize, data) : null;
+		});
 	}
 
 	/**
@@ -157,8 +166,11 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	selectLast<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
-		return this.ready(() => this.custom.selectLast(this.name, query?.options));
+	async selectLast<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null> {
+		return await this.ready(async () => {
+			const data = await this.custom.selectLast(this.name, query?.options);
+			return data ? await serializeDataForGet(this.serialize, data) : null;
+		});
 	}
 
 	/**
@@ -186,7 +198,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * await table.insert({ id: 123, name: "hello" });
 	 */
 	async insert(data: Partial<Row<S>>): Promise<void> {
-		data = await serializeData(this.serialize, data);
+		data = await serializeDataForSet(this.serialize, data);
 		return this.ready(() => this.custom.insert(this.name, data)).then(() => {
 			this.emit("insert", data as any);
 			return Promise.resolve();
@@ -204,7 +216,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
 	async update(data: Partial<Row<S>>, query: Query<S, any>): Promise<void> {
-		data = await serializeData(this.serialize, data, true);
+		data = await serializeDataForSet(this.serialize, data, true);
 		return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
 			this.emit("update", data as any, query.options);
 			return Promise.resolve();

@@ -66,5 +66,6 @@ export declare const verifyDatatype: <T extends OptionsDatatype>(value: any, typ
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export declare const serializeData: <S extends Serialize>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial?: boolean) => Promise<Partial<Row<S>>>;
+export declare const serializeDataForSet: <S extends Serialize, P extends boolean = false>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial?: P) => Promise<P extends true ? Partial<Row<S>> : Row<S>>;
+export declare const serializeDataForGet: <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(serialize: SerializeDatatype<S>, data: D) => Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>>;
 //# sourceMappingURL=Utils.d.ts.map

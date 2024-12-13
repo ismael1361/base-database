@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { getDatatype, serializeData } from "./Utils";
+import { getDatatype, serializeDataForGet, serializeDataForSet } from "./Utils";
 import { Query } from "./Query";
 /**
  * Table class
@@ -114,8 +114,11 @@ export class Table extends BasicEventEmitter {
      * @example
      * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll(query) {
-        return this.ready(() => this.custom.selectAll(this.name, query?.options));
+    async selectAll(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectAll(this.name, query?.options);
+            return await serializeDataForGet(this.serialize, data);
+        });
     }
     /**
      * Select one row from the table
@@ -124,8 +127,11 @@ export class Table extends BasicEventEmitter {
      * @example
      * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne(query) {
-        return this.ready(() => this.custom.selectOne(this.name, query?.options));
+    async selectOne(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectOne(this.name, query?.options);
+            return data ? await serializeDataForGet(this.serialize, data) : null;
+        });
     }
     /**
      * Select the first row from the table
@@ -134,8 +140,11 @@ export class Table extends BasicEventEmitter {
      * @example
      * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst(query) {
-        return this.ready(() => this.custom.selectFirst(this.name, query?.options));
+    async selectFirst(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectFirst(this.name, query?.options);
+            return data ? await serializeDataForGet(this.serialize, data) : null;
+        });
     }
     /**
      * Select the last row from the table
@@ -144,8 +153,11 @@ export class Table extends BasicEventEmitter {
      * @example
      * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast(query) {
-        return this.ready(() => this.custom.selectLast(this.name, query?.options));
+    async selectLast(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectLast(this.name, query?.options);
+            return data ? await serializeDataForGet(this.serialize, data) : null;
+        });
     }
     /**
      * Check if a row exists
@@ -171,7 +183,7 @@ export class Table extends BasicEventEmitter {
      * await table.insert({ id: 123, name: "hello" });
      */
     async insert(data) {
-        data = await serializeData(this.serialize, data);
+        data = await serializeDataForSet(this.serialize, data);
         return this.ready(() => this.custom.insert(this.name, data)).then(() => {
             this.emit("insert", data);
             return Promise.resolve();
@@ -188,7 +200,7 @@ export class Table extends BasicEventEmitter {
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
     async update(data, query) {
-        data = await serializeData(this.serialize, data, true);
+        data = await serializeDataForSet(this.serialize, data, true);
         return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
             this.emit("update", data, query.options);
             return Promise.resolve();

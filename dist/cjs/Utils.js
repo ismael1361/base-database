@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeData = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
+exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -102,12 +102,12 @@ exports.verifyDatatype = verifyDatatype;
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-const serializeData = (serialize, data, isPartial = false) => {
+const serializeDataForSet = (serialize, data, isPartial = false) => {
     return new Promise((resolve, reject) => {
         for (const key in isPartial ? data : serialize) {
             if (!(key in data)) {
                 if (serialize[key].default !== undefined) {
-                    data[key] = serialize[key].default;
+                    data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
                 }
                 else if (!serialize[key].autoIncrement) {
                     return reject(new Error(`Missing column ${key}`));
@@ -137,5 +137,35 @@ const serializeData = (serialize, data, isPartial = false) => {
         resolve(data);
     });
 };
-exports.serializeData = serializeData;
+exports.serializeDataForSet = serializeDataForSet;
+const serializeDataForGet = (serialize, data) => {
+    return new Promise((resolve, reject) => {
+        const list = (Array.isArray(data) ? data : [data]).map((data) => {
+            for (const key in serialize) {
+                if (!(key in data)) {
+                    if (serialize[key].default !== undefined) {
+                        data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
+                    }
+                }
+                if (data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type)) {
+                    delete data[key];
+                }
+                if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
+                    try {
+                        const isValid = serialize[key].check(data[key]);
+                        if (isValid instanceof Error) {
+                            delete data[key];
+                        }
+                    }
+                    catch (e) {
+                        delete data[key];
+                    }
+                }
+            }
+            return data;
+        });
+        resolve(Array.isArray(data) ? list : list[0]);
+    });
+};
+exports.serializeDataForGet = serializeDataForGet;
 //# sourceMappingURL=Utils.js.map

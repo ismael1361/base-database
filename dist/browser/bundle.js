@@ -526,8 +526,11 @@ class Table extends basic_event_emitter_1.default {
      * @example
      * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll(query) {
-        return this.ready(() => this.custom.selectAll(this.name, query?.options));
+    async selectAll(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectAll(this.name, query?.options);
+            return await (0, Utils_1.serializeDataForGet)(this.serialize, data);
+        });
     }
     /**
      * Select one row from the table
@@ -536,8 +539,11 @@ class Table extends basic_event_emitter_1.default {
      * @example
      * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne(query) {
-        return this.ready(() => this.custom.selectOne(this.name, query?.options));
+    async selectOne(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectOne(this.name, query?.options);
+            return data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+        });
     }
     /**
      * Select the first row from the table
@@ -546,8 +552,11 @@ class Table extends basic_event_emitter_1.default {
      * @example
      * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst(query) {
-        return this.ready(() => this.custom.selectFirst(this.name, query?.options));
+    async selectFirst(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectFirst(this.name, query?.options);
+            return data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+        });
     }
     /**
      * Select the last row from the table
@@ -556,8 +565,11 @@ class Table extends basic_event_emitter_1.default {
      * @example
      * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast(query) {
-        return this.ready(() => this.custom.selectLast(this.name, query?.options));
+    async selectLast(query) {
+        return await this.ready(async () => {
+            const data = await this.custom.selectLast(this.name, query?.options);
+            return data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+        });
     }
     /**
      * Check if a row exists
@@ -583,7 +595,7 @@ class Table extends basic_event_emitter_1.default {
      * await table.insert({ id: 123, name: "hello" });
      */
     async insert(data) {
-        data = await (0, Utils_1.serializeData)(this.serialize, data);
+        data = await (0, Utils_1.serializeDataForSet)(this.serialize, data);
         return this.ready(() => this.custom.insert(this.name, data)).then(() => {
             this.emit("insert", data);
             return Promise.resolve();
@@ -600,7 +612,7 @@ class Table extends basic_event_emitter_1.default {
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
     async update(data, query) {
-        data = await (0, Utils_1.serializeData)(this.serialize, data, true);
+        data = await (0, Utils_1.serializeDataForSet)(this.serialize, data, true);
         return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
             this.emit("update", data, query.options);
             return Promise.resolve();
@@ -640,7 +652,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 },{}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeData = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
+exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -742,12 +754,12 @@ exports.verifyDatatype = verifyDatatype;
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-const serializeData = (serialize, data, isPartial = false) => {
+const serializeDataForSet = (serialize, data, isPartial = false) => {
     return new Promise((resolve, reject) => {
         for (const key in isPartial ? data : serialize) {
             if (!(key in data)) {
                 if (serialize[key].default !== undefined) {
-                    data[key] = serialize[key].default;
+                    data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
                 }
                 else if (!serialize[key].autoIncrement) {
                     return reject(new Error(`Missing column ${key}`));
@@ -777,7 +789,37 @@ const serializeData = (serialize, data, isPartial = false) => {
         resolve(data);
     });
 };
-exports.serializeData = serializeData;
+exports.serializeDataForSet = serializeDataForSet;
+const serializeDataForGet = (serialize, data) => {
+    return new Promise((resolve, reject) => {
+        const list = (Array.isArray(data) ? data : [data]).map((data) => {
+            for (const key in serialize) {
+                if (!(key in data)) {
+                    if (serialize[key].default !== undefined) {
+                        data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
+                    }
+                }
+                if (data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type)) {
+                    delete data[key];
+                }
+                if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
+                    try {
+                        const isValid = serialize[key].check(data[key]);
+                        if (isValid instanceof Error) {
+                            delete data[key];
+                        }
+                    }
+                    catch (e) {
+                        delete data[key];
+                    }
+                }
+            }
+            return data;
+        });
+        resolve(Array.isArray(data) ? list : list[0]);
+    });
+};
+exports.serializeDataForGet = serializeDataForGet;
 
 },{}],7:[function(require,module,exports){
 "use strict";

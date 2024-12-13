@@ -97,12 +97,16 @@ export const verifyDatatype = <T extends OptionsDatatype>(value: any, type: T): 
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export const serializeData = <S extends Serialize>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial: boolean = false): Promise<Partial<Row<S>>> => {
+export const serializeDataForSet = <S extends Serialize, P extends boolean = false>(
+	serialize: SerializeDatatype<S>,
+	data: Partial<Row<S>>,
+	isPartial: P = false as P,
+): Promise<P extends true ? Partial<Row<S>> : Row<S>> => {
 	return new Promise((resolve, reject) => {
 		for (const key in isPartial ? data : serialize) {
 			if (!(key in data)) {
 				if (serialize[key].default !== undefined) {
-					(data as any)[key] = serialize[key].default;
+					(data as any)[key] = typeof serialize[key].default === "function" ? (serialize[key].default as any)() : serialize[key].default;
 				} else if (!serialize[key].autoIncrement) {
 					return reject(new Error(`Missing column ${key}`));
 				}
@@ -126,5 +130,41 @@ export const serializeData = <S extends Serialize>(serialize: SerializeDatatype<
 		}
 
 		resolve(data as any);
+	});
+};
+
+export const serializeDataForGet = <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(
+	serialize: SerializeDatatype<S>,
+	data: D,
+): Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>> => {
+	return new Promise((resolve, reject) => {
+		const list: Array<Partial<Row<S>>> = ((Array.isArray(data) ? data : [data]) as Array<Partial<Row<S>>>).map((data) => {
+			for (const key in serialize) {
+				if (!(key in data)) {
+					if (serialize[key].default !== undefined) {
+						(data as any)[key] = typeof serialize[key].default === "function" ? (serialize[key].default as any)() : serialize[key].default;
+					}
+				}
+
+				if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) {
+					delete data[key];
+				}
+
+				if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
+					try {
+						const isValid = (serialize as any)[key].check(data[key]);
+						if (isValid instanceof Error) {
+							delete data[key];
+						}
+					} catch (e) {
+						delete data[key];
+					}
+				}
+			}
+
+			return data;
+		});
+
+		resolve(Array.isArray(data) ? (list as any) : (list[0] as any));
 	});
 };

@@ -97,12 +97,12 @@ export const verifyDatatype = (value, type) => {
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export const serializeData = (serialize, data, isPartial = false) => {
+export const serializeDataForSet = (serialize, data, isPartial = false) => {
     return new Promise((resolve, reject) => {
         for (const key in isPartial ? data : serialize) {
             if (!(key in data)) {
                 if (serialize[key].default !== undefined) {
-                    data[key] = serialize[key].default;
+                    data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
                 }
                 else if (!serialize[key].autoIncrement) {
                     return reject(new Error(`Missing column ${key}`));
@@ -130,6 +130,35 @@ export const serializeData = (serialize, data, isPartial = false) => {
             }
         }
         resolve(data);
+    });
+};
+export const serializeDataForGet = (serialize, data) => {
+    return new Promise((resolve, reject) => {
+        const list = (Array.isArray(data) ? data : [data]).map((data) => {
+            for (const key in serialize) {
+                if (!(key in data)) {
+                    if (serialize[key].default !== undefined) {
+                        data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
+                    }
+                }
+                if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) {
+                    delete data[key];
+                }
+                if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
+                    try {
+                        const isValid = serialize[key].check(data[key]);
+                        if (isValid instanceof Error) {
+                            delete data[key];
+                        }
+                    }
+                    catch (e) {
+                        delete data[key];
+                    }
+                }
+            }
+            return data;
+        });
+        resolve(Array.isArray(data) ? list : list[0]);
     });
 };
 //# sourceMappingURL=Utils.js.map

@@ -43,7 +43,7 @@ type SerializeItemProperties<T> = {
 	primaryKey?: boolean;
 	autoIncrement?: boolean;
 	notNull?: boolean;
-	default?: T;
+	default?: T | (() => T);
 	unique?: boolean;
 	check?: (value: T) => Error | void | undefined;
 };
