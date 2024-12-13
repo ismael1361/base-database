@@ -310,11 +310,11 @@ class SQLite extends Database.Custom<sqlite3.Database> {
     selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                let { columns, where, order } = parseQuery(query);
+                const { columns, where, order } = parseQuery(query);
 
-                where = (where.trim() + (where.trim() === "" ? "WHERE" : " AND ") + ` rowid = (SELECT MAX(rowid) FROM ${table})`).trim();
+                const offset = ` LIMIT 1 OFFSET (SELECT COUNT(*) - 1 FROM ${table} ${where}`.trim() + ")";
 
-                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
+                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + `${offset};`, (err, row) => {
                     if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve(row ?? null);
                 });
