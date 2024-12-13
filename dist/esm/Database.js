@@ -122,7 +122,6 @@ export class Database extends BasicEventEmitter {
             },
             offOnce(name, callback) {
                 table.then((t) => t.offOnce(name, callback));
-                return this;
             },
         };
     }

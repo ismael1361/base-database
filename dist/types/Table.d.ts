@@ -1,14 +1,14 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Datatype, QueryOptions, Row, Serialize, SerializeDatatype } from "./Types";
+import { Datatype, Row, Serialize, SerializeDatatype } from "./Types";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
 /**
  * Table class
  */
 export declare class Table<S extends Serialize> extends BasicEventEmitter<{
-    insert: (data: Row<S>) => void;
-    update: (data: Partial<Row<S>>, query: QueryOptions<S>) => void;
-    delete: (query: QueryOptions<S>) => void;
+    insert: (inserted: Row<S>) => void;
+    update: (updated: Array<Row<S>>, previous: Array<Row<S>>) => void;
+    delete: (removed: Array<Row<S>>) => void;
 }> {
     readonly custom: Custom<any>;
     readonly name: string;

@@ -8,9 +8,9 @@ import { Query } from "./Query";
  * Table class
  */
 export class Table<S extends Serialize> extends BasicEventEmitter<{
-	insert: (data: Row<S>) => void;
-	update: (data: Partial<Row<S>>, query: QueryOptions<S>) => void;
-	delete: (query: QueryOptions<S>) => void;
+	insert: (inserted: Row<S>) => void;
+	update: (updated: Array<Row<S>>, previous: Array<Row<S>>) => void;
+	delete: (removed: Array<Row<S>>) => void;
 }> {
 	/**
 	 * If the table is disconnected
@@ -200,7 +200,9 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	async insert(data: Partial<Row<S>>): Promise<void> {
 		data = await serializeDataForSet(this.serialize, data);
 		return this.ready(() => this.custom.insert(this.name, data)).then(() => {
-			this.emit("insert", data as any);
+			this.selectLast().then((row) => {
+				this.emit("insert", row as any);
+			});
 			return Promise.resolve();
 		});
 	}
@@ -217,8 +219,11 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 */
 	async update(data: Partial<Row<S>>, query: Query<S, any>): Promise<void> {
 		data = await serializeDataForSet(this.serialize, data, true);
+		const previous = await this.selectAll(query);
 		return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
-			this.emit("update", data as any, query.options);
+			this.selectAll(query).then((updated) => {
+				this.emit("update", updated as any, previous as any);
+			});
 			return Promise.resolve();
 		});
 	}
@@ -231,8 +236,9 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
 	async delete(query: Query<S, any>): Promise<void> {
+		const removed = await this.selectAll(query);
 		return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
-			this.emit("delete", query.options);
+			this.emit("delete", removed as any);
 			return Promise.resolve();
 		});
 	}

@@ -142,7 +142,6 @@ class Database extends basic_event_emitter_1.default {
             },
             offOnce(name, callback) {
                 table.then((t) => t.offOnce(name, callback));
-                return this;
             },
         };
     }

@@ -19,10 +19,10 @@ export type TableReady<S extends Serialize> = {
 	ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
 	query: () => Query<S, keyof S>;
 	insert: (data: Partial<Row<S>>) => Promise<void>;
-	on: (typeof Table<S>)["prototype"]["on"];
-	once: (typeof Table<S>)["prototype"]["once"];
-	off: (...args: Parameters<(typeof Table<S>)["prototype"]["off"]>) => void;
-	offOnce: (...args: Parameters<(typeof Table<S>)["prototype"]["offOnce"]>) => TableReady<S>;
+	on: Table<S>["on"];
+	once: Table<S>["once"];
+	off: (...args: Parameters<Table<S>["off"]>) => void;
+	offOnce: (...args: Parameters<Table<S>["offOnce"]>) => void;
 };
 
 /**
@@ -185,7 +185,6 @@ export class Database<db = never> extends BasicEventEmitter<{
 
 			offOnce(name: any, callback: any) {
 				table.then((t) => t.offOnce(name, callback));
-				return this as any;
 			},
 		};
 	}

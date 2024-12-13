@@ -191,7 +191,9 @@ class Table extends basic_event_emitter_1.default {
     async insert(data) {
         data = await (0, Utils_1.serializeDataForSet)(this.serialize, data);
         return this.ready(() => this.custom.insert(this.name, data)).then(() => {
-            this.emit("insert", data);
+            this.selectLast().then((row) => {
+                this.emit("insert", row);
+            });
             return Promise.resolve();
         });
     }
@@ -207,8 +209,11 @@ class Table extends basic_event_emitter_1.default {
      */
     async update(data, query) {
         data = await (0, Utils_1.serializeDataForSet)(this.serialize, data, true);
+        const previous = await this.selectAll(query);
         return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
-            this.emit("update", data, query.options);
+            this.selectAll(query).then((updated) => {
+                this.emit("update", updated, previous);
+            });
             return Promise.resolve();
         });
     }
@@ -220,8 +225,9 @@ class Table extends basic_event_emitter_1.default {
      * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
     async delete(query) {
+        const removed = await this.selectAll(query);
         return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
-            this.emit("delete", query.options);
+            this.emit("delete", removed);
             return Promise.resolve();
         });
     }
