@@ -16,6 +16,10 @@ export type TableReady<S extends Serialize> = {
     ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
     query: () => Query<S, keyof S>;
     insert: (data: Partial<Row<S>>) => Promise<void>;
+    on: (typeof Table<S>)["prototype"]["on"];
+    once: (typeof Table<S>)["prototype"]["once"];
+    off: (...args: Parameters<(typeof Table<S>)["prototype"]["off"]>) => void;
+    offOnce: (...args: Parameters<(typeof Table<S>)["prototype"]["offOnce"]>) => TableReady<S>;
 };
 /**
  * Database class

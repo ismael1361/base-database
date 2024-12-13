@@ -180,6 +180,27 @@ class Database extends basic_event_emitter_1.default {
                     throw new Error("Table not found");
                 return await table.then((t) => t.insert(data));
             },
+            on(name, callback) {
+                table.then((t) => t.on(name, callback));
+                return {
+                    remove() {
+                        table.then((t) => t.off(name, callback));
+                    },
+                    stop() {
+                        this.remove();
+                    },
+                };
+            },
+            async once(name, callback) {
+                return await table.then((t) => t.once(name, callback));
+            },
+            off(name, callback) {
+                table.then((t) => t.off(name, callback));
+            },
+            offOnce(name, callback) {
+                table.then((t) => t.offOnce(name, callback));
+                return this;
+            },
         };
     }
     /**

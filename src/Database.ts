@@ -1,4 +1,4 @@
-import BasicEventEmitter from "basic-event-emitter";
+import BasicEventEmitter, { BasicEventHandler } from "basic-event-emitter";
 import { Row, Serialize } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
@@ -19,6 +19,10 @@ export type TableReady<S extends Serialize> = {
 	ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
 	query: () => Query<S, keyof S>;
 	insert: (data: Partial<Row<S>>) => Promise<void>;
+	on: (typeof Table<S>)["prototype"]["on"];
+	once: (typeof Table<S>)["prototype"]["once"];
+	off: (...args: Parameters<(typeof Table<S>)["prototype"]["off"]>) => void;
+	offOnce: (...args: Parameters<(typeof Table<S>)["prototype"]["offOnce"]>) => TableReady<S>;
 };
 
 /**
@@ -141,18 +145,47 @@ export class Database<db = never> extends BasicEventEmitter<{
 
 		return {
 			table,
+
 			async ready(callback) {
 				const t = await table;
 				if (!t) throw new Error("Table not found");
 				return t.ready(callback);
 			},
+
 			query() {
 				if (!table) throw new Error("Table not found");
 				return new Query(table);
 			},
+
 			async insert(data) {
 				if (!table) throw new Error("Table not found");
 				return await table.then((t) => t.insert(data));
+			},
+
+			on(name: any, callback: any): BasicEventHandler {
+				table.then((t) => t.on(name, callback));
+
+				return {
+					remove() {
+						table.then((t) => t.off(name, callback));
+					},
+					stop() {
+						this.remove();
+					},
+				};
+			},
+
+			async once(name: any, callback: any) {
+				return await table.then((t) => t.once(name, callback));
+			},
+
+			off(name: any, callback: any) {
+				table.then((t) => t.off(name, callback));
+			},
+
+			offOnce(name: any, callback: any) {
+				table.then((t) => t.offOnce(name, callback));
+				return this as any;
 			},
 		};
 	}
