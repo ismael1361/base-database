@@ -98,6 +98,8 @@ const table = database.readyTable("test", {
 	},
 });
 
+type RowItem = Database.ExtractTableRow<(typeof table)["table"]>;
+
 table.ready(async (table) => {
 	console.log("table:", table.query().where("integer", "=", 0));
 	const item = await table.query().where("integer", "=", 0).columns("bigint", "integer", "boolean").one();

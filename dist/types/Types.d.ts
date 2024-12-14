@@ -1,3 +1,5 @@
+import type { Query } from "Query";
+import type { Table } from "./Table";
 export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
 export type WheresItem<C extends Serialize, K extends keyof C> = {
     column: K;
@@ -41,5 +43,16 @@ export type SerializeDatatypeItem<V extends SerializeValueType, T extends Option
 export type SerializeDatatype<S extends Serialize = never> = {
     [k in keyof S]: SerializeDatatypeItem<S[k]["type"]>;
 };
+export type TableReady<S extends Serialize> = {
+    table: Promise<Table<S> | undefined>;
+    ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
+    query: () => Query<S>;
+    insert: (data: Partial<Row<S>>) => Promise<void>;
+    on: Table<S>["on"];
+    once: Table<S>["once"];
+    off: (...args: Parameters<Table<S>["off"]>) => void;
+    offOnce: (...args: Parameters<Table<S>["offOnce"]>) => void;
+};
+export type ExtractTableRow<T extends TableReady<any> | Table<any> | Promise<Table<any>> | Promise<Table<any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<infer U> ? Row<U> : T extends Table<infer U> ? Row<U> : T extends Promise<Table<infer U>> ? Row<U> : T extends Promise<Table<infer U> | undefined> ? Row<U> : T extends Row<infer U> ? Row<U> : T extends Serialize<infer U> ? Row<U> : never;
 export {};
 //# sourceMappingURL=Types.d.ts.map

@@ -1,8 +1,7 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Row, Serialize } from "./Types";
+import { Serialize, TableReady } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
-import { Query } from "./Query";
 export * from "./Types";
 export * from "./Utils";
 export * from "./Custom";
@@ -11,16 +10,6 @@ export * from "./Table";
  * Define type for custom database constructor
  */
 export type CustomConstructor<db = never> = new (database: string) => Custom<db>;
-export type TableReady<S extends Serialize> = {
-    table: Promise<Table<S> | undefined>;
-    ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
-    query: () => Query<S>;
-    insert: (data: Partial<Row<S>>) => Promise<void>;
-    on: Table<S>["on"];
-    once: Table<S>["once"];
-    off: (...args: Parameters<Table<S>["off"]>) => void;
-    offOnce: (...args: Parameters<Table<S>["offOnce"]>) => void;
-};
 /**
  * Database class
  */
