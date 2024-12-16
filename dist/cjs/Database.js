@@ -21,6 +21,7 @@ exports.Database = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Table_1 = require("./Table");
 const Query_1 = require("./Query");
+// import { TableReady } from "./TableReady";
 __exportStar(require("./Types"), exports);
 __exportStar(require("./Utils"), exports);
 __exportStar(require("./Custom"), exports);
@@ -114,8 +115,6 @@ class Database extends basic_event_emitter_1.default {
                 return t.ready(callback);
             },
             query() {
-                if (!table)
-                    throw new Error("Table not found");
                 return new Query_1.Query(table);
             },
             async insert(data) {

@@ -3,6 +3,7 @@ import { Row, Serialize, TableReady } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
+// import { TableReady } from "./TableReady";
 
 export * from "./Types";
 export * from "./Utils";
@@ -142,7 +143,6 @@ export class Database<db = never> extends BasicEventEmitter<{
 			},
 
 			query() {
-				if (!table) throw new Error("Table not found");
 				return new Query(table);
 			},
 

@@ -1,6 +1,7 @@
 import BasicEventEmitter from "basic-event-emitter";
 import { Table } from "./Table";
 import { Query } from "./Query";
+// import { TableReady } from "./TableReady";
 export * from "./Types";
 export * from "./Utils";
 export * from "./Custom";
@@ -94,8 +95,6 @@ export class Database extends BasicEventEmitter {
                 return t.ready(callback);
             },
             query() {
-                if (!table)
-                    throw new Error("Table not found");
                 return new Query(table);
             },
             async insert(data) {

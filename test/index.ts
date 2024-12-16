@@ -69,7 +69,8 @@ class ModelDatabase extends Database.Custom<localDB> {
 }
 
 const database = new Database.Database(ModelDatabase, "");
-const table = database.readyTable("test", {
+
+const table = database.table("test", {
 	integer: {
 		type: Database.Types.INTEGER,
 		primaryKey: true,
@@ -101,8 +102,9 @@ const table = database.readyTable("test", {
 type RowItem = Database.ExtractTableRow<(typeof table)["table"]>;
 
 table.ready(async (table) => {
-	console.log("table:", table.query().where("integer", "=", 0));
-	const item = await table.query().where("integer", "=", 0).columns("bigint", "integer", "boolean").one();
+	const q = table.query();
+	console.log("table:", q.where("integer", "=", 0));
+	const item = await q.where("integer", "=", 0).columns("bigint", "integer", "boolean").one();
 
 	table
 		.insert({

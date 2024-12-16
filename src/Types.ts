@@ -65,16 +65,16 @@ export type SerializeDatatype<S extends Serialize = never> = {
 	[k in keyof S]: SerializeDatatypeItem<S[k]["type"]>;
 };
 
-export type TableReady<S extends Serialize> = {
+export interface TableReady<S extends Serialize> {
 	table: Promise<Table<S> | undefined>;
-	ready: <T = void>(callback: (table: Table<S>) => T | Promise<T>) => Promise<T>;
-	query: () => Query<S>;
-	insert: (data: Partial<Row<S>>) => Promise<void>;
+	ready<T = void>(callback: (table: Table<S>) => T | Promise<T>): Promise<T>;
+	query(): ReturnType<Table<S>["query"]>;
+	insert(...args: Parameters<Table<S>["insert"]>): Promise<void>;
 	on: Table<S>["on"];
 	once: Table<S>["once"];
-	off: (...args: Parameters<Table<S>["off"]>) => void;
-	offOnce: (...args: Parameters<Table<S>["offOnce"]>) => void;
-};
+	off(...args: Parameters<Table<S>["off"]>): void;
+	offOnce(...args: Parameters<Table<S>["offOnce"]>): void;
+}
 
 export type ExtractTableRow<T extends TableReady<any> | Table<any> | Promise<Table<any>> | Promise<Table<any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<infer U>
 	? Row<U>
