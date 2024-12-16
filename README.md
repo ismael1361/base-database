@@ -312,9 +312,9 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order } = parseQuery(query);
 
-                const offset = ` LIMIT 1 OFFSET (SELECT COUNT(*) - 1 FROM ${table} ${where}`.trim() + ")";
+                const offset = `LIMIT 1 OFFSET (SELECT COUNT(*) - 1 FROM ${table} ${where}`.trim() + ")";
 
-                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + `${offset};`, (err, row) => {
+                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ` ${offset};`, (err, row) => {
                     if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve(row ?? null);
                 });
