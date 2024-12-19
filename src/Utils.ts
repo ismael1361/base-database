@@ -1,4 +1,4 @@
-import { Datatype, OptionsDatatype, Row, Serialize, SerializeDatatype } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
 
 export const Operators = {
 	EQUAL: "=",
@@ -36,7 +36,7 @@ export const Types = {
  * getDatatype(new Date()); // "DATETIME"
  * getDatatype(Symbol("hello")); // "TEXT"
  */
-export const getDatatype = <T extends null | string | bigint | number | boolean | Date>(value: T): Datatype<T> => {
+export const getDatatype = <T extends null | string | bigint | number | boolean | Date>(value: T): DataType<T> => {
 	if (value === null) return "NULL" as any;
 	if (typeof value === "string") return "TEXT" as any;
 	if (typeof value === "bigint") return "BIGINT" as any;
@@ -62,7 +62,7 @@ export const getDatatype = <T extends null | string | bigint | number | boolean 
  * verifyDatatype(123, "FLOAT"); // false
  * verifyDatatype(123.456, "INTEGER"); // false
  */
-export const verifyDatatype = <T extends OptionsDatatype>(value: any, type: T): value is T => {
+export const verifyDatatype = <T extends OptionsDataType>(value: any, type: T): value is T => {
 	switch (type) {
 		case "TEXT":
 			return typeof value === "string";
@@ -98,7 +98,7 @@ export const verifyDatatype = <T extends OptionsDatatype>(value: any, type: T): 
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
 export const serializeDataForSet = <S extends Serialize, P extends boolean = false>(
-	serialize: SerializeDatatype<S>,
+	serialize: SerializeDataType<S>,
 	data: Partial<Row<S>>,
 	isPartial: P = false as P,
 ): Promise<P extends true ? Partial<Row<S>> : Row<S>> => {
@@ -107,17 +107,18 @@ export const serializeDataForSet = <S extends Serialize, P extends boolean = fal
 			if (!(key in data)) {
 				if (serialize[key].default !== undefined) {
 					(data as any)[key] = typeof serialize[key].default === "function" ? (serialize[key].default as any)() : serialize[key].default;
-				} else if (!serialize[key].autoIncrement) {
-					return reject(new Error(`Missing column ${key}`));
 				}
+				// else if (!serialize[key].autoIncrement) {
+				// 	return reject(new Error(`Missing column ${key}`));
+				// }
 			}
 			if (serialize[key].autoIncrement) {
 				delete data[key];
 			} else {
-				if (serialize[key].notNull && (data[key] === null || data[key] === undefined)) return reject(new Error(`Column ${key} cannot be null or undefined`));
-				if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
+				if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined)) return reject(new Error(`Column ${key} cannot be null or undefined`));
+				if (key in data && data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
 
-				if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
+				if (key in data && data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
 					try {
 						const isValid = (serialize as any)[key].check(data[key]);
 						if (isValid instanceof Error) return reject(isValid);
@@ -134,7 +135,7 @@ export const serializeDataForSet = <S extends Serialize, P extends boolean = fal
 };
 
 export const serializeDataForGet = <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(
-	serialize: SerializeDatatype<S>,
+	serialize: SerializeDataType<S>,
 	data: D,
 ): Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>> => {
 	return new Promise((resolve, reject) => {

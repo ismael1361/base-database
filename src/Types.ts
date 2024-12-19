@@ -19,15 +19,15 @@ export interface QueryOptions<S extends Serialize = any> {
 	columns: Array<keyof S>;
 }
 
-export type OptionsDatatype = "TEXT" | "INTEGER" | "FLOAT" | "BOOLEAN" | "DATETIME" | "BIGINT" | "NULL";
+export type OptionsDataType = "TEXT" | "INTEGER" | "FLOAT" | "BOOLEAN" | "DATETIME" | "BIGINT" | "NULL";
 
 export type SerializeValueType = null | string | bigint | number | boolean | Date;
 
-export type Row<C extends Serialize = any, K extends string | number | symbol = keyof C> = {
+export type Row<C extends Serialize = any, K extends keyof C = keyof C> = {
 	[k in K]: C[k]["type"];
 };
 
-export type Datatype<T extends SerializeValueType> = T extends null
+export type DataType<T extends SerializeValueType> = T extends null
 	? "NULL"
 	: T extends string
 	? "TEXT"
@@ -41,17 +41,39 @@ export type Datatype<T extends SerializeValueType> = T extends null
 	? "DATETIME"
 	: "TEXT";
 
+export type DataValueType<T extends OptionsDataType> = T extends "NULL"
+	? null
+	: T extends "TEXT"
+	? string
+	: T extends "BIGINT"
+	? bigint
+	: T extends "INTEGER" | "FLOAT"
+	? number
+	: T extends "BOOLEAN"
+	? boolean
+	: T extends "DATETIME"
+	? Date
+	: never;
+
+export type SerializeValueDefault<T> = T extends OptionsDataType ? DataValueType<T> : T;
+
 type SerializeItemProperties<T> = {
 	type: T;
-	primaryKey?: boolean;
-	autoIncrement?: boolean;
-	notNull?: boolean;
-	default?: T | (() => T);
-	unique?: boolean;
+	primaryKey?: true | false;
+	autoIncrement?: true | false;
+	notNull?: true | false;
+	default?: SerializeValueDefault<T> | (() => SerializeValueDefault<T>);
+	unique?: true | false;
 	check?: (value: T) => Error | void | undefined;
 };
 
-export type SerializeItemAny<T> = T extends { type: infer U } ? (U extends SerializeValueType ? SerializeItemProperties<U> : SerializeItemProperties<T>) : SerializeItemProperties<T>;
+export type SerializeItemAny<T> = T extends { type: infer U }
+	? U extends OptionsDataType
+		? SerializeItemProperties<DataValueType<U>>
+		: U extends SerializeValueType
+		? SerializeItemProperties<U>
+		: SerializeItemProperties<T>
+	: SerializeItemProperties<T>;
 
 export type SerializeItem<T extends SerializeValueType> = SerializeItemAny<T>;
 
@@ -59,10 +81,10 @@ export type Serialize<T extends Record<PropertyKey, SerializeItem<SerializeValue
 	[k in keyof T]: SerializeItem<T[k]["type"]>;
 };
 
-export type SerializeDatatypeItem<V extends SerializeValueType, T extends OptionsDatatype = Datatype<V>> = SerializeItemAny<T>;
+export type SerializeDataTypeItem<V extends SerializeValueType, T extends OptionsDataType = DataType<V>> = SerializeItemAny<T>;
 
-export type SerializeDatatype<S extends Serialize = never> = {
-	[k in keyof S]: SerializeDatatypeItem<S[k]["type"]>;
+export type SerializeDataType<S extends Serialize = never> = {
+	[k in keyof S]: SerializeDataTypeItem<S[k]["type"]>;
 };
 
 export interface TableReady<S extends Serialize> {

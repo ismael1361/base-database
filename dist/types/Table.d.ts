@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Datatype, Row, Serialize, SerializeDatatype } from "./Types";
+import { DataType, Row, Serialize, SerializeDataType } from "./Types";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
 /**
@@ -63,14 +63,14 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * table.getColumnType("id"); // "INTEGER"
      */
-    getColumnType<C extends keyof S>(key: C): Datatype<S[C]["type"]>;
+    getColumnType<C extends keyof S>(key: C): DataType<S[C]["type"]>;
     /**
      * Get the columns
      * @returns The columns
      * @example
      * table.getColumns();
      */
-    getColumns(): SerializeDatatype<S>;
+    getColumns(): SerializeDataType<S>;
     /**
      * Create a query object
      * @returns The query object

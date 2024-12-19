@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Datatype, QueryOptions, Row, Serialize, SerializeDatatype } from "./Types";
+import { DataType, QueryOptions, Row, Serialize, SerializeDataType } from "./Types";
 import { getDatatype, serializeDataForGet, serializeDataForSet } from "./Utils";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
@@ -19,7 +19,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	/**
 	 * The serialize datatype
 	 */
-	private readonly serialize: SerializeDatatype<S>;
+	private readonly serialize: SerializeDataType<S>;
 	/**
 	 * The initial promise
 	 */
@@ -89,7 +89,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * table.getColumnType("id"); // "INTEGER"
 	 */
-	getColumnType<C extends keyof S>(key: C): Datatype<S[C]["type"]> {
+	getColumnType<C extends keyof S>(key: C): DataType<S[C]["type"]> {
 		return this.serialize[key].type as any;
 	}
 
@@ -99,7 +99,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 * @example
 	 * table.getColumns();
 	 */
-	getColumns(): SerializeDatatype<S> {
+	getColumns(): SerializeDataType<S> {
 		return this.serialize;
 	}
 
@@ -199,10 +199,8 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 */
 	async insert(data: Partial<Row<S>>): Promise<void> {
 		data = await serializeDataForSet(this.serialize, data);
-		return this.ready(() => this.custom.insert(this.name, data)).then(() => {
-			this.selectLast().then((row) => {
-				this.emit("insert", row as any);
-			});
+		return await this.ready(() => this.custom.insert(this.name, data)).then((row) => {
+			this.emit("insert", row);
 			return Promise.resolve();
 		});
 	}
@@ -219,10 +217,10 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	 */
 	async update(data: Partial<Row<S>>, query: Query<S, any>): Promise<void> {
 		data = await serializeDataForSet(this.serialize, data, true);
-		const previous = await this.selectAll(query);
-		return this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
+		const previous: Array<Row<S>> = await this.selectAll(query);
+		return await this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
 			this.selectAll(query).then((updated) => {
-				this.emit("update", updated as any, previous as any);
+				this.emit("update", updated, previous);
 			});
 			return Promise.resolve();
 		});
@@ -238,7 +236,7 @@ export class Table<S extends Serialize> extends BasicEventEmitter<{
 	async delete(query: Query<S, any>): Promise<void> {
 		const removed = await this.selectAll(query);
 		return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
-			this.emit("delete", removed as any);
+			this.emit("delete", removed);
 			return Promise.resolve();
 		});
 	}

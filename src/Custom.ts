@@ -1,4 +1,4 @@
-import { QueryOptions, Row, SerializeDatatype } from "./Types";
+import { QueryOptions, Row, SerializeDataType } from "./Types";
 
 /**
  * Custom database class
@@ -129,7 +129,7 @@ export abstract class Custom<db = never> {
 	 * @example
 	 * await custom.insert("my-table", { id: 123, name: "hello" });
 	 */
-	abstract insert(table: string, data: Row): Promise<void>;
+	abstract insert(table: string, data: Row): Promise<Row>;
 
 	/**
 	 * Update rows in a table
@@ -176,7 +176,7 @@ export abstract class Custom<db = never> {
 	 *     name: { type: "TEXT", notNull: true },
 	 * });
 	 */
-	abstract createTable(table: string, columns: SerializeDatatype<any>): Promise<void>;
+	abstract createTable(table: string, columns: SerializeDataType<any>): Promise<void>;
 
 	/**
 	 * Delete a table

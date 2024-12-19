@@ -1,4 +1,4 @@
-import { Datatype, OptionsDatatype, Row, Serialize, SerializeDatatype } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
 export declare const Operators: {
     readonly EQUAL: "=";
     readonly NOT_EQUAL: "!=";
@@ -33,7 +33,7 @@ export declare const Types: {
  * getDatatype(new Date()); // "DATETIME"
  * getDatatype(Symbol("hello")); // "TEXT"
  */
-export declare const getDatatype: <T extends null | string | bigint | number | boolean | Date>(value: T) => Datatype<T>;
+export declare const getDatatype: <T extends null | string | bigint | number | boolean | Date>(value: T) => DataType<T>;
 /**
  * Verify if a value is of a certain datatype
  * @param value The value to verify
@@ -50,7 +50,7 @@ export declare const getDatatype: <T extends null | string | bigint | number | b
  * verifyDatatype(123, "FLOAT"); // false
  * verifyDatatype(123.456, "INTEGER"); // false
  */
-export declare const verifyDatatype: <T extends OptionsDatatype>(value: any, type: T) => value is T;
+export declare const verifyDatatype: <T extends OptionsDataType>(value: any, type: T) => value is T;
 /**
  * Serialize data
  * @param serialize The serialize datatype
@@ -66,6 +66,6 @@ export declare const verifyDatatype: <T extends OptionsDatatype>(value: any, typ
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export declare const serializeDataForSet: <S extends Serialize, P extends boolean = false>(serialize: SerializeDatatype<S>, data: Partial<Row<S>>, isPartial?: P) => Promise<P extends true ? Partial<Row<S>> : Row<S>>;
-export declare const serializeDataForGet: <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(serialize: SerializeDatatype<S>, data: D) => Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>>;
+export declare const serializeDataForSet: <S extends Serialize, P extends boolean = false>(serialize: SerializeDataType<S>, data: Partial<Row<S>>, isPartial?: P) => Promise<P extends true ? Partial<Row<S>> : Row<S>>;
+export declare const serializeDataForGet: <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(serialize: SerializeDataType<S>, data: D) => Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>>;
 //# sourceMappingURL=Utils.d.ts.map

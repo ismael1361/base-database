@@ -34,10 +34,11 @@ class ModelDatabase extends Database.Custom<localDB> {
 		throw new Error("Method not implemented.");
 	}
 
-	insert(table: string, data: Database.Row): Promise<void> {
+	insert(table: string, data: Database.Row): Promise<Database.Row> {
 		return this.ready(async () => {
 			const db = this.db.get(table) ?? [];
 			db.push(data);
+			return db[db.length - 1];
 		});
 	}
 
@@ -53,7 +54,7 @@ class ModelDatabase extends Database.Custom<localDB> {
 		throw new Error("Method not implemented.");
 	}
 
-	createTable(table: string, columns: Database.SerializeDatatype<any>): Promise<void> {
+	createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void> {
 		return this.ready(async () => {
 			this.db.set(table, []);
 		});
@@ -74,6 +75,7 @@ const table = database.table("test", {
 	integer: {
 		type: Database.Types.INTEGER,
 		primaryKey: true,
+		autoIncrement: true,
 	},
 	float: {
 		type: Database.Types.FLOAT,
@@ -108,7 +110,6 @@ table.ready(async (table) => {
 
 	table
 		.insert({
-			integer: 0,
 			float: 0.1,
 			string: "",
 			boolean: true,

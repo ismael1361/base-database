@@ -138,12 +138,12 @@ selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row |
 }
 ```
 
-### ``insert(table: string, data: Database.Row): Promise<void>``
+### ``insert(table: string, data: Database.Row): Promise<Database.Row>``
 
 Método responsável por inserir um registro em uma tabela. Deve retornar uma `Promise` que resolve após a inserção.
 
 ```ts
-insert(table: string, data: Database.Row): Promise<void> {
+insert(table: string, data: Database.Row): Promise<Database.Row> {
   // Implementação da inserção
 }
 ```
@@ -178,12 +178,12 @@ length(table: string, query?: Database.QueryOptions): Promise<number> {
 }
 ```
 
-### ``createTable(table: string, columns: Database.SerializeDatatype<any>): Promise<void>``
+### ``createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void>``
 
 Método responsável por criar uma tabela. Deve retornar uma `Promise` que resolve após a criação da tabela.
 
 ```ts
-createTable(table: string, columns: Database.SerializeDatatype<any>): Promise<void> {
+createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void> {
   // Implementação da criação da tabela
 }
 ```
@@ -246,12 +246,15 @@ const parseQuery = (query?: Database.QueryOptions) => {
 class SQLite extends Database.Custom<sqlite3.Database> {
 	private db: sqlite3.Database | undefined;
 
-   connect(database: string): Promise<sqlite3.Database> {
+    connect(database: string): Promise<sqlite3.Database> {
         return new Promise((resolve, reject) => {
-            this.db = new sqlite3.Database(database, (err) => {
-                if (err) reject(err);
-                else resolve(this.db);
-            });
+            try {
+                this.db = new sqlite3.Database(database);
+            } catch (e) {
+                const message = e instanceof Error ? e.message : String(e);
+                return reject(new HandleError(message, "SQLITE_ERROR", e));
+            }
+            resolve(this.db);
         });
     }
 
@@ -259,11 +262,11 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         return new Promise((resolve, reject) => {
             if (this.db) {
                 this.db.close((err) => {
-                    if (err) reject(err);
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve();
                 });
             } else {
-                reject(new Error('Database not connected'));
+                reject(new HandleError("Database not connected", "SQLITE_ERROR"));
             }
         });
     }
@@ -273,8 +276,8 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order, limit, offset } = parseQuery(query);
 
-                db.all(`SELECT ${columns} FROM ${table} ${where} ${order} ${limit} ${offset}`.trim() + ";", (err, rows) => {
-                    if (err) reject(err);
+                db.all<Database.Row>(`SELECT ${columns} FROM ${table} ${where} ${order} ${limit} ${offset}`.trim() + ";", (err, rows) => {
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve(rows);
                 });
             });
@@ -286,9 +289,9 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order } = parseQuery(query);
 
-                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
+                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
+                    else resolve(row ?? null);
                 });
             });
         });
@@ -299,9 +302,9 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { columns, where, order } = parseQuery(query);
 
-                db.get(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
+                db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
+                    else resolve(row ?? null);
                 });
             });
         });
@@ -311,9 +314,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 const { columns, where, order } = parseQuery(query);
-
                 const offset = `LIMIT 1 OFFSET (SELECT COUNT(*) - 1 FROM ${table} ${where}`.trim() + ")";
-
                 db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ` ${offset};`, (err, row) => {
                     if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve(row ?? null);
@@ -322,16 +323,26 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         });
     }
 
-    insert(table: string, data: Database.Row): Promise<void> {
+    insert(table: string, data: Database.Row): Promise<Database.Row> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 const columns = Object.keys(data).join(", ");
-                const values = Object.values(data).map((v) => `'${v}'`).join(", ");
+                const values = Object.values(data)
+                    .map(() => `?`)
+                    .join(", ");
 
-                db.run(`INSERT INTO ${table} (${columns}) VALUES (${values});`, (err) => {
-                    if (err) reject(err);
-                    else resolve();
+                const stmt = db.prepare(`INSERT INTO ${table} (${columns}) VALUES (${values});`);
+
+                stmt.run(Object.values(data), function (err) {
+                    if (err) return reject(err);
+                    const lastRowID = this.lastID;
+                    db.get<Database.Row>(`SELECT rowid, * FROM ${table} WHERE rowid = ?`, [lastRowID], function (err, row) {
+                        if (err) return reject(err);
+                        resolve(row);
+                    });
                 });
+
+                stmt.finalize();
             });
         });
     }
@@ -339,12 +350,18 @@ class SQLite extends Database.Custom<sqlite3.Database> {
     update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const setClause = Object.entries(data).map(([column, value]) => `${column} = '${value}'`).join(", ");
-                
+                const setClause = Object.keys(data)
+                    .map((column) => `${column} = ?`)
+                    .join(", ");
                 const { where } = parseQuery(query);
 
-                db.run(`UPDATE ${table} SET ${setClause} ${where}`.trim() + ";", (err) => {
-                    if (err) reject(err);
+                if (where.trim() === "") {
+                    reject(new HandleError("WHERE clause is required for UPDATE operation", "SQLITE_ERROR"));
+                    return;
+                }
+
+                db.run(`UPDATE ${table} SET ${setClause} ${where}`.trim() + ";", Object.values(data), (err) => {
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve();
                 });
             });
@@ -356,8 +373,13 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { where } = parseQuery(query);
 
+                if (where.trim() === "") {
+                    reject(new HandleError("WHERE clause is required for UPDATE operation", "SQLITE_ERROR"));
+                    return;
+                }
+
                 db.run(`DELETE FROM ${table} ${where}`.trim() + ";", (err) => {
-                    if (err) reject(err);
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve();
                 });
             });
@@ -369,32 +391,89 @@ class SQLite extends Database.Custom<sqlite3.Database> {
             return new Promise((resolve, reject) => {
                 const { where } = parseQuery(query);
 
-                db.get(`SELECT COUNT(*) AS count FROM ${table} ${where}`.trim() + ";", (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row.count);
+                db.get<{
+                    count: number;
+                }>(`SELECT COUNT(*) AS count FROM ${table} ${where}`.trim() + ";", (err, row) => {
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
+                    else resolve(row?.count ?? 0);
                 });
             });
         });
     }
 
-    createTable(table: string, columns: Database.SerializeDatatype<any>): Promise<void> {
+    createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
-                const columnClause = Object.entries(columns).map(([column, {type, primaryKey, autoIncrement, notNull, default, unique}]) => {
-                    let clause = `${column} ${type}`;
+                const columnClause = Object.fromEntries(
+                    Object.entries(columns).map(([column, info]) => {
+                        let clause = `${column} ${info.type}`;
 
-                    if (primaryKey) clause += " PRIMARY KEY";
-                    if (autoIncrement) clause += " AUTOINCREMENT";
-                    if (notNull) clause += " NOT NULL";
-                    if (default) clause += ` DEFAULT ${default}`;
-                    if (unique) clause += " UNIQUE";
+                        if (info.primaryKey) clause += " PRIMARY KEY";
+                        if (info.autoIncrement) clause += " AUTOINCREMENT";
+                        if (info.notNull) clause += " NOT NULL";
+                        if (info.default && typeof info.default !== "function") {
+                            switch (typeof info.default) {
+                                case "string":
+                                    clause += ` DEFAULT ${JSON.stringify(info.default)}`;
+                                    break;
+                                case "number":
+                                case "bigint":
+                                case "boolean":
+                                    clause += ` DEFAULT ${info.default}`;
+                                    break;
+                                case "object":
+                                    if (info.default instanceof Date) {
+                                        clause += ` DEFAULT ${info.default.getTime()}`;
+                                    }
+                                    break;
+                            }
+                        }
+                        if (info.unique) clause += " UNIQUE";
 
-                    return clause;
-                }).join(", ");
+                        return [column, clause];
+                    })
+                );
 
-                db.run(`CREATE TABLE IF NOT EXISTS ${table} (${columnClause});`, (err) => {
-                    if (err) reject(err);
-                    else resolve();
+                db.all<{
+                    cid: number;
+                    name: string;
+                    type: string;
+                    notnull: number;
+                    dflt_value: string;
+                    pk: number;
+                }>(`PRAGMA table_info(${table});`, (err, rows) => {
+                    if (err) {
+                        return reject(new HandleError(err.message, "SQLITE_ERROR", err));
+                    }
+
+                    const existingColumns = rows.map((row) => row.name); // Nomes das colunas existentes
+
+                    // Verifica e cria colunas ausentes
+                    const columnDefinitions: string[] = Object.keys(columns)
+                        .filter((column) => !existingColumns.includes(column)) // Apenas colunas ausentes
+                        .map((column) => {
+                            return `ALTER TABLE ${table} ADD COLUMN ${columnClause[column]}`;
+                        });
+
+                    // Executa as colunas ausentes
+                    const executeAddColumn = async () => {
+                        for (const query of columnDefinitions) {
+                            await new Promise<void>((resolveAdd, rejectAdd) => {
+                                db.run(query, (err) => {
+                                    if (err) rejectAdd(new HandleError(err.message, "SQLITE_ERROR", err));
+                                    else resolveAdd();
+                                });
+                            });
+                        }
+                    };
+
+                    db.run(`CREATE TABLE IF NOT EXISTS ${table} (${Object.values(columnClause).join(", ")});`, async (err) => {
+                        if (err) {
+                            return reject(new HandleError(err.message, "SQLITE_ERROR", err));
+                        }
+                        await executeAddColumn().catch(reject);
+                        resolve();
+                    });
                 });
             });
         });
@@ -404,7 +483,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 db.run(`DROP TABLE IF EXISTS ${table};`, (err) => {
-                    if (err) reject(err);
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve();
                 });
             });
@@ -415,7 +494,7 @@ class SQLite extends Database.Custom<sqlite3.Database> {
         return this.ready(async (db) => {
             return new Promise((resolve, reject) => {
                 db.close((err) => {
-                    if (err) reject(err);
+                    if (err) reject(new HandleError(err.message, "SQLITE_ERROR", err));
                     else resolve();
                 });
             });

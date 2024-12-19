@@ -109,19 +109,19 @@ const serializeDataForSet = (serialize, data, isPartial = false) => {
                 if (serialize[key].default !== undefined) {
                     data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
                 }
-                else if (!serialize[key].autoIncrement) {
-                    return reject(new Error(`Missing column ${key}`));
-                }
+                // else if (!serialize[key].autoIncrement) {
+                // 	return reject(new Error(`Missing column ${key}`));
+                // }
             }
             if (serialize[key].autoIncrement) {
                 delete data[key];
             }
             else {
-                if (serialize[key].notNull && (data[key] === null || data[key] === undefined))
+                if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined))
                     return reject(new Error(`Column ${key} cannot be null or undefined`));
-                if (data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
+                if (key in data && data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
                     return reject(new Error(`Invalid datatype for column ${key}`));
-                if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
+                if (key in data && data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
                     try {
                         const isValid = serialize[key].check(data[key]);
                         if (isValid instanceof Error)
