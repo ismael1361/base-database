@@ -161,4 +161,18 @@ export const serializeDataForGet = (serialize, data) => {
         resolve(Array.isArray(data) ? list : list[0]);
     });
 };
+export const columns = (columns) => {
+    return Object.keys(columns).reduce((acc, key) => {
+        acc[key] = {
+            type: columns[key].type,
+            primaryKey: columns[key].primaryKey ?? false,
+            autoIncrement: columns[key].autoIncrement ?? false,
+            notNull: columns[key].notNull ?? false,
+            default: columns[key].default,
+            unique: columns[key].unique ?? false,
+            check: columns[key].check,
+        };
+        return acc;
+    }, {});
+};
 //# sourceMappingURL=Utils.js.map

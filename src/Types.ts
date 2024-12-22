@@ -87,12 +87,12 @@ export type SerializeDataType<S extends Serialize = never> = {
 	[k in keyof S]: SerializeDataTypeItem<S[k]["type"]>;
 };
 
-export type CreatorFunction<S extends Serialize, O = Row<S>> = (row: Row<S>) => O extends abstract new (...args: any) => any ? InstanceType<O> : Row<S>;
+export type CreatorFunction<S extends Serialize, O = Row<S>> = (row: Row<S>) => O extends SerializableClassType<S> ? InstanceType<O> : Row<S>;
 export type SerializerFunction<S extends Serialize> = (obj: any) => Partial<Row<S>>;
 
 export type SerializableClassType<S extends Serialize> = {
 	new (...args: any): any;
-	create?(row: Row<S>): any;
+	create?(snap: Row<S>): any;
 };
 
 export interface TypeSchemaOptions<S extends Serialize, O = Row<S>> {
@@ -108,15 +108,20 @@ export interface TableSchema<S extends Serialize, O = Row<S>> {
 	serialize(obj: any): Partial<Row<S>>;
 }
 
-export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends abstract new (...args: any) => any ? InstanceType<O> : Row<S, K>;
+export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends SerializableClassType<S> ? InstanceType<O> : Row<S, K>;
 
-export type RowSerialize<S extends Serialize, O = Row<S>> = O extends abstract new (...args: any) => any ? InstanceType<O> : Partial<Row<S>>;
+export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S>>;
 
 export interface TableReady<S extends Serialize, O = Row<S>> {
 	table: Promise<Table<S, O> | undefined>;
 	ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
 	query(): ReturnType<Table<S, O>["query"]>;
 	insert(...args: Parameters<Table<S, O>["insert"]>): Promise<void>;
+	selectAll(): ReturnType<Table<S, O>["selectAll"]>;
+	selectOne(): ReturnType<Table<S, O>["selectOne"]>;
+	selectFirst(): ReturnType<Table<S, O>["selectFirst"]>;
+	selectLast(): ReturnType<Table<S, O>["selectLast"]>;
+	length(): ReturnType<Table<S, O>["length"]>;
 	on: Table<S, O>["on"];
 	once: Table<S, O>["once"];
 	off(...args: Parameters<Table<S, O>["off"]>): void;

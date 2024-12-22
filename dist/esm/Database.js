@@ -102,6 +102,31 @@ export class Database extends BasicEventEmitter {
                     throw new Error("Table not found");
                 return await table.then((t) => t.insert(data));
             },
+            async selectAll() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectAll());
+            },
+            async selectOne() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectOne());
+            },
+            async selectFirst() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectFirst());
+            },
+            async selectLast() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectLast());
+            },
+            async length() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.length());
+            },
             on(name, callback) {
                 table.then((t) => t.on(name, callback));
                 return {
@@ -121,6 +146,10 @@ export class Database extends BasicEventEmitter {
             },
             offOnce(name, callback) {
                 table.then((t) => t.offOnce(name, callback));
+            },
+            schema(schema, options) {
+                table.then((t) => t.bindSchema(schema, options));
+                return this;
             },
         };
     }

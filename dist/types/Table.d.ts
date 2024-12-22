@@ -1,14 +1,14 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { DataType, Row, Serialize, SerializeDataType } from "./Types";
+import { DataType, Row, RowDeserialize, RowSerialize, SerializableClassType, Serialize, SerializeDataType, TypeSchemaOptions } from "./Types";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
 /**
  * Table class
  */
-export declare class Table<S extends Serialize> extends BasicEventEmitter<{
-    insert: (inserted: Row<S>) => void;
-    update: (updated: Array<Row<S>>, previous: Array<Row<S>>) => void;
-    delete: (removed: Array<Row<S>>) => void;
+export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
+    insert: (inserted: RowDeserialize<S, O>) => void;
+    update: (updated: Array<RowDeserialize<S, O>>, previous: Array<RowDeserialize<S, O>>) => void;
+    delete: (removed: Array<RowDeserialize<S, O>>) => void;
 }> {
     readonly custom: Custom<any>;
     readonly name: string;
@@ -24,6 +24,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * The initial promise
      */
     private readonly initialPromise;
+    private schema;
     /**
      * Create a table
      * @param custom The custom database class
@@ -55,7 +56,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      *    // Code here will run when the table is ready
      * });
      */
-    ready<R = never>(callback?: (table: Table<S>) => R | Promise<R>): Promise<R>;
+    ready<R = never>(callback?: (table: Table<S, O>) => R | Promise<R>): Promise<R>;
     /**
      * Get the datatype of a column
      * @param key The column key
@@ -81,7 +82,24 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      *  .take(10)
      *  .get("id", "name");
      */
-    query(): Query<S>;
+    query(): Query<S, O>;
+    /**
+     * Bind a schema to the table
+     * @param schema The schema
+     * @param options The options
+     * @param options.serializer The serializer
+     * @param options.creator The creator
+     * @returns The table
+     * @example
+     * class MyClass {
+     *    ...
+     *    serialize() { ... }
+     *    static create() { ... }
+     * }
+     *
+     * const schema = table.bindSchema(MyClass, { serializer: "serialize", creator: "create" });
+     */
+    bindSchema<O extends SerializableClassType<S>>(schema: O, options?: TypeSchemaOptions<S, O>): Table<S, O>;
     /**
      * Select all rows from the table
      * @param query The query
@@ -89,7 +107,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectAll<K extends keyof S>(query?: Query<S, K>): Promise<Array<Row<S, K>>>;
+    selectAll<K extends keyof S>(query?: Query<S, O, K>): Promise<Array<RowDeserialize<S, O, K>>>;
     /**
      * Select one row from the table
      * @param query The query
@@ -97,7 +115,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
      */
-    selectOne<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null>;
+    selectOne<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null>;
     /**
      * Select the first row from the table
      * @param query The query
@@ -105,7 +123,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectFirst<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null>;
+    selectFirst<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null>;
     /**
      * Select the last row from the table
      * @param query The query
@@ -113,7 +131,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
      */
-    selectLast<K extends keyof S>(query?: Query<S, K>): Promise<Row<S, K> | null>;
+    selectLast<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null>;
     /**
      * Check if a row exists
      * @param query The query
@@ -121,7 +139,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    exists(query: Query<S, any>): Promise<boolean>;
+    exists(query: Query<S, O, any>): Promise<boolean>;
     /**
      * Insert a row into the table
      * @param data The data to insert
@@ -132,7 +150,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.insert({ id: 123, name: "hello" });
      */
-    insert(data: Partial<Row<S>>): Promise<void>;
+    insert(data: RowSerialize<S, O>): Promise<void>;
     /**
      * Update rows in the table
      * @param data The data to update
@@ -143,7 +161,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    update(data: Partial<Row<S>>, query: Query<S, any>): Promise<void>;
+    update(data: RowSerialize<S, O>, query: Query<S, O, any>): Promise<void>;
     /**
      * Delete rows from the table
      * @param query The query
@@ -151,7 +169,7 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * @example
      * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    delete(query: Query<S, any>): Promise<void>;
+    delete(query: Query<S, O, any>): Promise<void>;
     /**
      * Get the length of the table
      * @param query The query
@@ -160,6 +178,6 @@ export declare class Table<S extends Serialize> extends BasicEventEmitter<{
      * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
      * await table.length();
      */
-    length(query?: Query<S, any>): Promise<number>;
+    length(query?: Query<S, O, any>): Promise<number>;
 }
 //# sourceMappingURL=Table.d.ts.map

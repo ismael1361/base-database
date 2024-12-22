@@ -179,6 +179,31 @@ class Database extends basic_event_emitter_1.default {
                     throw new Error("Table not found");
                 return await table.then((t) => t.insert(data));
             },
+            async selectAll() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectAll());
+            },
+            async selectOne() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectOne());
+            },
+            async selectFirst() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectFirst());
+            },
+            async selectLast() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.selectLast());
+            },
+            async length() {
+                if (!table)
+                    throw new Error("Table not found");
+                return await table.then((t) => t.length());
+            },
             on(name, callback) {
                 table.then((t) => t.on(name, callback));
                 return {
@@ -198,6 +223,10 @@ class Database extends basic_event_emitter_1.default {
             },
             offOnce(name, callback) {
                 table.then((t) => t.offOnce(name, callback));
+            },
+            schema(schema, options) {
+                table.then((t) => t.bindSchema(schema, options));
+                return this;
             },
         };
     }
@@ -456,6 +485,13 @@ class Table extends basic_event_emitter_1.default {
      * The initial promise
      */
     initialPromise;
+    schema = {
+        schema: {},
+        creator: (row) => row,
+        serializer: (obj) => obj,
+        deserialize: (row) => row,
+        serialize: (obj) => obj,
+    };
     /**
      * Create a table
      * @param custom The custom database class
@@ -545,6 +581,81 @@ class Table extends basic_event_emitter_1.default {
         return new Query_1.Query(Promise.resolve(this));
     }
     /**
+     * Bind a schema to the table
+     * @param schema The schema
+     * @param options The options
+     * @param options.serializer The serializer
+     * @param options.creator The creator
+     * @returns The table
+     * @example
+     * class MyClass {
+     *    ...
+     *    serialize() { ... }
+     *    static create() { ... }
+     * }
+     *
+     * const schema = table.bindSchema(MyClass, { serializer: "serialize", creator: "create" });
+     */
+    bindSchema(schema, options = {}) {
+        if (typeof schema !== "function") {
+            throw new TypeError("constructor must be a function");
+        }
+        if (typeof options.serializer === "undefined") {
+            if (typeof schema.prototype.serialize === "function") {
+                options.serializer = schema.prototype.serialize;
+            }
+        }
+        else if (typeof options.serializer === "string") {
+            if (typeof schema.prototype[options.serializer] === "function") {
+                options.serializer = schema.prototype[options.serializer];
+            }
+            else {
+                throw new TypeError(`${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer`);
+            }
+        }
+        else if (typeof options.serializer !== "function") {
+            throw new TypeError(`serializer for class ${schema.name} must be a function, or the name of a prototype method`);
+        }
+        if (typeof options.creator === "undefined") {
+            if (typeof schema.create === "function") {
+                options.creator = schema.create;
+            }
+        }
+        else if (typeof options.creator === "string") {
+            if (typeof schema[options.creator] === "function") {
+                options.creator = schema[options.creator];
+            }
+            else {
+                throw new TypeError(`${schema.name}.${options.creator} is not a function, cannot use it as creator`);
+            }
+        }
+        else if (typeof options.creator !== "function") {
+            throw new TypeError(`creator for class ${schema.name} must be a function, or the name of a static method`);
+        }
+        const prepare = {
+            schema: schema,
+            creator: options.creator,
+            serializer: options.serializer,
+            deserialize(row) {
+                if (typeof this.creator === "function") {
+                    return this.creator.call(this.schema, row);
+                }
+                return new this.schema(row);
+            },
+            serialize(obj) {
+                if (typeof this.serializer === "function") {
+                    return this.serializer.call(obj, obj);
+                }
+                else if (obj && typeof obj.serialize === "function") {
+                    return obj.serialize(obj);
+                }
+                return obj;
+            },
+        };
+        this.schema = prepare;
+        return this;
+    }
+    /**
      * Select all rows from the table
      * @param query The query
      * @returns The rows
@@ -554,7 +665,8 @@ class Table extends basic_event_emitter_1.default {
     async selectAll(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectAll(this.name, query?.options);
-            return await (0, Utils_1.serializeDataForGet)(this.serialize, data);
+            const rows = await (0, Utils_1.serializeDataForGet)(this.serialize, data);
+            return rows.map((row) => this.schema.deserialize(row));
         });
     }
     /**
@@ -567,7 +679,8 @@ class Table extends basic_event_emitter_1.default {
     async selectOne(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectOne(this.name, query?.options);
-            return data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+            const row = data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+            return row ? this.schema.deserialize(row) : null;
         });
     }
     /**
@@ -580,7 +693,8 @@ class Table extends basic_event_emitter_1.default {
     async selectFirst(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectFirst(this.name, query?.options);
-            return data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+            const row = data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+            return row ? this.schema.deserialize(row) : null;
         });
     }
     /**
@@ -593,7 +707,8 @@ class Table extends basic_event_emitter_1.default {
     async selectLast(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectLast(this.name, query?.options);
-            return data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+            const row = data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
+            return row ? this.schema.deserialize(row) : null;
         });
     }
     /**
@@ -620,9 +735,10 @@ class Table extends basic_event_emitter_1.default {
      * await table.insert({ id: 123, name: "hello" });
      */
     async insert(data) {
-        data = await (0, Utils_1.serializeDataForSet)(this.serialize, data);
-        return await this.ready(() => this.custom.insert(this.name, data)).then((row) => {
-            this.emit("insert", row);
+        let value = this.schema.serialize(data);
+        value = await (0, Utils_1.serializeDataForSet)(this.serialize, value);
+        return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
+            this.emit("insert", this.schema.deserialize(row));
             return Promise.resolve();
         });
     }
@@ -637,9 +753,10 @@ class Table extends basic_event_emitter_1.default {
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
     async update(data, query) {
-        data = await (0, Utils_1.serializeDataForSet)(this.serialize, data, true);
+        let value = this.schema.serialize(data);
+        value = await (0, Utils_1.serializeDataForSet)(this.serialize, value, true);
         const previous = await this.selectAll(query);
-        return await this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
+        return await this.ready(() => this.custom.update(this.name, value, query.options)).then(() => {
             this.selectAll(query).then((updated) => {
                 this.emit("update", updated, previous);
             });
@@ -681,7 +798,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 },{}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
+exports.columns = exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -849,6 +966,21 @@ const serializeDataForGet = (serialize, data) => {
     });
 };
 exports.serializeDataForGet = serializeDataForGet;
+const columns = (columns) => {
+    return Object.keys(columns).reduce((acc, key) => {
+        acc[key] = {
+            type: columns[key].type,
+            primaryKey: columns[key].primaryKey ?? false,
+            autoIncrement: columns[key].autoIncrement ?? false,
+            notNull: columns[key].notNull ?? false,
+            default: columns[key].default,
+            unique: columns[key].unique ?? false,
+            check: columns[key].check,
+        };
+        return acc;
+    }, {});
+};
+exports.columns = columns;
 
 },{}],7:[function(require,module,exports){
 "use strict";

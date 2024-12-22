@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
+exports.columns = exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -168,4 +168,19 @@ const serializeDataForGet = (serialize, data) => {
     });
 };
 exports.serializeDataForGet = serializeDataForGet;
+const columns = (columns) => {
+    return Object.keys(columns).reduce((acc, key) => {
+        acc[key] = {
+            type: columns[key].type,
+            primaryKey: columns[key].primaryKey ?? false,
+            autoIncrement: columns[key].autoIncrement ?? false,
+            notNull: columns[key].notNull ?? false,
+            default: columns[key].default,
+            unique: columns[key].unique ?? false,
+            check: columns[key].check,
+        };
+        return acc;
+    }, {});
+};
+exports.columns = columns;
 //# sourceMappingURL=Utils.js.map

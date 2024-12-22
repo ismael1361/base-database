@@ -27,8 +27,8 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
 
 	private schema: TableSchema<S, O> = {
 		schema: {} as any,
-		creator: () => undefined as any,
-		serializer: () => ({} as any),
+		creator: (row: Row<S>) => row as any,
+		serializer: (obj: any) => obj as any,
 		deserialize: (row: Row<S>) => row as any,
 		serialize: (obj: any) => obj as any,
 	};
@@ -125,6 +125,22 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
 		return new Query(Promise.resolve(this));
 	}
 
+	/**
+	 * Bind a schema to the table
+	 * @param schema The schema
+	 * @param options The options
+	 * @param options.serializer The serializer
+	 * @param options.creator The creator
+	 * @returns The table
+	 * @example
+	 * class MyClass {
+	 *    ...
+	 *    serialize() { ... }
+	 *    static create() { ... }
+	 * }
+	 *
+	 * const schema = table.bindSchema(MyClass, { serializer: "serialize", creator: "create" });
+	 */
 	bindSchema<O extends SerializableClassType<S>>(schema: O, options: TypeSchemaOptions<S, O> = {}): Table<S, O> {
 		if (typeof schema !== "function") {
 			throw new TypeError("constructor must be a function");
@@ -172,9 +188,11 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
 			serialize(obj: any) {
 				if (typeof this.serializer === "function") {
 					return this.serializer.call(obj, obj);
+				} else if (obj && typeof obj.serialize === "function") {
+					return obj.serialize(obj);
 				}
 
-				return obj.toDatabase();
+				return obj;
 			},
 		};
 

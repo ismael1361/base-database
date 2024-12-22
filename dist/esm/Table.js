@@ -19,6 +19,13 @@ export class Table extends BasicEventEmitter {
      * The initial promise
      */
     initialPromise;
+    schema = {
+        schema: {},
+        creator: (row) => row,
+        serializer: (obj) => obj,
+        deserialize: (row) => row,
+        serialize: (obj) => obj,
+    };
     /**
      * Create a table
      * @param custom The custom database class
@@ -108,6 +115,81 @@ export class Table extends BasicEventEmitter {
         return new Query(Promise.resolve(this));
     }
     /**
+     * Bind a schema to the table
+     * @param schema The schema
+     * @param options The options
+     * @param options.serializer The serializer
+     * @param options.creator The creator
+     * @returns The table
+     * @example
+     * class MyClass {
+     *    ...
+     *    serialize() { ... }
+     *    static create() { ... }
+     * }
+     *
+     * const schema = table.bindSchema(MyClass, { serializer: "serialize", creator: "create" });
+     */
+    bindSchema(schema, options = {}) {
+        if (typeof schema !== "function") {
+            throw new TypeError("constructor must be a function");
+        }
+        if (typeof options.serializer === "undefined") {
+            if (typeof schema.prototype.serialize === "function") {
+                options.serializer = schema.prototype.serialize;
+            }
+        }
+        else if (typeof options.serializer === "string") {
+            if (typeof schema.prototype[options.serializer] === "function") {
+                options.serializer = schema.prototype[options.serializer];
+            }
+            else {
+                throw new TypeError(`${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer`);
+            }
+        }
+        else if (typeof options.serializer !== "function") {
+            throw new TypeError(`serializer for class ${schema.name} must be a function, or the name of a prototype method`);
+        }
+        if (typeof options.creator === "undefined") {
+            if (typeof schema.create === "function") {
+                options.creator = schema.create;
+            }
+        }
+        else if (typeof options.creator === "string") {
+            if (typeof schema[options.creator] === "function") {
+                options.creator = schema[options.creator];
+            }
+            else {
+                throw new TypeError(`${schema.name}.${options.creator} is not a function, cannot use it as creator`);
+            }
+        }
+        else if (typeof options.creator !== "function") {
+            throw new TypeError(`creator for class ${schema.name} must be a function, or the name of a static method`);
+        }
+        const prepare = {
+            schema: schema,
+            creator: options.creator,
+            serializer: options.serializer,
+            deserialize(row) {
+                if (typeof this.creator === "function") {
+                    return this.creator.call(this.schema, row);
+                }
+                return new this.schema(row);
+            },
+            serialize(obj) {
+                if (typeof this.serializer === "function") {
+                    return this.serializer.call(obj, obj);
+                }
+                else if (obj && typeof obj.serialize === "function") {
+                    return obj.serialize(obj);
+                }
+                return obj;
+            },
+        };
+        this.schema = prepare;
+        return this;
+    }
+    /**
      * Select all rows from the table
      * @param query The query
      * @returns The rows
@@ -117,7 +199,8 @@ export class Table extends BasicEventEmitter {
     async selectAll(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectAll(this.name, query?.options);
-            return await serializeDataForGet(this.serialize, data);
+            const rows = await serializeDataForGet(this.serialize, data);
+            return rows.map((row) => this.schema.deserialize(row));
         });
     }
     /**
@@ -130,7 +213,8 @@ export class Table extends BasicEventEmitter {
     async selectOne(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectOne(this.name, query?.options);
-            return data ? await serializeDataForGet(this.serialize, data) : null;
+            const row = data ? await serializeDataForGet(this.serialize, data) : null;
+            return row ? this.schema.deserialize(row) : null;
         });
     }
     /**
@@ -143,7 +227,8 @@ export class Table extends BasicEventEmitter {
     async selectFirst(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectFirst(this.name, query?.options);
-            return data ? await serializeDataForGet(this.serialize, data) : null;
+            const row = data ? await serializeDataForGet(this.serialize, data) : null;
+            return row ? this.schema.deserialize(row) : null;
         });
     }
     /**
@@ -156,7 +241,8 @@ export class Table extends BasicEventEmitter {
     async selectLast(query) {
         return await this.ready(async () => {
             const data = await this.custom.selectLast(this.name, query?.options);
-            return data ? await serializeDataForGet(this.serialize, data) : null;
+            const row = data ? await serializeDataForGet(this.serialize, data) : null;
+            return row ? this.schema.deserialize(row) : null;
         });
     }
     /**
@@ -183,9 +269,10 @@ export class Table extends BasicEventEmitter {
      * await table.insert({ id: 123, name: "hello" });
      */
     async insert(data) {
-        data = await serializeDataForSet(this.serialize, data);
-        return await this.ready(() => this.custom.insert(this.name, data)).then((row) => {
-            this.emit("insert", row);
+        let value = this.schema.serialize(data);
+        value = await serializeDataForSet(this.serialize, value);
+        return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
+            this.emit("insert", this.schema.deserialize(row));
             return Promise.resolve();
         });
     }
@@ -200,9 +287,10 @@ export class Table extends BasicEventEmitter {
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
     async update(data, query) {
-        data = await serializeDataForSet(this.serialize, data, true);
+        let value = this.schema.serialize(data);
+        value = await serializeDataForSet(this.serialize, value, true);
         const previous = await this.selectAll(query);
-        return await this.ready(() => this.custom.update(this.name, data, query.options)).then(() => {
+        return await this.ready(() => this.custom.update(this.name, value, query.options)).then(() => {
             this.selectAll(query).then((updated) => {
                 this.emit("update", updated, previous);
             });

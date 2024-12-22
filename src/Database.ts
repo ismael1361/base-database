@@ -1,5 +1,5 @@
 import BasicEventEmitter, { BasicEventHandler } from "basic-event-emitter";
-import { Row, Serialize, TableReady, SerializableClassType } from "./Types";
+import { Row, Serialize, TableReady } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
@@ -149,6 +149,31 @@ export class Database<db = never> extends BasicEventEmitter<{
 			async insert(data) {
 				if (!table) throw new Error("Table not found");
 				return await table.then((t) => t.insert(data));
+			},
+
+			async selectAll() {
+				if (!table) throw new Error("Table not found");
+				return await table.then((t) => t.selectAll());
+			},
+
+			async selectOne() {
+				if (!table) throw new Error("Table not found");
+				return await table.then((t) => t.selectOne());
+			},
+
+			async selectFirst() {
+				if (!table) throw new Error("Table not found");
+				return await table.then((t) => t.selectFirst());
+			},
+
+			async selectLast() {
+				if (!table) throw new Error("Table not found");
+				return await table.then((t) => t.selectLast());
+			},
+
+			async length() {
+				if (!table) throw new Error("Table not found");
+				return await table.then((t) => t.length());
 			},
 
 			on(name: any, callback: any): BasicEventHandler {
