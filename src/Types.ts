@@ -87,24 +87,53 @@ export type SerializeDataType<S extends Serialize = never> = {
 	[k in keyof S]: SerializeDataTypeItem<S[k]["type"]>;
 };
 
-export interface TableReady<S extends Serialize> {
-	table: Promise<Table<S> | undefined>;
-	ready<T = void>(callback: (table: Table<S>) => T | Promise<T>): Promise<T>;
-	query(): ReturnType<Table<S>["query"]>;
-	insert(...args: Parameters<Table<S>["insert"]>): Promise<void>;
-	on: Table<S>["on"];
-	once: Table<S>["once"];
-	off(...args: Parameters<Table<S>["off"]>): void;
-	offOnce(...args: Parameters<Table<S>["offOnce"]>): void;
+export type CreatorFunction<S extends Serialize, O = Row<S>> = (row: Row<S>) => O extends abstract new (...args: any) => any ? InstanceType<O> : Row<S>;
+export type SerializerFunction<S extends Serialize> = (obj: any) => Partial<Row<S>>;
+
+export type SerializableClassType<S extends Serialize> = {
+	new (...args: any): any;
+	create?(row: Row<S>): any;
+};
+
+export interface TypeSchemaOptions<S extends Serialize, O = Row<S>> {
+	serializer?: string | SerializerFunction<S>;
+	creator?: string | CreatorFunction<S, O>;
 }
 
-export type ExtractTableRow<T extends TableReady<any> | Table<any> | Promise<Table<any>> | Promise<Table<any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<infer U>
+export interface TableSchema<S extends Serialize, O = Row<S>> {
+	schema: O;
+	creator: CreatorFunction<S, O>;
+	serializer: SerializerFunction<S>;
+	deserialize<K extends keyof S>(row: Row<S>): RowDeserialize<S, O, K>;
+	serialize(obj: any): Partial<Row<S>>;
+}
+
+export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends abstract new (...args: any) => any ? InstanceType<O> : Row<S, K>;
+
+export type RowSerialize<S extends Serialize, O = Row<S>> = O extends abstract new (...args: any) => any ? InstanceType<O> : Partial<Row<S>>;
+
+export interface TableReady<S extends Serialize, O = Row<S>> {
+	table: Promise<Table<S, O> | undefined>;
+	ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
+	query(): ReturnType<Table<S, O>["query"]>;
+	insert(...args: Parameters<Table<S, O>["insert"]>): Promise<void>;
+	on: Table<S, O>["on"];
+	once: Table<S, O>["once"];
+	off(...args: Parameters<Table<S, O>["off"]>): void;
+	offOnce(...args: Parameters<Table<S, O>["offOnce"]>): void;
+	schema<O extends SerializableClassType<S>>(schema: O, options?: TypeSchemaOptions<S, O>): TableReady<S, O>;
+}
+
+export type ExtractTableRow<T extends TableReady<any, any> | Table<any, any> | Promise<Table<any, any>> | Promise<Table<any, any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<
+	infer U,
+	any
+>
 	? Row<U>
-	: T extends Table<infer U>
+	: T extends Table<infer U, any>
 	? Row<U>
-	: T extends Promise<Table<infer U>>
+	: T extends Promise<Table<infer U, any>>
 	? Row<U>
-	: T extends Promise<Table<infer U> | undefined>
+	: T extends Promise<Table<infer U, any> | undefined>
 	? Row<U>
 	: T extends Row<infer U>
 	? Row<U>

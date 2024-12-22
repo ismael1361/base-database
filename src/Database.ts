@@ -1,5 +1,5 @@
 import BasicEventEmitter, { BasicEventHandler } from "basic-event-emitter";
-import { Row, Serialize, TableReady } from "./Types";
+import { Row, Serialize, TableReady, SerializableClassType } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
@@ -82,7 +82,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *    date: { type: Database.Types.DATETIME },
 	 * });
 	 */
-	forTable<S extends Serialize>(name: string, columns: S): Promise<Table<S>> {
+	forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>> {
 		return this.ready(() => {
 			if (this.custom.disconnected) throw new Error("Database is disconnected");
 
@@ -91,7 +91,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 				table = new Table(this.custom, name, columns);
 				this.tables.set(name, table);
 			}
-			return Promise.resolve(table as Table<S>);
+			return Promise.resolve(table as Table<S, O>);
 		});
 	}
 
@@ -121,14 +121,14 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *   // Code here will run when the table is ready
 	 * });
 	 */
-	readyTable<S extends Serialize>(table: Promise<Table<S>>): TableReady<S>;
-	readyTable<S extends Serialize>(name: string, columns: S): TableReady<S>;
-	readyTable<S extends Serialize>(name: string | Promise<Table<S>>, columns?: S): TableReady<S> {
+	readyTable<S extends Serialize, O = Row<S>>(table: Promise<Table<S, O>>): TableReady<S, O>;
+	readyTable<S extends Serialize, O = Row<S>>(name: string, columns: S): TableReady<S, O>;
+	readyTable<S extends Serialize, O = Row<S>>(name: string | Promise<Table<S, O>>, columns?: S): TableReady<S, O> {
 		const table =
 			typeof name === "string" && this.tables.has(name)
-				? Promise.resolve(this.tables.get(name) as Table<S>)
+				? Promise.resolve(this.tables.get(name) as Table<S, O>)
 				: typeof name === "string" && columns
-				? this.forTable(name, columns!)
+				? this.forTable<S, O>(name, columns!)
 				: name instanceof Promise
 				? name
 				: Promise.reject(new Error("Invalid arguments"));
@@ -174,6 +174,11 @@ export class Database<db = never> extends BasicEventEmitter<{
 
 			offOnce(name: any, callback: any) {
 				table.then((t) => t.offOnce(name, callback));
+			},
+
+			schema(schema, options) {
+				table.then((t) => t.bindSchema(schema, options));
+				return this as any;
 			},
 		};
 	}

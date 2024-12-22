@@ -169,3 +169,18 @@ export const serializeDataForGet = <S extends Serialize, D extends Partial<Row<S
 		resolve(Array.isArray(data) ? (list as any) : (list[0] as any));
 	});
 };
+
+export const columns = <S extends Serialize>(columns: S): S => {
+	return Object.keys(columns).reduce((acc, key) => {
+		acc[key] = {
+			type: columns[key].type,
+			primaryKey: columns[key].primaryKey ?? false,
+			autoIncrement: columns[key].autoIncrement ?? false,
+			notNull: columns[key].notNull ?? false,
+			default: columns[key].default,
+			unique: columns[key].unique ?? false,
+			check: columns[key].check,
+		};
+		return acc;
+	}, {} as any);
+};

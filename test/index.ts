@@ -19,7 +19,9 @@ class ModelDatabase extends Database.Custom<localDB> {
 	}
 
 	selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>> {
-		throw new Error("Method not implemented.");
+		return this.ready(async () => {
+			return this.db.get(table) ?? [];
+		});
 	}
 
 	selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null> {
@@ -38,6 +40,7 @@ class ModelDatabase extends Database.Custom<localDB> {
 		return this.ready(async () => {
 			const db = this.db.get(table) ?? [];
 			db.push(data);
+			this.db.set(table, db);
 			return db[db.length - 1];
 		});
 	}
@@ -71,11 +74,10 @@ class ModelDatabase extends Database.Custom<localDB> {
 
 const database = new Database.Database(ModelDatabase, "");
 
-const table = database.table("test", {
+const testColumns = Database.columns({
 	integer: {
 		type: Database.Types.INTEGER,
 		primaryKey: true,
-		autoIncrement: true,
 	},
 	float: {
 		type: Database.Types.FLOAT,
@@ -101,21 +103,53 @@ const table = database.table("test", {
 	},
 });
 
-type RowItem = Database.ExtractTableRow<(typeof table)["table"]>;
+class Test {
+	constructor(public integer: number, public float: number, public string: string, public boolean: boolean, public _null: null, public date: Date, public bigint: bigint) {}
+
+	serialize(): Partial<Database.Row<typeof testColumns>> {
+		return {
+			integer: this.integer,
+			float: this.float,
+			string: this.string,
+			boolean: this.boolean,
+			null: this._null,
+			date: this.date,
+			bigint: this.bigint,
+		};
+	}
+
+	static create(row: Database.Row<typeof testColumns>): Test {
+		return new Test(row.integer, row.float, row.string, row.boolean, row.null, row.date, row.bigint);
+	}
+}
+
+const test = database.table("test", testColumns).schema(Test);
+
+test.insert(new Test(0, 0, "", false, null, new Date(), BigInt(0)));
+
+const table = database.table("table", testColumns);
+
+table.insert({
+	integer: 0,
+	float: 0,
+	string: "",
+	boolean: false,
+	null: null,
+});
 
 table.ready(async (table) => {
 	const q = table.query();
-	console.log("table:", q.where("integer", "=", 0));
-	const item = await q.where("integer", "=", 0).columns("bigint", "integer", "boolean").one();
+	const query = q.where("integer", "=", 0).columns("bigint", "integer", "boolean");
 
-	table
-		.insert({
-			float: 0.1,
-			string: "",
-			boolean: true,
-			null: null,
-			date: new Date(),
-			bigint: BigInt(0),
-		})
-		.then();
+	console.log(await query.get());
+
+	await table.insert({
+		integer: 0,
+		float: 0,
+		string: "",
+		boolean: false,
+		null: null,
+	});
+
+	console.log(await query.get());
 });
