@@ -166,49 +166,50 @@ class Database extends basic_event_emitter_1.default {
         return {
             table,
             async ready(callback) {
-                const t = await table;
+                const t = await this.table;
                 if (!t)
                     throw new Error("Table not found");
                 return t.ready(callback);
             },
             query() {
-                return new Query_1.Query(table);
+                return new Query_1.Query(this.table);
             },
             async insert(data) {
-                if (!table)
+                if (!this.table)
                     throw new Error("Table not found");
-                return await table.then((t) => t.insert(data));
+                return await this.table.then((t) => t.insert(data));
             },
             async selectAll() {
-                if (!table)
+                if (!this.table)
                     throw new Error("Table not found");
-                return await table.then((t) => t.selectAll());
+                return await this.table.then((t) => t.selectAll());
             },
             async selectOne() {
-                if (!table)
+                if (!this.table)
                     throw new Error("Table not found");
-                return await table.then((t) => t.selectOne());
+                return await this.table.then((t) => t.selectOne());
             },
             async selectFirst() {
-                if (!table)
+                if (!this.table)
                     throw new Error("Table not found");
-                return await table.then((t) => t.selectFirst());
+                return await this.table.then((t) => t.selectFirst());
             },
             async selectLast() {
-                if (!table)
+                if (!this.table)
                     throw new Error("Table not found");
-                return await table.then((t) => t.selectLast());
+                return await this.table.then((t) => t.selectLast());
             },
             async length() {
-                if (!table)
+                if (!this.table)
                     throw new Error("Table not found");
-                return await table.then((t) => t.length());
+                return await this.table.then((t) => t.length());
             },
             on(name, callback) {
-                table.then((t) => t.on(name, callback));
+                this.table.then((t) => t.on(name, callback));
+                const self = this;
                 return {
                     remove() {
-                        table.then((t) => t.off(name, callback));
+                        self.table.then((t) => t.off(name, callback));
                     },
                     stop() {
                         this.remove();
@@ -216,17 +217,17 @@ class Database extends basic_event_emitter_1.default {
                 };
             },
             async once(name, callback) {
-                return await table.then((t) => t.once(name, callback));
+                return await this.table.then((t) => t.once(name, callback));
             },
             off(name, callback) {
-                table.then((t) => t.off(name, callback));
+                this.table.then((t) => t.off(name, callback));
             },
             offOnce(name, callback) {
-                table.then((t) => t.offOnce(name, callback));
+                this.table.then((t) => t.offOnce(name, callback));
             },
             schema(schema, options) {
-                table.then((t) => t.bindSchema(schema, options));
-                return this;
+                const t = this.table.then((t) => t.bindSchema(schema, options));
+                return Object.create(this, { table: { value: t } });
             },
         };
     }
@@ -652,8 +653,8 @@ class Table extends basic_event_emitter_1.default {
                 return obj;
             },
         };
-        this.schema = prepare;
-        return this;
+        // this.schema = prepare as any;
+        return Object.create(this, { schema: { value: prepare } });
     }
     /**
      * Select all rows from the table

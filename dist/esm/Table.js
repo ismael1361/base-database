@@ -186,8 +186,8 @@ export class Table extends BasicEventEmitter {
                 return obj;
             },
         };
-        this.schema = prepare;
-        return this;
+        // this.schema = prepare as any;
+        return Object.create(this, { schema: { value: prepare } });
     }
     /**
      * Select all rows from the table

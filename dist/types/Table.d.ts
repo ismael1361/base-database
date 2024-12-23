@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { DataType, Row, RowDeserialize, RowSerialize, SerializableClassType, Serialize, SerializeDataType, TypeSchemaOptions } from "./Types";
+import { DataType, Row, RowDeserialize, RowSerialize, SerializableClassType, Serialize, SerializeDataType, TableSchema, TypeSchemaOptions } from "./Types";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
 /**
@@ -24,7 +24,7 @@ export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEm
      * The initial promise
      */
     private readonly initialPromise;
-    private schema;
+    schema: TableSchema<S, O>;
     /**
      * Create a table
      * @param custom The custom database class

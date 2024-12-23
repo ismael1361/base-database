@@ -123,42 +123,55 @@ class Test {
 	}
 }
 
-const test = database.table("test", testColumns).schema(Test);
+const test = database.table("test", testColumns);
+
+const TestTable = test.schema(Test);
 
 test.ready(async (table) => {
 	const query = table.query().where("integer", "=", 0).columns("bigint", "integer", "boolean");
 
-	console.log(await query.get());
+	console.log("0::", await query.get());
 
-	await test.insert(new Test(0, 0, "", false, null, new Date(), BigInt(0)));
-	await test.insert(new Test(1, 1, "", false, null, new Date(), BigInt(1)));
+	await table.insert({ integer: 0, float: 0, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(0) });
+	await table.insert({ integer: 1, float: 1, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(1) });
 
-	console.log(await query.get());
+	console.log("0::", await query.get());
 });
 
-const table = database.table("table", testColumns);
+TestTable.ready(async (table) => {
+	const query = table.query().where("integer", "=", 0).columns("bigint", "integer", "boolean");
 
-table.insert({
-	integer: 0,
-	float: 0,
-	string: "",
-	boolean: false,
-	null: null,
+	console.log("1::", await query.get());
+
+	await table.insert(new Test(2, 2, "", false, null, new Date(), BigInt(0)));
+	await table.insert(new Test(3, 3, "", false, null, new Date(), BigInt(1)));
+
+	console.log("1::", await query.get());
 });
 
-table.ready(async (table) => {
-	const q = table.query();
-	const query = q.where("integer", "=", 0).columns("bigint", "integer", "boolean");
+// const table = database.table("table", testColumns);
 
-	console.log(await query.get());
+// table.insert({
+// 	integer: 0,
+// 	float: 0,
+// 	string: "",
+// 	boolean: false,
+// 	null: null,
+// });
 
-	await table.insert({
-		integer: 1,
-		float: 1,
-		string: "",
-		boolean: false,
-		null: null,
-	});
+// table.ready(async (table) => {
+// 	const q = table.query();
+// 	const query = q.where("integer", "=", 0).columns("bigint", "integer", "boolean");
 
-	console.log(await query.get());
-});
+// 	console.log("2::", await query.get());
+
+// 	await table.insert({
+// 		integer: 1,
+// 		float: 1,
+// 		string: "",
+// 		boolean: false,
+// 		null: null,
+// 	});
+
+// 	console.log("2::", await query.get());
+// });

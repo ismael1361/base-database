@@ -1,5 +1,6 @@
-import type { Query } from "Query";
 import type { Table } from "./Table";
+
+export type IsLiteral<T> = T extends object ? (T extends Function | Date | Array<any> | { new (...args: any[]): any } ? never : T) : never;
 
 export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
 
@@ -108,12 +109,12 @@ export interface TableSchema<S extends Serialize, O = Row<S>> {
 	serialize(obj: any): Partial<Row<S>>;
 }
 
-export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends SerializableClassType<S> ? InstanceType<O> : Row<S, K>;
+export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends SerializableClassType<S> ? InstanceType<O> : Row<S, K> & Record<PropertyKey, unknown>;
 
-export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S>>;
+export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S> & Record<PropertyKey, unknown>>;
 
 export interface TableReady<S extends Serialize, O = Row<S>> {
-	table: Promise<Table<S, O> | undefined>;
+	table: Promise<Table<S, O>>;
 	ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
 	query(): ReturnType<Table<S, O>["query"]>;
 	insert(...args: Parameters<Table<S, O>["insert"]>): Promise<void>;

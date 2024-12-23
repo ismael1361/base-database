@@ -192,8 +192,8 @@ class Table extends basic_event_emitter_1.default {
                 return obj;
             },
         };
-        this.schema = prepare;
-        return this;
+        // this.schema = prepare as any;
+        return Object.create(this, { schema: { value: prepare } });
     }
     /**
      * Select all rows from the table

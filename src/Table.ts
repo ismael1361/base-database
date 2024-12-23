@@ -25,7 +25,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
 	 */
 	private readonly initialPromise: Promise<void>;
 
-	private schema: TableSchema<S, O> = {
+	schema: TableSchema<S, O> = {
 		schema: {} as any,
 		creator: (row: Row<S>) => row as any,
 		serializer: (obj: any) => obj as any,
@@ -196,8 +196,8 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
 			},
 		};
 
-		this.schema = prepare as any;
-		return this as any;
+		// this.schema = prepare as any;
+		return Object.create(this, { schema: { value: prepare } });
 	}
 
 	/**
