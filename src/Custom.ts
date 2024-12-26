@@ -12,13 +12,25 @@ export abstract class Custom<db = never> {
 	 * The database promise
 	 */
 	readonly database: Promise<db>;
+	/**
+	 * The database name
+	 */
+	private readonly _databaseName: string;
 
 	/**
 	 * Create a custom database
 	 * @param database The database name
 	 */
 	constructor(database: string) {
+		this._databaseName = database;
 		this.database = this.connect(database);
+	}
+
+	/**
+	 * Get the database name
+	 */
+	get databaseName(): string {
+		return this._databaseName;
 	}
 
 	/**

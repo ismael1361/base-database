@@ -1,15 +1,16 @@
-import BasicEventEmitter from "basic-event-emitter";
+import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 import { DataType, Row, RowDeserialize, RowSerialize, SerializableClassType, Serialize, SerializeDataType, TableSchema, TypeSchemaOptions } from "./Types";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
-/**
- * Table class
- */
-export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<{
+type TableEvents<S extends Serialize, O = Row<S>> = EventsListeners<{
     insert: (inserted: RowDeserialize<S, O>) => void;
     update: (updated: Array<RowDeserialize<S, O>>, previous: Array<RowDeserialize<S, O>>) => void;
     delete: (removed: Array<RowDeserialize<S, O>>) => void;
-}> {
+}>;
+/**
+ * Table class
+ */
+export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<TableEvents<S, O>> {
     readonly custom: Custom<any>;
     readonly name: string;
     /**
@@ -25,6 +26,8 @@ export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEm
      */
     private readonly initialPromise;
     schema: TableSchema<S, O>;
+    private _events;
+    private _clearEvents;
     /**
      * Create a table
      * @param custom The custom database class
@@ -42,6 +45,7 @@ export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEm
      * table.delete([{ column: "id", operator: "=", value: 123 }]);
      */
     constructor(custom: Custom<any>, name: string, columns: S);
+    private pipeEvent;
     /**
      * If the table is disconnected
      */
@@ -180,4 +184,5 @@ export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEm
      */
     length(query?: Query<S, O, any>): Promise<number>;
 }
+export {};
 //# sourceMappingURL=Table.d.ts.map

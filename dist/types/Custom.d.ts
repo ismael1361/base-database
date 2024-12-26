@@ -12,10 +12,18 @@ export declare abstract class Custom<db = never> {
      */
     readonly database: Promise<db>;
     /**
+     * The database name
+     */
+    private readonly _databaseName;
+    /**
      * Create a custom database
      * @param database The database name
      */
     constructor(database: string);
+    /**
+     * Get the database name
+     */
+    get databaseName(): string;
     /**
      * If the database is disconnected
      */

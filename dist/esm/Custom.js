@@ -11,11 +11,22 @@ export class Custom {
      */
     database;
     /**
+     * The database name
+     */
+    _databaseName;
+    /**
      * Create a custom database
      * @param database The database name
      */
     constructor(database) {
+        this._databaseName = database;
         this.database = this.connect(database);
+    }
+    /**
+     * Get the database name
+     */
+    get databaseName() {
+        return this._databaseName;
     }
     /**
      * If the database is disconnected

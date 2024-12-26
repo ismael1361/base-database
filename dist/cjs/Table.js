@@ -7,6 +7,7 @@ exports.Table = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Utils_1 = require("./Utils");
 const Query_1 = require("./Query");
+const eventsEmitters = new Map();
 /**
  * Table class
  */
@@ -32,6 +33,8 @@ class Table extends basic_event_emitter_1.default {
         deserialize: (row) => row,
         serialize: (obj) => obj,
     };
+    _events = new basic_event_emitter_1.default();
+    _clearEvents = [];
     /**
      * Create a table
      * @param custom The custom database class
@@ -65,6 +68,26 @@ class Table extends basic_event_emitter_1.default {
             return acc;
         }, {});
         this.initialPromise = this.custom.createTable(name, this.serialize);
+        this.pipeEvent();
+    }
+    pipeEvent() {
+        this._clearEvents.splice(0).forEach((event) => event.stop());
+        const mapName = [this.custom.databaseName, this.name].join(":");
+        let eventEmitter = eventsEmitters.get(mapName);
+        if (!eventsEmitters.has(mapName) || !eventEmitter) {
+            eventEmitter = new basic_event_emitter_1.default();
+            eventsEmitters.set(mapName, eventEmitter);
+        }
+        this._clearEvents.push(eventEmitter.on("insert", (row) => {
+            this.emit("insert", this.schema.deserialize(row));
+        }));
+        this._clearEvents.push(eventEmitter.on("update", (rows, previous) => {
+            this.emit("update", rows.map((row) => this.schema.deserialize(row)), previous.map((row) => this.schema.deserialize(row)));
+        }));
+        this._clearEvents.push(eventEmitter.on("delete", (rows) => {
+            this.emit("delete", rows.map((row) => this.schema.deserialize(row)));
+        }));
+        this._events = eventEmitter;
     }
     /**
      * If the table is disconnected
@@ -192,8 +215,10 @@ class Table extends basic_event_emitter_1.default {
                 return obj;
             },
         };
-        // this.schema = prepare as any;
-        return Object.create(this, { schema: { value: prepare } });
+        const self = Object.create(this, { _clearEvents: { value: [] }, schema: { value: prepare } });
+        self.clearEvents();
+        self.pipeEvent();
+        return self;
     }
     /**
      * Select all rows from the table
@@ -278,7 +303,8 @@ class Table extends basic_event_emitter_1.default {
         let value = this.schema.serialize(data);
         value = await (0, Utils_1.serializeDataForSet)(this.serialize, value);
         return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
-            this.emit("insert", this.schema.deserialize(row));
+            this._events.emit("insert", row);
+            // this.emit("insert", this.schema.deserialize(row));
             return Promise.resolve();
         });
     }
@@ -298,7 +324,8 @@ class Table extends basic_event_emitter_1.default {
         const previous = await this.selectAll(query);
         return await this.ready(() => this.custom.update(this.name, value, query.options)).then(() => {
             this.selectAll(query).then((updated) => {
-                this.emit("update", updated, previous);
+                this._events.emit("update", updated.map((row) => this.schema.serialize(row)), previous.map((row) => this.schema.serialize(row)));
+                // this.emit("update", updated, previous);
             });
             return Promise.resolve();
         });
@@ -313,7 +340,8 @@ class Table extends basic_event_emitter_1.default {
     async delete(query) {
         const removed = await this.selectAll(query);
         return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
-            this.emit("delete", removed);
+            this._events.emit("delete", removed.map((row) => this.schema.serialize(row)));
+            // this.emit("delete", removed);
             return Promise.resolve();
         });
     }
