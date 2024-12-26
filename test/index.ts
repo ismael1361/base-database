@@ -104,7 +104,23 @@ const testColumns = Database.columns({
 });
 
 class Test {
-	constructor(public integer: number, public float: number, public string: string, public boolean: boolean, public name: null, public date: Date, public bigint: bigint) {}
+	public integer: number;
+	public float: number;
+	public string: string;
+	public boolean: boolean;
+	public name: null;
+	public date: Date;
+	public bigint: bigint;
+
+	constructor(row: Database.Row<typeof testColumns>) {
+		this.integer = row.integer;
+		this.float = row.float;
+		this.string = row.string;
+		this.boolean = row.boolean;
+		this.name = row.null;
+		this.date = row.date;
+		this.bigint = row.bigint;
+	}
 
 	serialize(): Partial<Database.Row<typeof testColumns>> {
 		return {
@@ -116,10 +132,6 @@ class Test {
 			date: this.date,
 			bigint: this.bigint,
 		};
-	}
-
-	static create(row: Database.Row<typeof testColumns>): Test {
-		return new Test(row.integer, row.float, row.string, row.boolean, row.null, row.date, row.bigint);
 	}
 }
 
@@ -151,8 +163,8 @@ TestTable.ready(async (table) => {
 
 	// console.log("1::", await query.get());
 
-	await table.insert(new Test(2, 2, "", false, null, new Date(), BigInt(0)));
-	await table.insert(new Test(3, 3, "", false, null, new Date(), BigInt(1)));
+	await table.insert(new Test({ integer: 2, float: 2, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(0) }));
+	await table.insert(new Test({ integer: 3, float: 3, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(1) }));
 
 	// console.log("1::", await query.get());
 });
