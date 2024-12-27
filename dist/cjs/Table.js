@@ -305,7 +305,7 @@ class Table extends basic_event_emitter_1.default {
         return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
             this._events.emit("insert", row);
             // this.emit("insert", this.schema.deserialize(row));
-            return Promise.resolve();
+            return Promise.resolve(this.schema.deserialize(row));
         });
     }
     /**
@@ -322,12 +322,12 @@ class Table extends basic_event_emitter_1.default {
         let value = this.schema.serialize(data);
         value = await (0, Utils_1.serializeDataForSet)(this.serialize, value, true);
         const previous = await this.selectAll(query);
-        return await this.ready(() => this.custom.update(this.name, value, query.options)).then(() => {
-            this.selectAll(query).then((updated) => {
-                this._events.emit("update", updated.map((row) => this.schema.serialize(row)), previous.map((row) => this.schema.serialize(row)));
-                // this.emit("update", updated, previous);
-            });
-            return Promise.resolve();
+        return await this.ready(() => this.custom.update(this.name, value, query.options))
+            .then(() => this.selectAll(query))
+            .then((updated) => {
+            this._events.emit("update", updated.map((row) => this.schema.serialize(row)), previous.map((row) => this.schema.serialize(row)));
+            // this.emit("update", updated, previous);
+            return Promise.resolve(updated.map((row) => this.schema.deserialize(row)));
         });
     }
     /**

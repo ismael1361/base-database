@@ -154,7 +154,7 @@ export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEm
      * @example
      * await table.insert({ id: 123, name: "hello" });
      */
-    insert(data: RowSerialize<S, O>): Promise<void>;
+    insert(data: RowSerialize<S, O>): Promise<RowDeserialize<S, O>>;
     /**
      * Update rows in the table
      * @param data The data to update
@@ -165,7 +165,7 @@ export declare class Table<S extends Serialize, O = Row<S>> extends BasicEventEm
      * @example
      * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
      */
-    update(data: RowSerialize<S, O>, query: Query<S, O, any>): Promise<void>;
+    update(data: RowSerialize<S, O>, query: Query<S, O, any>): Promise<Array<RowDeserialize<S, O>>>;
     /**
      * Delete rows from the table
      * @param query The query

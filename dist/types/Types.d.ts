@@ -22,20 +22,28 @@ export interface QueryOptions<S extends Serialize = any> {
 export type OptionsDataType = "TEXT" | "INTEGER" | "FLOAT" | "BOOLEAN" | "DATETIME" | "BIGINT" | "NULL";
 export type SerializeValueType = null | string | bigint | number | boolean | Date;
 export type Row<C extends Serialize = any, K extends keyof C = keyof C> = {
-    [k in K]: C[k]["type"];
+    [k in K]: C[k]["options"] extends Array<infer O> ? O : C[k]["type"];
 };
 export type DataType<T extends SerializeValueType> = T extends null ? "NULL" : T extends string ? "TEXT" : T extends bigint ? "BIGINT" : T extends number ? "INTEGER" | "FLOAT" : T extends boolean ? "BOOLEAN" : T extends Date ? "DATETIME" : "TEXT";
 export type DataValueType<T extends OptionsDataType> = T extends "NULL" ? null : T extends "TEXT" ? string : T extends "BIGINT" ? bigint : T extends "INTEGER" | "FLOAT" ? number : T extends "BOOLEAN" ? boolean : T extends "DATETIME" ? Date : never;
 export type SerializeValueDefault<T> = T extends OptionsDataType ? DataValueType<T> : T;
-type SerializeItemProperties<T> = {
-    type: T;
+type TypedOptions<T> = T extends {
+    type: string;
+    options: (infer O)[];
+} ? Omit<T, "type" | "default"> & {
+    type: O;
+    default: O | (() => O);
+} : T;
+type SerializeItemProperties<T> = TypedOptions<{
+    type: SerializeValueDefault<T>;
     primaryKey?: true | false;
     autoIncrement?: true | false;
     notNull?: true | false;
     default?: SerializeValueDefault<T> | (() => SerializeValueDefault<T>);
     unique?: true | false;
     check?: (value: T) => Error | void | undefined;
-};
+    options?: SerializeValueDefault<T> extends string ? Array<string> : never;
+}>;
 export type SerializeItemAny<T> = T extends {
     type: infer U;
 } ? U extends OptionsDataType ? SerializeItemProperties<DataValueType<U>> : U extends SerializeValueType ? SerializeItemProperties<U> : SerializeItemProperties<T> : SerializeItemProperties<T>;
@@ -64,13 +72,13 @@ export interface TableSchema<S extends Serialize, O = Row<S>> {
     deserialize<K extends keyof S>(row: Row<S>): RowDeserialize<S, O, K>;
     serialize(obj: any): Partial<Row<S>>;
 }
-export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends SerializableClassType<S> ? InstanceType<O> : Row<S, K> & Record<PropertyKey, unknown>;
-export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S> & Record<PropertyKey, unknown>>;
+export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends SerializableClassType<S> ? InstanceType<O> : Row<S, K> & Record<K, unknown>;
+export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S> & Record<keyof S, unknown>>;
 export interface TableReady<S extends Serialize, O = Row<S>> {
     table: Promise<Table<S, O>>;
     ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
     query(): ReturnType<Table<S, O>["query"]>;
-    insert(...args: Parameters<Table<S, O>["insert"]>): Promise<void>;
+    insert(...args: Parameters<Table<S, O>["insert"]>): ReturnType<Table<S, O>["insert"]>;
     selectAll(): ReturnType<Table<S, O>["selectAll"]>;
     selectOne(): ReturnType<Table<S, O>["selectOne"]>;
     selectFirst(): ReturnType<Table<S, O>["selectFirst"]>;

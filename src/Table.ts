@@ -335,13 +335,13 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.insert({ id: 123, name: "hello" });
 	 */
-	async insert(data: RowSerialize<S, O>): Promise<void> {
+	async insert(data: RowSerialize<S, O>): Promise<RowDeserialize<S, O>> {
 		let value = this.schema.serialize(data);
 		value = await serializeDataForSet(this.serialize, value);
 		return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
-			this._events.emit("insert", row);
+			this._events.emit("insert", row as any);
 			// this.emit("insert", this.schema.deserialize(row));
-			return Promise.resolve();
+			return Promise.resolve(this.schema.deserialize(row));
 		});
 	}
 
@@ -355,21 +355,22 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async update(data: RowSerialize<S, O>, query: Query<S, O, any>): Promise<void> {
+	async update(data: RowSerialize<S, O>, query: Query<S, O, any>): Promise<Array<RowDeserialize<S, O>>> {
 		let value = this.schema.serialize(data);
 		value = await serializeDataForSet(this.serialize, value, true);
 		const previous = await this.selectAll(query);
-		return await this.ready(() => this.custom.update(this.name, value, query.options)).then(() => {
-			this.selectAll(query).then((updated) => {
+		return await this.ready(() => this.custom.update(this.name, value, query.options))
+			.then(() => this.selectAll(query))
+			.then((updated) => {
 				this._events.emit(
 					"update",
-					updated.map((row) => this.schema.serialize(row) as Row<any>),
-					previous.map((row) => this.schema.serialize(row) as Row<any>),
+					updated.map((row) => this.schema.serialize(row) as any),
+					previous.map((row) => this.schema.serialize(row) as any),
 				);
 				// this.emit("update", updated, previous);
+
+				return Promise.resolve(updated.map((row) => this.schema.deserialize(row) as any));
 			});
-			return Promise.resolve();
-		});
 	}
 
 	/**
@@ -384,7 +385,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 		return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
 			this._events.emit(
 				"delete",
-				removed.map((row) => this.schema.serialize(row) as Row<any>),
+				removed.map((row) => this.schema.serialize(row) as any),
 			);
 			// this.emit("delete", removed);
 			return Promise.resolve();

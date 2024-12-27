@@ -777,7 +777,7 @@ class Table extends basic_event_emitter_1.default {
         return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
             this._events.emit("insert", row);
             // this.emit("insert", this.schema.deserialize(row));
-            return Promise.resolve();
+            return Promise.resolve(this.schema.deserialize(row));
         });
     }
     /**
@@ -794,12 +794,12 @@ class Table extends basic_event_emitter_1.default {
         let value = this.schema.serialize(data);
         value = await (0, Utils_1.serializeDataForSet)(this.serialize, value, true);
         const previous = await this.selectAll(query);
-        return await this.ready(() => this.custom.update(this.name, value, query.options)).then(() => {
-            this.selectAll(query).then((updated) => {
-                this._events.emit("update", updated.map((row) => this.schema.serialize(row)), previous.map((row) => this.schema.serialize(row)));
-                // this.emit("update", updated, previous);
-            });
-            return Promise.resolve();
+        return await this.ready(() => this.custom.update(this.name, value, query.options))
+            .then(() => this.selectAll(query))
+            .then((updated) => {
+            this._events.emit("update", updated.map((row) => this.schema.serialize(row)), previous.map((row) => this.schema.serialize(row)));
+            // this.emit("update", updated, previous);
+            return Promise.resolve(updated.map((row) => this.schema.deserialize(row)));
         });
     }
     /**
@@ -883,6 +883,8 @@ exports.generateUUID = generateUUID;
  * getDatatype(Symbol("hello")); // "TEXT"
  */
 const getDatatype = (value) => {
+    if (["NULL", "TEXT", "BIGINT", "INTEGER", "FLOAT", "BOOLEAN", "DATETIME"].includes(value))
+        return value;
     if (value === null)
         return "NULL";
     if (typeof value === "string")
@@ -964,19 +966,28 @@ const serializeDataForSet = (serialize, data, isPartial = false) => {
                 delete data[key];
             }
             else {
-                if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined))
+                if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined)) {
                     return reject(new Error(`Column ${key} cannot be null or undefined`));
-                if (key in data && data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type))
-                    return reject(new Error(`Invalid datatype for column ${key}`));
-                if (key in data && data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
-                    try {
-                        const isValid = serialize[key].check(data[key]);
-                        if (isValid instanceof Error)
-                            return reject(isValid);
+                }
+                if (key in data && data[key] !== null && data[key] !== undefined) {
+                    if (!(0, exports.verifyDatatype)(data[key], (0, exports.getDatatype)(serialize[key].type))) {
+                        return reject(new Error(`Invalid datatype for column ${key}`));
                     }
-                    catch (e) {
-                        const message = "message" in e ? e.message : "Invalid value, error thrown: " + String(e);
-                        return reject(new Error(message));
+                    if (typeof data[key] === "string" && Array.isArray(serialize[key].options) && serialize[key].options.length > 0) {
+                        if (!serialize[key].options.includes(data[key])) {
+                            return reject(new Error(`Invalid value for column ${key}`));
+                        }
+                    }
+                    if (typeof serialize[key].check === "function") {
+                        try {
+                            const isValid = serialize[key].check(data[key]);
+                            if (isValid instanceof Error)
+                                return reject(isValid);
+                        }
+                        catch (e) {
+                            const message = "message" in e ? e.message : "Invalid value, error thrown: " + String(e);
+                            return reject(new Error(message));
+                        }
                     }
                 }
             }
@@ -994,7 +1005,7 @@ const serializeDataForGet = (serialize, data) => {
                         data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
                     }
                 }
-                if (data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], serialize[key].type)) {
+                if (data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], (0, exports.getDatatype)(serialize[key].type))) {
                     delete data[key];
                 }
                 if (data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {

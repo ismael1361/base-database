@@ -12,7 +12,15 @@ export const Operators = {
 	IN: "IN",
 } as const;
 
-export const Types = {
+export const Types: {
+	TEXT: string;
+	INTEGER: number;
+	FLOAT: number;
+	BOOLEAN: boolean;
+	DATETIME: Date;
+	BIGINT: bigint;
+	NULL: null;
+} = {
 	TEXT: "",
 	INTEGER: 0,
 	FLOAT: 0.1,
@@ -46,6 +54,7 @@ export const generateUUID = (separator: string = "") => {
  * getDatatype(Symbol("hello")); // "TEXT"
  */
 export const getDatatype = <T extends null | string | bigint | number | boolean | Date>(value: T): DataType<T> => {
+	if (["NULL", "TEXT", "BIGINT", "INTEGER", "FLOAT", "BOOLEAN", "DATETIME"].includes(value as any)) return value as any;
 	if (value === null) return "NULL" as any;
 	if (typeof value === "string") return "TEXT" as any;
 	if (typeof value === "bigint") return "BIGINT" as any;
@@ -124,16 +133,29 @@ export const serializeDataForSet = <S extends Serialize, P extends boolean = fal
 			if (serialize[key].autoIncrement) {
 				delete data[key];
 			} else {
-				if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined)) return reject(new Error(`Column ${key} cannot be null or undefined`));
-				if (key in data && data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) return reject(new Error(`Invalid datatype for column ${key}`));
+				if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined)) {
+					return reject(new Error(`Column ${key} cannot be null or undefined`));
+				}
 
-				if (key in data && data[key] !== null && data[key] !== undefined && typeof serialize[key].check === "function") {
-					try {
-						const isValid = (serialize as any)[key].check(data[key]);
-						if (isValid instanceof Error) return reject(isValid);
-					} catch (e) {
-						const message = "message" in (e as any) ? (e as any).message : "Invalid value, error thrown: " + String(e);
-						return reject(new Error(message));
+				if (key in data && data[key] !== null && data[key] !== undefined) {
+					if (!verifyDatatype(data[key], getDatatype(serialize[key].type))) {
+						return reject(new Error(`Invalid datatype for column ${key}`));
+					}
+
+					if (typeof data[key] === "string" && Array.isArray(serialize[key].options) && serialize[key].options.length > 0) {
+						if (!serialize[key].options.includes(data[key])) {
+							return reject(new Error(`Invalid value for column ${key}`));
+						}
+					}
+
+					if (typeof serialize[key].check === "function") {
+						try {
+							const isValid = (serialize as any)[key].check(data[key]);
+							if (isValid instanceof Error) return reject(isValid);
+						} catch (e) {
+							const message = "message" in (e as any) ? (e as any).message : "Invalid value, error thrown: " + String(e);
+							return reject(new Error(message));
+						}
 					}
 				}
 			}
@@ -156,7 +178,7 @@ export const serializeDataForGet = <S extends Serialize, D extends Partial<Row<S
 					}
 				}
 
-				if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], serialize[key].type)) {
+				if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], getDatatype(serialize[key].type))) {
 					delete data[key];
 				}
 

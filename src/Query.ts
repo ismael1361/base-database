@@ -218,7 +218,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.update({ name: "world" });
 	 */
-	async update(data: RowSerialize<S, O>): Promise<void> {
+	async update(data: RowSerialize<S, O>): Promise<Array<RowDeserialize<S, O>>> {
 		return await this.table.then((t) => t.update(data, this));
 	}
 

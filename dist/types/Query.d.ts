@@ -145,7 +145,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * @example
      * query.update({ name: "world" });
      */
-    update(data: RowSerialize<S, O>): Promise<void>;
+    update(data: RowSerialize<S, O>): Promise<Array<RowDeserialize<S, O>>>;
     /**
      * Delete rows
      * @example
