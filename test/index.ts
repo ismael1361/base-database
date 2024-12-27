@@ -137,10 +137,6 @@ class Test {
 
 const test = database.table("test", testColumns);
 
-test.on("insert", (row) => {
-	console.log("insert", row);
-});
-
 const TestTable = test.schema(Test);
 
 TestTable.on("insert", (row) => {
@@ -152,8 +148,8 @@ test.ready(async (table) => {
 
 	// console.log("0::", await query.get());
 
-	await table.insert({ integer: 0, float: 0, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(0) });
-	await table.insert({ integer: 1, float: 1, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(1) });
+	await table.insert({ integer: 0, float: 0, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(0) });
+	await table.insert({ integer: 1, float: 1, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(1) });
 
 	// console.log("0::", await query.get());
 });
@@ -163,8 +159,8 @@ TestTable.ready(async (table) => {
 
 	// console.log("1::", await query.get());
 
-	await table.insert(new Test({ integer: 2, float: 2, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(0) }));
-	await table.insert(new Test({ integer: 3, float: 3, string: "", boolean: false, null: null, date: new Date(), bigint: BigInt(1) }));
+	await table.insert(new Test({ integer: 2, float: 2, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(0) }));
+	await table.insert(new Test({ integer: 3, float: 3, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(1) }));
 
 	// console.log("1::", await query.get());
 });

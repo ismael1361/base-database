@@ -18,6 +18,14 @@ export const Types = {
     BIGINT: BigInt(0),
     NULL: null,
 };
+export const generateUUID = (separator = "") => {
+    let currentTime = Date.now();
+    return `xxxxxxxx${separator}xxxx${separator}4xxx${separator}yxxx${separator}xxxxxxxxxxxx`.replace(/[xy]/g, function (c) {
+        const r = (currentTime + Math.random() * 16) % 16 | 0;
+        currentTime = Math.floor(currentTime / 16);
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+};
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of

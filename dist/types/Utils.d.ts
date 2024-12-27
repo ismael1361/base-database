@@ -19,6 +19,7 @@ export declare const Types: {
     BIGINT: bigint;
     NULL: null;
 };
+export declare const generateUUID: (separator?: string) => string;
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of
