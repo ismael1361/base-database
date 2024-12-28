@@ -327,22 +327,22 @@ const parseQuery = (query?: Database.QueryOptions) => {
                     whereClause.push(`${column} ${operator} ${compare}`);
                     break;
                 case "IN":
-                    whereClause.push(`${column} IN (${compare.join(", ")})`);
+                    if (Array.isArray(compare) && compare.length > 0) whereClause.push(`${column} IN (${compare.join(", ")})`);
                     break;
                 case "NOT IN":
-                    whereClause.push(`${column} NOT IN (${compare.join(", ")})`);
+                    if (Array.isArray(compare) && compare.length > 0) whereClause.push(`${column} NOT IN (${compare.join(", ")})`);
                     break;
                 case "BETWEEN":
-                    whereClause.push(`${column} BETWEEN ${compare[0]} AND ${compare[1]}`);
+                    if (Array.isArray(compare) && compare.length >= 2) whereClause.push(`${column} BETWEEN ${compare[0]} AND ${compare[1]}`);
                     break;
                 case "NOT BETWEEN":
-                    whereClause.push(`${column} NOT BETWEEN ${compare[0]} AND ${compare[1]}`);
+                    if (Array.isArray(compare) && compare.length >= 2) whereClause.push(`${column} NOT BETWEEN ${compare[0]} AND ${compare[1]}`);
                     break;
                 case "LIKE":
-                    whereClause.push(`${column} LIKE ${compare}`);
+                    if (typeof compare === "string") whereClause.push(`${column} LIKE ${compare}`);
                     break;
                 case "NOT LIKE":
-                    whereClause.push(`${column} NOT LIKE ${compare}`);
+                    if (typeof compare === "string") whereClause.push(`${column} NOT LIKE ${compare}`);
                     break;
             }
         });
