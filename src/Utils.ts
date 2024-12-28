@@ -1,4 +1,4 @@
-import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
+import { DataType, OptionsDataType, NormalizeSerialize, Row, Serialize, SerializeDataType } from "./Types";
 
 export const Operators = {
 	EQUAL: "=",
@@ -8,8 +8,11 @@ export const Operators = {
 	GREATER_THAN_OR_EQUAL: ">=",
 	LESS_THAN_OR_EQUAL: "<=",
 	BETWEEN: "BETWEEN",
+	NOT_BETWEEN: "NOT BETWEEN",
 	LIKE: "LIKE",
+	NOT_LIKE: "NOT LIKE",
 	IN: "IN",
+	NOT_IN: "NOT IN",
 } as const;
 
 export const Types: {
@@ -28,7 +31,7 @@ export const Types: {
 	DATETIME: new Date(),
 	BIGINT: BigInt(0),
 	NULL: null,
-};
+} as const;
 
 export const generateUUID = (separator: string = "") => {
 	let currentTime = Date.now();
@@ -37,6 +40,21 @@ export const generateUUID = (separator: string = "") => {
 		currentTime = Math.floor(currentTime / 16);
 		return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
 	});
+};
+
+export const columns = <S extends Serialize>(columns: S): NormalizeSerialize<S> => {
+	return Object.keys(columns).reduce((acc, key) => {
+		acc[key] = {
+			type: columns[key].type,
+			primaryKey: columns[key].primaryKey ?? false,
+			autoIncrement: columns[key].autoIncrement ?? false,
+			notNull: columns[key].notNull ?? false,
+			default: columns[key].default,
+			unique: columns[key].unique ?? false,
+			check: columns[key].check,
+		};
+		return acc;
+	}, {} as any);
 };
 
 /**
@@ -199,19 +217,4 @@ export const serializeDataForGet = <S extends Serialize, D extends Partial<Row<S
 
 		resolve(Array.isArray(data) ? (list as any) : (list[0] as any));
 	});
-};
-
-export const columns = <S extends Serialize>(columns: S): S => {
-	return Object.keys(columns).reduce((acc, key) => {
-		acc[key] = {
-			type: columns[key].type,
-			primaryKey: columns[key].primaryKey ?? false,
-			autoIncrement: columns[key].autoIncrement ?? false,
-			notNull: columns[key].notNull ?? false,
-			default: columns[key].default,
-			unique: columns[key].unique ?? false,
-			check: columns[key].check,
-		};
-		return acc;
-	}, {} as any);
 };

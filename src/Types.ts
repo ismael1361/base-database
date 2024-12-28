@@ -2,7 +2,7 @@ import type { Table } from "./Table";
 
 export type IsLiteral<T> = T extends object ? (T extends Function | Date | Array<any> | { new (...args: any[]): any } ? never : T) : never;
 
-export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "LIKE" | "IN";
+export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "NOT BETWEEN" | "LIKE" | "NOT LIKE" | "IN" | "NOT IN";
 
 export type WheresItem<C extends Serialize, K extends keyof C> = {
 	column: K;
@@ -58,7 +58,13 @@ export type DataValueType<T extends OptionsDataType> = T extends "NULL"
 
 export type SerializeValueDefault<T> = T extends OptionsDataType ? DataValueType<T> : T;
 
-type TypedOptions<T> = T extends { type: string; options: (infer O)[] } ? Omit<T, "type" | "default"> & { type: O; default: O | (() => O) } : T;
+type TypedOptions<T> = T extends { type: OptionsDataType; options: (infer O)[] }
+	? T extends { type: "TEXT"; options: (infer O)[] }
+		? Omit<T, "type" | "default"> & { type: O; default: O | (() => O) }
+		: T
+	: T extends { type: string; options: (infer O)[] }
+	? Omit<T, "type" | "default"> & { type: O; default: O | (() => O) }
+	: T;
 
 type SerializeItemProperties<T> = TypedOptions<{
 	type: SerializeValueDefault<T>;
@@ -82,13 +88,17 @@ export type SerializeItemAny<T> = T extends { type: infer U }
 export type SerializeItem<T extends SerializeValueType> = SerializeItemAny<T>;
 
 export type Serialize<T extends Record<PropertyKey, SerializeItem<SerializeValueType>> = Record<PropertyKey, SerializeItem<SerializeValueType>>> = {
-	[k in keyof T]: SerializeItem<T[k]["type"]>;
+	[k in keyof T]: TypedOptions<SerializeItem<T[k]["type"]>>;
 };
 
 export type SerializeDataTypeItem<V extends SerializeValueType, T extends OptionsDataType = DataType<V>> = SerializeItemAny<T>;
 
 export type SerializeDataType<S extends Serialize = never> = {
 	[k in keyof S]: SerializeDataTypeItem<S[k]["type"]>;
+};
+
+export type NormalizeSerialize<S extends Serialize> = {
+	[k in keyof S]: TypedOptions<S[k]>;
 };
 
 export type CreatorFunction<S extends Serialize, O = Row<S>> = (row: Row<S>) => O extends SerializableClassType<S> ? InstanceType<O> : Row<S>;
@@ -117,20 +127,20 @@ export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = 
 export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S> & Record<keyof S, unknown>>;
 
 export interface TableReady<S extends Serialize, O = Row<S>> {
-	table: Promise<Table<S, O>>;
-	ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
-	query(): ReturnType<Table<S, O>["query"]>;
-	insert(...args: Parameters<Table<S, O>["insert"]>): ReturnType<Table<S, O>["insert"]>;
-	selectAll(): ReturnType<Table<S, O>["selectAll"]>;
-	selectOne(): ReturnType<Table<S, O>["selectOne"]>;
-	selectFirst(): ReturnType<Table<S, O>["selectFirst"]>;
-	selectLast(): ReturnType<Table<S, O>["selectLast"]>;
-	length(): ReturnType<Table<S, O>["length"]>;
-	on: Table<S, O>["on"];
-	once: Table<S, O>["once"];
-	off(...args: Parameters<Table<S, O>["off"]>): void;
-	offOnce(...args: Parameters<Table<S, O>["offOnce"]>): void;
-	schema<O extends SerializableClassType<S>>(schema: O, options?: TypeSchemaOptions<S, O>): TableReady<S, O>;
+	table: Promise<Table<NormalizeSerialize<S>, O>>;
+	ready<T = void>(callback: (table: Table<NormalizeSerialize<S>, O>) => T | Promise<T>): Promise<T>;
+	query(): ReturnType<Table<NormalizeSerialize<S>, O>["query"]>;
+	insert(...args: Parameters<Table<NormalizeSerialize<S>, O>["insert"]>): ReturnType<Table<NormalizeSerialize<S>, O>["insert"]>;
+	selectAll(): ReturnType<Table<NormalizeSerialize<S>, O>["selectAll"]>;
+	selectOne(): ReturnType<Table<NormalizeSerialize<S>, O>["selectOne"]>;
+	selectFirst(): ReturnType<Table<NormalizeSerialize<S>, O>["selectFirst"]>;
+	selectLast(): ReturnType<Table<NormalizeSerialize<S>, O>["selectLast"]>;
+	length(): ReturnType<Table<NormalizeSerialize<S>, O>["length"]>;
+	on: Table<NormalizeSerialize<S>, O>["on"];
+	once: Table<NormalizeSerialize<S>, O>["once"];
+	off(...args: Parameters<Table<NormalizeSerialize<S>, O>["off"]>): void;
+	offOnce(...args: Parameters<Table<NormalizeSerialize<S>, O>["offOnce"]>): void;
+	schema<O extends SerializableClassType<NormalizeSerialize<S>>>(schema: O, options?: TypeSchemaOptions<NormalizeSerialize<S>, O>): TableReady<NormalizeSerialize<S>, O>;
 }
 
 export type ExtractTableRow<T extends TableReady<any, any> | Table<any, any> | Promise<Table<any, any>> | Promise<Table<any, any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<

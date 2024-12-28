@@ -75,6 +75,11 @@ class ModelDatabase extends Database.Custom<localDB> {
 const database = new Database.Database(ModelDatabase, "");
 
 const testColumns = Database.columns({
+	gender: {
+		type: Database.Types.TEXT,
+		default: "Female",
+		options: ["Female", "Male"] as const,
+	},
 	integer: {
 		type: Database.Types.INTEGER,
 		primaryKey: true,
@@ -100,11 +105,6 @@ const testColumns = Database.columns({
 	},
 	bigint: {
 		type: Database.Types.BIGINT,
-	},
-	gender: {
-		type: Database.Types.TEXT,
-		default: "Female",
-		options: ["Female", "Male"] as const,
 	},
 });
 
@@ -152,12 +152,12 @@ TestTable.on("insert", (row) => {
 });
 
 test.ready(async (table) => {
-	const query = table.query().where("integer", "=", 0).columns("bigint", "integer", "boolean");
+	const query = table.query().where("integer", "=", 0).where("gender", "=", "Female").columns("bigint", "integer", "boolean");
 
 	// console.log("0::", await query.get());
 
 	await table.insert({ integer: 0, float: 0, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(0) });
-	await table.insert({ integer: 1, float: 1, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(1) });
+	await table.insert({ integer: 1, float: 1, string: Database.generateUUID(), boolean: false, null: null, date: new Date(), bigint: BigInt(1), gender: "Male" });
 
 	// console.log("0::", await query.get());
 });

@@ -6,8 +6,11 @@ export const Operators = {
     GREATER_THAN_OR_EQUAL: ">=",
     LESS_THAN_OR_EQUAL: "<=",
     BETWEEN: "BETWEEN",
+    NOT_BETWEEN: "NOT BETWEEN",
     LIKE: "LIKE",
+    NOT_LIKE: "NOT LIKE",
     IN: "IN",
+    NOT_IN: "NOT IN",
 };
 export const Types = {
     TEXT: "",
@@ -25,6 +28,20 @@ export const generateUUID = (separator = "") => {
         currentTime = Math.floor(currentTime / 16);
         return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
     });
+};
+export const columns = (columns) => {
+    return Object.keys(columns).reduce((acc, key) => {
+        acc[key] = {
+            type: columns[key].type,
+            primaryKey: columns[key].primaryKey ?? false,
+            autoIncrement: columns[key].autoIncrement ?? false,
+            notNull: columns[key].notNull ?? false,
+            default: columns[key].default,
+            unique: columns[key].unique ?? false,
+            check: columns[key].check,
+        };
+        return acc;
+    }, {});
 };
 /**
  * Get the datatype of a value
@@ -179,19 +196,5 @@ export const serializeDataForGet = (serialize, data) => {
         });
         resolve(Array.isArray(data) ? list : list[0]);
     });
-};
-export const columns = (columns) => {
-    return Object.keys(columns).reduce((acc, key) => {
-        acc[key] = {
-            type: columns[key].type,
-            primaryKey: columns[key].primaryKey ?? false,
-            autoIncrement: columns[key].autoIncrement ?? false,
-            notNull: columns[key].notNull ?? false,
-            default: columns[key].default,
-            unique: columns[key].unique ?? false,
-            check: columns[key].check,
-        };
-        return acc;
-    }, {});
 };
 //# sourceMappingURL=Utils.js.map

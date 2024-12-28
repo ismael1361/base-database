@@ -49,11 +49,10 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.where("active", Database.Operators.EQUAL, true);
 	 * query.where("price", Database.Operators.LESS_THAN, 100);
 	 */
-	where<C extends keyof S>(column: C, operator: "=" | "!=", compare: S[C]["type"]): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: "BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: "LIKE", compare: S[C]["type"]): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: "IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
+	where<C extends keyof S>(column: C, operator: "=" | "!=" | ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
+	where<C extends keyof S>(column: C, operator: "BETWEEN" | "NOT BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
+	where<C extends keyof S>(column: C, operator: "LIKE" | "NOT LIKE", compare: string): Query<S, O, K>;
+	where<C extends keyof S>(column: C, operator: "IN" | "NOT IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
 	where(column: string, operator: Operator, compare: any): Query<S, O, K> {
 		this[__private__].wheres.push({ column, operator, compare });
 		return this;
@@ -71,11 +70,10 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.filter("active", Database.Operators.EQUAL, true);
 	 * query.filter("price", Database.Operators.LESS_THAN, 100);
 	 */
-	filter<C extends keyof S>(column: C, operator: "=" | "!=", compare: S[C]["type"]): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: "BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: "LIKE", compare: S[C]["type"]): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: "IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
+	filter<C extends keyof S>(column: C, operator: "=" | "!=" | ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
+	filter<C extends keyof S>(column: C, operator: "BETWEEN" | "NOT BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
+	filter<C extends keyof S>(column: C, operator: "LIKE" | "NOT LIKE", compare: string): Query<S, O, K>;
+	filter<C extends keyof S>(column: C, operator: "IN" | "NOT IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
 	filter(column: string, operator: Operator, compare: any): Query<S, O, K> {
 		return this.where(column, operator as any, compare);
 	}

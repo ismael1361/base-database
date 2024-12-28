@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Row, Serialize, TableReady } from "./Types";
+import { NormalizeSerialize, Row, Serialize, TableReady } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 export * from "./Types";
@@ -64,7 +64,7 @@ export declare class Database<db = never> extends BasicEventEmitter<{
      *    date: { type: Database.Types.DATETIME },
      * });
      */
-    forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>>;
+    forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<NormalizeSerialize<S>, O>>;
     /**
      * Get a ready table
      * @param table The table promise

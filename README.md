@@ -300,13 +300,55 @@ Em seguida, implemente a classe personalizada para SQLite:
 import * as Database from 'base-database';
 import * as sqlite3 from 'sqlite3';
 
+const formatDateToSQL = (date: Date): string => {
+    const pad = (n: number) => (n < 10 ? '0' + n : n);
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+const normalizeWhereCompare = (compare: any) => {
+    return typeof compare === "string" ? `'${compare}'` : compare instanceof Date ? formatDateToSQL(compare) : Array.isArray(compare) ? compare.map(normalizeWhereCompare) : compare;
+};
+
 const parseQuery = (query?: Database.QueryOptions) => {
     if (!query) return { columns: "*", where: "", order: "", limit: "", offset: "" };
 
-    const whereClause =
-        Array.isArray(query.wheres) && query.wheres.length > 0
-            ? query.wheres.map((w) => `${w.column} ${w.operator} ${typeof w.compare === "string" ? `'${w.compare}'` : w.compare}`).join(" AND ")
-            : "";
+    let whereClause: string[] = [];
+
+    if (Array.isArray(query.wheres) && query.wheres.length > 0) {
+        query.wheres.forEach(({ column, operator, compare }) => {
+            compare = normalizeWhereCompare(compare);
+            switch (operator) {
+                case "=":
+                case "!=":
+                case "<":
+                case "<=":
+                case ">":
+                case ">=":
+                    whereClause.push(`${column} ${operator} ${compare}`);
+                    break;
+                case "IN":
+                    whereClause.push(`${column} IN (${compare.join(", ")})`);
+                    break;
+                case "NOT IN":
+                    whereClause.push(`${column} NOT IN (${compare.join(", ")})`);
+                    break;
+                case "BETWEEN":
+                    whereClause.push(`${column} BETWEEN ${compare[0]} AND ${compare[1]}`);
+                    break;
+                case "NOT BETWEEN":
+                    whereClause.push(`${column} NOT BETWEEN ${compare[0]} AND ${compare[1]}`);
+                    break;
+                case "LIKE":
+                    whereClause.push(`${column} LIKE ${compare}`);
+                    break;
+                case "NOT LIKE":
+                    whereClause.push(`${column} NOT LIKE ${compare}`);
+                    break;
+            }
+        });
+    }
+
+    Array.isArray(query.wheres) && query.wheres.length > 0 ? query.wheres.map((w) => `${w.column} ${w.operator} ${typeof w.compare === "string" ? `'${w.compare}'` : w.compare}`).join(" AND ") : "";
 
     const columnClause = Array.isArray(query.wheres) && query.columns.length > 0 ? query.columns.join(", ") : "*";
 
@@ -314,7 +356,7 @@ const parseQuery = (query?: Database.QueryOptions) => {
 
     return {
         columns: columnClause,
-        where: whereClause.trim() === "" ? "" : `WHERE ${whereClause}`,
+        where: whereClause.join(" AND ").trim() === "" ? "" : `WHERE ${whereClause.join(" AND ").trim()}`,
         order: orderClause.trim() === "" ? "" : `ORDER BY ${orderClause.trim()}`,
         limit: query.take ? `LIMIT ${query.take}` : "",
         offset: query.skip ? `OFFSET ${query.skip}` : "",
@@ -910,7 +952,7 @@ const query = table.query();
 
 #### ``Database.Table.query.where``
 
-Método que adiciona uma cláusula `WHERE` à consulta.
+Método que adiciona uma cláusula `WHERE` à consulta. Visite a documentação de [`Database.Operators`](#databaseoperators) para mais informações.
 
 ```ts
 query.where("name", Database.Operators.EQUAL, "John");
@@ -1319,8 +1361,11 @@ O objeto `Database.Operators` contém os operadores disponíveis para a criaçã
 - ``LESS_THAN``: Menor que `<`.
 - ``LESS_THAN_OR_EQUAL``: Menor ou igual a `<=`.
 - ``BETWEEN``: Entre `BETWEEN`.
+- ``NOT_BETWEEN``: Não entre `NOT BETWEEN`.
 - ``LIKE``: Semelhante a `LIKE`.
+- ``NOT_LIKE``: Não semelhante a `NOT LIKE`.
 - ``IN``: Em `IN`.
+- ``NOT_IN``: Não em `NOT IN`.
 
 ## ``Database.Types``
 
