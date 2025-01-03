@@ -363,8 +363,6 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 		return await this.ready(() => this.custom.update(this.name, value, query.options))
 			.then(() => this.selectAll(query))
 			.then(async (updated) => {
-				updated = (await serializeDataForGet(this.serialize, updated)) as any;
-
 				this._events.emit(
 					"update",
 					updated.map((row) => this.schema.serialize(row) as any),
