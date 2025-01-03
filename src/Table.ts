@@ -338,7 +338,8 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	async insert(data: RowSerialize<S, O>): Promise<RowDeserialize<S, O>> {
 		let value = this.schema.serialize(data);
 		value = await serializeDataForSet(this.serialize, value);
-		return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
+		return await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
+			row = await serializeDataForGet(this.serialize, row);
 			this._events.emit("insert", row as any);
 			// this.emit("insert", this.schema.deserialize(row));
 			return Promise.resolve(this.schema.deserialize(row));
@@ -361,7 +362,9 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 		const previous = await this.selectAll(query);
 		return await this.ready(() => this.custom.update(this.name, value, query.options))
 			.then(() => this.selectAll(query))
-			.then((updated) => {
+			.then(async (updated) => {
+				updated = (await serializeDataForGet(this.serialize, updated)) as any;
+
 				this._events.emit(
 					"update",
 					updated.map((row) => this.schema.serialize(row) as any),

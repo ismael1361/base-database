@@ -822,7 +822,8 @@ class Table extends basic_event_emitter_1.default {
     async insert(data) {
         let value = this.schema.serialize(data);
         value = await (0, Utils_1.serializeDataForSet)(this.serialize, value);
-        return await this.ready(() => this.custom.insert(this.name, value)).then((row) => {
+        return await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
+            row = await (0, Utils_1.serializeDataForGet)(this.serialize, row);
             this._events.emit("insert", row);
             // this.emit("insert", this.schema.deserialize(row));
             return Promise.resolve(this.schema.deserialize(row));
@@ -844,7 +845,8 @@ class Table extends basic_event_emitter_1.default {
         const previous = await this.selectAll(query);
         return await this.ready(() => this.custom.update(this.name, value, query.options))
             .then(() => this.selectAll(query))
-            .then((updated) => {
+            .then(async (updated) => {
+            updated = (await (0, Utils_1.serializeDataForGet)(this.serialize, updated));
             this._events.emit("update", updated.map((row) => this.schema.serialize(row)), previous.map((row) => this.schema.serialize(row)));
             // this.emit("update", updated, previous);
             return Promise.resolve(updated.map((row) => this.schema.deserialize(row)));
@@ -1047,32 +1049,55 @@ const serializeDataForSet = (serialize, data, isPartial = false) => {
             }
             if (serialize[key].autoIncrement) {
                 delete data[key];
+                continue;
             }
-            else {
-                if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined)) {
-                    return reject(new Error(`Column ${key} cannot be null or undefined`));
+            if (serialize[key].notNull && (!(key in data) || data[key] === null || data[key] === undefined)) {
+                return reject(new Error(`Column ${key} cannot be null or undefined`));
+            }
+            if (key in data && data[key] !== null && data[key] !== undefined) {
+                if (!(0, exports.verifyDatatype)(data[key], (0, exports.getDatatype)(serialize[key].type))) {
+                    return reject(new Error(`Invalid datatype for column ${key}`));
                 }
-                if (key in data && data[key] !== null && data[key] !== undefined) {
-                    if (!(0, exports.verifyDatatype)(data[key], (0, exports.getDatatype)(serialize[key].type))) {
-                        return reject(new Error(`Invalid datatype for column ${key}`));
-                    }
-                    if (typeof data[key] === "string" && Array.isArray(serialize[key].options) && serialize[key].options.length > 0) {
-                        if (!serialize[key].options.includes(data[key])) {
-                            return reject(new Error(`Invalid value for column ${key}`));
-                        }
-                    }
-                    if (typeof serialize[key].check === "function") {
-                        try {
-                            const isValid = serialize[key].check(data[key]);
-                            if (isValid instanceof Error)
-                                return reject(isValid);
-                        }
-                        catch (e) {
-                            const message = "message" in e ? e.message : "Invalid value, error thrown: " + String(e);
-                            return reject(new Error(message));
-                        }
+                if (typeof data[key] === "string" && Array.isArray(serialize[key].options) && serialize[key].options.length > 0) {
+                    if (!serialize[key].options.includes(data[key])) {
+                        return reject(new Error(`Invalid value for column ${key}`));
                     }
                 }
+                if (typeof serialize[key].check === "function") {
+                    try {
+                        const isValid = serialize[key].check(data[key]);
+                        if (isValid instanceof Error)
+                            return reject(isValid);
+                    }
+                    catch (e) {
+                        const message = "message" in e ? e.message : "Invalid value, error thrown: " + String(e);
+                        return reject(new Error(message));
+                    }
+                }
+            }
+            switch ((0, exports.getDatatype)(serialize[key].type)) {
+                case "TEXT":
+                    data[key] = typeof data[key] === "string" ? data[key] : undefined;
+                    break;
+                case "INTEGER":
+                case "FLOAT":
+                    data[key] = typeof data[key] === "number" ? data[key] : undefined;
+                    break;
+                case "BOOLEAN":
+                    data[key] = typeof data[key] === "boolean" ? data[key] : undefined;
+                    break;
+                case "DATETIME":
+                    data[key] = data[key] instanceof Date ? data[key].getTime() : typeof data[key] === "number" ? data[key] : undefined;
+                    break;
+                case "BIGINT":
+                    data[key] = typeof data[key] === "bigint" ? data[key] : ["string", "number"].includes(typeof data[key]) ? BigInt(data[key]) : undefined;
+                    break;
+                case "NULL":
+                    data[key] = data[key] === null ? data[key] : undefined;
+                    break;
+            }
+            if (data[key] === undefined) {
+                delete data[key];
             }
         }
         resolve(data);
@@ -1087,6 +1112,27 @@ const serializeDataForGet = (serialize, data) => {
                     if (serialize[key].default !== undefined) {
                         data[key] = typeof serialize[key].default === "function" ? serialize[key].default() : serialize[key].default;
                     }
+                }
+                switch ((0, exports.getDatatype)(serialize[key].type)) {
+                    case "TEXT":
+                        data[key] = typeof data[key] === "string" ? data[key] : undefined;
+                        break;
+                    case "INTEGER":
+                    case "FLOAT":
+                        data[key] = typeof data[key] === "number" ? data[key] : undefined;
+                        break;
+                    case "BOOLEAN":
+                        data[key] = typeof data[key] === "boolean" ? data[key] : undefined;
+                        break;
+                    case "DATETIME":
+                        data[key] = data[key] instanceof Date ? data[key] : typeof data[key] === "number" ? new Date(data[key]) : undefined;
+                        break;
+                    case "BIGINT":
+                        data[key] = typeof data[key] === "bigint" ? data[key] : ["string", "number"].includes(typeof data[key]) ? BigInt(data[key]) : undefined;
+                        break;
+                    case "NULL":
+                        data[key] = data[key] !== null ? data[key] : undefined;
+                        break;
                 }
                 if (data[key] !== null && data[key] !== undefined && !(0, exports.verifyDatatype)(data[key], (0, exports.getDatatype)(serialize[key].type))) {
                     delete data[key];

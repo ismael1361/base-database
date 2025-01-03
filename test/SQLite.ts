@@ -156,7 +156,7 @@ export class SQLite extends Database.Custom<sqlite3.Database> {
 		return this.ready(async (db) => {
 			return new Promise((resolve, reject) => {
 				const columns = Object.keys(data).join(", ");
-				const values = Object.values(data)
+				const values = Object.keys(data)
 					.map(() => `?`)
 					.join(", ");
 
@@ -165,7 +165,7 @@ export class SQLite extends Database.Custom<sqlite3.Database> {
 				stmt.run(Object.values(data), function (err) {
 					if (err) return reject(err);
 					const lastRowID = this.lastID;
-					db.get<Database.Row>(`SELECT rowid, * FROM ${table} WHERE rowid = ?`, [lastRowID], function (err, row) {
+					db.get<Database.Row>(`SELECT rowid, * FROM ${table} WHERE rowid = ?`, [lastRowID], function (err, { rowid, ...row }) {
 						if (err) return reject(err);
 						resolve(row);
 					});

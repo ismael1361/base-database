@@ -48,12 +48,10 @@ TestTable.on("insert", (row) => {
 TestTable.ready(async (table) => {
 	const query = table.query().where("name", "LIKE", /^(m)/i);
 
-	console.log(query.options.wheres);
-
 	await table.insert(new Test({ name: "Maria", gender: "Female" }));
 	await table.insert(new Test({ name: "João", gender: "Male" }));
 	await table.insert(new Test({ name: "Pedro", gender: "Male" }));
 	await table.insert(new Test({ name: "Martha", gender: "Female" }));
 
-	console.log("1::", await query.get());
+	console.log("query::", await query.get());
 });
