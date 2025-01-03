@@ -24,6 +24,8 @@ export declare const Types: {
 };
 export declare const generateUUID: (separator?: string) => string;
 export declare const columns: <S extends Serialize>(columns: S) => NormalizeSerialize<S>;
+export declare const isLiteralObject: (obj: any) => boolean;
+export declare const cloneObject: <T>(obj: T) => T;
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of

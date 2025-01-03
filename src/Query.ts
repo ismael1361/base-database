@@ -1,5 +1,6 @@
 import { Operator, QueryOptions, Row, RowDeserialize, RowSerialize, Serialize, WheresCompareType } from "./Types";
 import { Table } from "./Table";
+import { cloneObject } from "./Utils";
 
 const __private__ = Symbol("private");
 
@@ -34,7 +35,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * Get the query options
 	 */
 	get options(): QueryOptions<S> {
-		return JSON.parse(JSON.stringify(this[__private__]));
+		return cloneObject(this[__private__]);
 	}
 
 	/**

@@ -17,7 +17,7 @@ export type WheresCompareType<T extends SerializeValueType, O extends Operator> 
 	: O extends "BETWEEN" | "NOT BETWEEN"
 	? [T, T]
 	: O extends "LIKE" | "NOT LIKE"
-	? string
+	? string | RegExp
 	: O extends "IN" | "NOT IN"
 	? Array<T>
 	: never;

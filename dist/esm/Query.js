@@ -1,3 +1,4 @@
+import { cloneObject } from "./Utils";
 const __private__ = Symbol("private");
 /**
  * Query class
@@ -26,7 +27,7 @@ export class Query {
      * Get the query options
      */
     get options() {
-        return JSON.parse(JSON.stringify(this[__private__]));
+        return cloneObject(this[__private__]);
     }
     /**
      * Where clause for the query

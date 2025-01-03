@@ -57,6 +57,22 @@ export const columns = <S extends Serialize>(columns: S): NormalizeSerialize<S> 
 	}, {} as any);
 };
 
+export const isLiteralObject = (obj: any): boolean => {
+	return obj !== null && typeof obj === "object" && !(obj instanceof Object.constructor);
+};
+
+export const cloneObject = <T>(obj: T): T => {
+	const result: any = Array.isArray(obj) ? [] : {};
+	for (const key in obj) {
+		if (typeof obj[key] === "object" && obj[key] !== null && ![Date, RegExp].includes(obj[key].constructor as any)) {
+			result[key] = isLiteralObject(obj[key]) ? cloneObject(obj[key]) : Object.assign(Object.create(Object.getPrototypeOf(obj[key])), obj[key]);
+		} else {
+			result[key] = obj[key];
+		}
+	}
+	return result;
+};
+
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of

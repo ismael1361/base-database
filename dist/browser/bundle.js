@@ -298,10 +298,11 @@ class Database extends basic_event_emitter_1.default {
 }
 exports.Database = Database;
 
-},{"./Custom":1,"./Query":3,"./Table":4,"./Types":5,"./Utils":6,"basic-event-emitter":8}],3:[function(require,module,exports){
+},{"./Custom":1,"./Query":3,"./Table":5,"./Types":6,"./Utils":7,"basic-event-emitter":9}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Query = void 0;
+const Utils_1 = require("./Utils");
 const __private__ = Symbol("private");
 /**
  * Query class
@@ -330,7 +331,7 @@ class Query {
      * Get the query options
      */
     get options() {
-        return JSON.parse(JSON.stringify(this[__private__]));
+        return (0, Utils_1.cloneObject)(this[__private__]);
     }
     /**
      * Where clause for the query
@@ -507,7 +508,16 @@ class Query {
 }
 exports.Query = Query;
 
-},{}],4:[function(require,module,exports){
+},{"./Utils":7}],4:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getLoadablePath = void 0;
+const getLoadablePath = () => {
+    throw new Error("Unsupported platform for sqlite-regex, on a browser environment. Consult the sqlite-regex NPM package README for details.");
+};
+exports.getLoadablePath = getLoadablePath;
+
+},{}],5:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -869,14 +879,14 @@ class Table extends basic_event_emitter_1.default {
 }
 exports.Table = Table;
 
-},{"./Query":3,"./Utils":6,"basic-event-emitter":8}],5:[function(require,module,exports){
+},{"./Query":3,"./Utils":7,"basic-event-emitter":9}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.columns = exports.generateUUID = exports.Types = exports.Operators = void 0;
+exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.cloneObject = exports.isLiteralObject = exports.columns = exports.generateUUID = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -924,6 +934,23 @@ const columns = (columns) => {
     }, {});
 };
 exports.columns = columns;
+const isLiteralObject = (obj) => {
+    return obj !== null && typeof obj === "object" && !(obj instanceof Object.constructor);
+};
+exports.isLiteralObject = isLiteralObject;
+const cloneObject = (obj) => {
+    const result = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+        if (typeof obj[key] === "object" && obj[key] !== null && ![Date, RegExp].includes(obj[key].constructor)) {
+            result[key] = (0, exports.isLiteralObject)(obj[key]) ? (0, exports.cloneObject)(obj[key]) : Object.assign(Object.create(Object.getPrototypeOf(obj[key])), obj[key]);
+        }
+        else {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+};
+exports.cloneObject = cloneObject;
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of
@@ -1083,7 +1110,7 @@ const serializeDataForGet = (serialize, data) => {
 };
 exports.serializeDataForGet = serializeDataForGet;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1122,11 +1149,13 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.SQLiteRegex = void 0;
 const Database = __importStar(require("./Database"));
 __exportStar(require("./Database"), exports);
+exports.SQLiteRegex = __importStar(require("./SQLiteRegex"));
 exports.default = Database;
 
-},{"./Database":2}],8:[function(require,module,exports){
+},{"./Database":2,"./SQLiteRegex":4}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasicEventEmitter = void 0;
@@ -1479,5 +1508,5 @@ class BasicEventEmitter {
 exports.BasicEventEmitter = BasicEventEmitter;
 exports.default = BasicEventEmitter;
 
-},{}]},{},[7])(7)
+},{}]},{},[8])(8)
 });

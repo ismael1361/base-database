@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Query = void 0;
+const Utils_1 = require("./Utils");
 const __private__ = Symbol("private");
 /**
  * Query class
@@ -29,7 +30,7 @@ class Query {
      * Get the query options
      */
     get options() {
-        return JSON.parse(JSON.stringify(this[__private__]));
+        return (0, Utils_1.cloneObject)(this[__private__]);
     }
     /**
      * Where clause for the query

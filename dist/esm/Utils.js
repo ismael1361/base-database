@@ -43,6 +43,21 @@ export const columns = (columns) => {
         return acc;
     }, {});
 };
+export const isLiteralObject = (obj) => {
+    return obj !== null && typeof obj === "object" && !(obj instanceof Object.constructor);
+};
+export const cloneObject = (obj) => {
+    const result = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+        if (typeof obj[key] === "object" && obj[key] !== null && ![Date, RegExp].includes(obj[key].constructor)) {
+            result[key] = isLiteralObject(obj[key]) ? cloneObject(obj[key]) : Object.assign(Object.create(Object.getPrototypeOf(obj[key])), obj[key]);
+        }
+        else {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+};
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of

@@ -1,6 +1,6 @@
 {
 	"name": "base-database",
-	"version": "0.6.8",
+	"version": "0.7.0",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",
 	"types": "./dist/types/index.d.ts",
@@ -23,6 +23,14 @@
 			"browser": "./dist/browser/bundle.js",
 			"types": "./dist/types/index.d.ts"
 		}
+	},
+	"files": [
+		"dist",
+		"lib"
+	],
+	"browser": {
+		"./dist/cjs/SQLiteRegex/index.js": "./dist/cjs/SQLiteRegex/browser.js",
+		"./dist/esm/SQLiteRegex/index.js": "./dist/esm/SQLiteRegex/browser.js"
 	},
 	"scripts": {
 		"start": "nodemon",
@@ -67,6 +75,7 @@
 	"dependencies": {
 		"basic-event-emitter": "^0.1.5",
 		"esm": "^3.2.25",
-		"resolve": "^1.22.8"
+		"resolve": "^1.22.8",
+		"sqlite3": "^5.1.7"
 	}
 }

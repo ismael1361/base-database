@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.columns = exports.generateUUID = exports.Types = exports.Operators = void 0;
+exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.cloneObject = exports.isLiteralObject = exports.columns = exports.generateUUID = exports.Types = exports.Operators = void 0;
 exports.Operators = {
     EQUAL: "=",
     NOT_EQUAL: "!=",
@@ -48,6 +48,23 @@ const columns = (columns) => {
     }, {});
 };
 exports.columns = columns;
+const isLiteralObject = (obj) => {
+    return obj !== null && typeof obj === "object" && !(obj instanceof Object.constructor);
+};
+exports.isLiteralObject = isLiteralObject;
+const cloneObject = (obj) => {
+    const result = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+        if (typeof obj[key] === "object" && obj[key] !== null && ![Date, RegExp].includes(obj[key].constructor)) {
+            result[key] = (0, exports.isLiteralObject)(obj[key]) ? (0, exports.cloneObject)(obj[key]) : Object.assign(Object.create(Object.getPrototypeOf(obj[key])), obj[key]);
+        }
+        else {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+};
+exports.cloneObject = cloneObject;
 /**
  * Get the datatype of a value
  * @param value The value to get the datatype of
