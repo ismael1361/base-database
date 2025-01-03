@@ -1,4 +1,4 @@
-import { QueryOptions, Row, RowDeserialize, RowSerialize, Serialize } from "./Types";
+import { Operator, QueryOptions, Row, RowDeserialize, RowSerialize, Serialize, WheresCompareType } from "./Types";
 import { Table } from "./Table";
 declare const __private__: unique symbol;
 type IsNever<T> = [T] extends [never] ? true : false;
@@ -31,10 +31,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * query.where("active", Database.Operators.EQUAL, true);
      * query.where("price", Database.Operators.LESS_THAN, 100);
      */
-    where<C extends keyof S>(column: C, operator: "=" | "!=" | ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
-    where<C extends keyof S>(column: C, operator: "BETWEEN" | "NOT BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
-    where<C extends keyof S>(column: C, operator: "LIKE" | "NOT LIKE", compare: string): Query<S, O, K>;
-    where<C extends keyof S>(column: C, operator: "IN" | "NOT IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
+    where<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K>;
     /**
      * Filter clause for the query
      * @param column The column
@@ -47,10 +44,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * query.filter("active", Database.Operators.EQUAL, true);
      * query.filter("price", Database.Operators.LESS_THAN, 100);
      */
-    filter<C extends keyof S>(column: C, operator: "=" | "!=" | ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
-    filter<C extends keyof S>(column: C, operator: "BETWEEN" | "NOT BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
-    filter<C extends keyof S>(column: C, operator: "LIKE" | "NOT LIKE", compare: string): Query<S, O, K>;
-    filter<C extends keyof S>(column: C, operator: "IN" | "NOT IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
+    filter<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K>;
     /**
      * Take clause for the query
      * @param take The number of rows to take
@@ -72,8 +66,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * query.sort("name");
      * query.sort("name", false);
      */
-    sort(column: string): Query<S, O, K>;
-    sort(column: keyof S, ascending: boolean): Query<S, O, K>;
+    sort(column: keyof S, ascending?: boolean): Query<S, O, K>;
     /**
      * Order clause for the query
      * @param column The column to order
@@ -81,8 +74,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * query.order("name");
      * query.order("name", false);
      */
-    order(column: keyof S): Query<S, O, K>;
-    order(column: keyof S, ascending: boolean): Query<S, O, K>;
+    order(column: keyof S, ascending?: boolean): Query<S, O, K>;
     /**
      * Columns should return in selection
      * @param columns The columns to select

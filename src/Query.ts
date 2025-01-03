@@ -1,4 +1,4 @@
-import { Operator, QueryOptions, Row, RowDeserialize, RowSerialize, Serialize } from "./Types";
+import { Operator, QueryOptions, Row, RowDeserialize, RowSerialize, Serialize, WheresCompareType } from "./Types";
 import { Table } from "./Table";
 
 const __private__ = Symbol("private");
@@ -49,13 +49,9 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.where("active", Database.Operators.EQUAL, true);
 	 * query.where("price", Database.Operators.LESS_THAN, 100);
 	 */
-	where<C extends keyof S>(column: C, operator: "=" | "!=" | ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: "BETWEEN" | "NOT BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: "LIKE" | "NOT LIKE", compare: string): Query<S, O, K>;
-	where<C extends keyof S>(column: C, operator: "IN" | "NOT IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
-	where(column: string, operator: Operator, compare: any): Query<S, O, K> {
-		this[__private__].wheres.push({ column, operator, compare });
-		return this;
+	where<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K> {
+		this[__private__].wheres.push({ column, operator, compare } as any);
+		return this as any;
 	}
 
 	/**
@@ -70,11 +66,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.filter("active", Database.Operators.EQUAL, true);
 	 * query.filter("price", Database.Operators.LESS_THAN, 100);
 	 */
-	filter<C extends keyof S>(column: C, operator: "=" | "!=" | ">" | "<" | ">=" | "<=", compare: S[C]["type"]): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: "BETWEEN" | "NOT BETWEEN", compare: [S[C]["type"], S[C]["type"]]): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: "LIKE" | "NOT LIKE", compare: string): Query<S, O, K>;
-	filter<C extends keyof S>(column: C, operator: "IN" | "NOT IN", compare: Array<S[C]["type"]>): Query<S, O, K>;
-	filter(column: string, operator: Operator, compare: any): Query<S, O, K> {
+	filter<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K> {
 		return this.where(column, operator as any, compare);
 	}
 
@@ -107,9 +99,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.sort("name");
 	 * query.sort("name", false);
 	 */
-	sort(column: string): Query<S, O, K>;
-	sort(column: keyof S, ascending: boolean): Query<S, O, K>;
-	sort(column: keyof S | string, ascending: boolean = true): Query<S, O, K> {
+	sort(column: keyof S, ascending: boolean = true): Query<S, O, K> {
 		this[__private__].order.push({ column, ascending });
 		return this;
 	}
@@ -121,9 +111,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.order("name");
 	 * query.order("name", false);
 	 */
-	order(column: keyof S): Query<S, O, K>;
-	order(column: keyof S, ascending: boolean): Query<S, O, K>;
-	order(column: keyof S | string, ascending: boolean = true): Query<S, O, K> {
+	order(column: keyof S, ascending: boolean = true): Query<S, O, K> {
 		return this.sort(column, ascending);
 	}
 

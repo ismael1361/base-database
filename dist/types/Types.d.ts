@@ -9,6 +9,7 @@ export type WheresItem<C extends Serialize, K extends keyof C> = {
     compare: C[K]["type"];
 };
 export type Wheres<C extends Serialize = any, K extends keyof C = never> = Array<WheresItem<C, K>>;
+export type WheresCompareType<T extends SerializeValueType, O extends Operator> = O extends "=" | "!=" | ">" | "<" | ">=" | "<=" ? T : O extends "BETWEEN" | "NOT BETWEEN" ? [T, T] : O extends "LIKE" | "NOT LIKE" ? string : O extends "IN" | "NOT IN" ? Array<T> : never;
 export interface QueryOptions<S extends Serialize = any> {
     wheres: Wheres<S, any>;
     skip?: number;

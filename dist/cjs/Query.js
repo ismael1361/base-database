@@ -31,10 +31,34 @@ class Query {
     get options() {
         return JSON.parse(JSON.stringify(this[__private__]));
     }
+    /**
+     * Where clause for the query
+     * @param column The column
+     * @param operator The operator
+     * @param compare The value to compare
+     * @example
+     * query.where("id", Database.Operators.EQUAL, 123);
+     * query.where("name", Database.Operators.LIKE, "hello");
+     * query.where("date", Database.Operators.GREATER_THAN, new Date());
+     * query.where("active", Database.Operators.EQUAL, true);
+     * query.where("price", Database.Operators.LESS_THAN, 100);
+     */
     where(column, operator, compare) {
         this[__private__].wheres.push({ column, operator, compare });
         return this;
     }
+    /**
+     * Filter clause for the query
+     * @param column The column
+     * @param operator The operator
+     * @param compare The value to compare
+     * @example
+     * query.filter("id", Database.Operators.EQUAL, 123);
+     * query.filter("name", Database.Operators.LIKE, "hello");
+     * query.filter("date", Database.Operators.GREATER_THAN, new Date());
+     * query.filter("active", Database.Operators.EQUAL, true);
+     * query.filter("price", Database.Operators.LESS_THAN, 100);
+     */
     filter(column, operator, compare) {
         return this.where(column, operator, compare);
     }
@@ -58,10 +82,24 @@ class Query {
         this[__private__].skip = skip;
         return this;
     }
+    /**
+     * Sort clause for the query
+     * @param column The column to sort
+     * @example
+     * query.sort("name");
+     * query.sort("name", false);
+     */
     sort(column, ascending = true) {
         this[__private__].order.push({ column, ascending });
         return this;
     }
+    /**
+     * Order clause for the query
+     * @param column The column to order
+     * @example
+     * query.order("name");
+     * query.order("name", false);
+     */
     order(column, ascending = true) {
         return this.sort(column, ascending);
     }
