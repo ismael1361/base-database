@@ -50,7 +50,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.where("active", Database.Operators.EQUAL, true);
 	 * query.where("price", Database.Operators.LESS_THAN, 100);
 	 */
-	where<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K> {
+	where<C extends keyof S, T extends Operator>(column: C, operator: T, compare: WheresCompareType<S[C]["type"], T>): Query<S, O, K> {
 		this[__private__].wheres.push({ column, operator, compare } as any);
 		return this as any;
 	}
@@ -67,7 +67,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.filter("active", Database.Operators.EQUAL, true);
 	 * query.filter("price", Database.Operators.LESS_THAN, 100);
 	 */
-	filter<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K> {
+	filter<C extends keyof S, T extends Operator>(column: C, operator: T, compare: WheresCompareType<S[C]["type"], T>): Query<S, O, K> {
 		return this.where(column, operator as any, compare);
 	}
 

@@ -335,15 +335,19 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.insert({ id: 123, name: "hello" });
 	 */
-	async insert(data: RowSerialize<S, O>): Promise<RowDeserialize<S, O>> {
+	async insert<D extends RowSerialize<S, O> | Array<RowSerialize<S, O>>>(data: D): Promise<D extends Array<any> ? Array<RowDeserialize<S, O>> : RowDeserialize<S, O>> {
+		if (Array.isArray(data)) {
+			return (await Promise.all(data.map(async (row) => await this.insert(row)))) as any;
+		}
+
 		let value = this.schema.serialize(data);
 		value = await serializeDataForSet(this.serialize, value);
-		return await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
+		return (await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
 			row = await serializeDataForGet(this.serialize, row);
 			this._events.emit("insert", row as any);
 			// this.emit("insert", this.schema.deserialize(row));
 			return Promise.resolve(this.schema.deserialize(row));
-		});
+		})) as any;
 	}
 
 	/**
@@ -356,7 +360,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async update(data: RowSerialize<S, O>, query: Query<S, O, any>): Promise<Array<RowDeserialize<S, O>>> {
+	async update<D extends RowSerialize<S, O>>(data: D, query: Query<S, O, any>): Promise<Array<RowDeserialize<S, O>>> {
 		let value = this.schema.serialize(data);
 		value = await serializeDataForSet(this.serialize, value, true);
 		const previous = await this.selectAll(query);

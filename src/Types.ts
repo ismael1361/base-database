@@ -104,7 +104,7 @@ export type Serialize<T extends Record<PropertyKey, SerializeItem<SerializeValue
 export type SerializeDataTypeItem<V extends SerializeValueType, T extends OptionsDataType = DataType<V>> = SerializeItemAny<T>;
 
 export type SerializeDataType<S extends Serialize = never> = {
-	[k in keyof S]: SerializeDataTypeItem<S[k]["type"]>;
+	[k in keyof S]: TypedOptions<SerializeDataTypeItem<S[k]["type"]>>;
 };
 
 export type NormalizeSerialize<S extends Serialize> = {
@@ -137,20 +137,20 @@ export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = 
 export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S> & Record<keyof S, unknown>>;
 
 export interface TableReady<S extends Serialize, O = Row<S>> {
-	table: Promise<Table<NormalizeSerialize<S>, O>>;
-	ready<T = void>(callback: (table: Table<NormalizeSerialize<S>, O>) => T | Promise<T>): Promise<T>;
-	query(): ReturnType<Table<NormalizeSerialize<S>, O>["query"]>;
-	insert(...args: Parameters<Table<NormalizeSerialize<S>, O>["insert"]>): ReturnType<Table<NormalizeSerialize<S>, O>["insert"]>;
-	selectAll(): ReturnType<Table<NormalizeSerialize<S>, O>["selectAll"]>;
-	selectOne(): ReturnType<Table<NormalizeSerialize<S>, O>["selectOne"]>;
-	selectFirst(): ReturnType<Table<NormalizeSerialize<S>, O>["selectFirst"]>;
-	selectLast(): ReturnType<Table<NormalizeSerialize<S>, O>["selectLast"]>;
-	length(): ReturnType<Table<NormalizeSerialize<S>, O>["length"]>;
-	on: Table<NormalizeSerialize<S>, O>["on"];
-	once: Table<NormalizeSerialize<S>, O>["once"];
-	off(...args: Parameters<Table<NormalizeSerialize<S>, O>["off"]>): void;
-	offOnce(...args: Parameters<Table<NormalizeSerialize<S>, O>["offOnce"]>): void;
-	schema<O extends SerializableClassType<NormalizeSerialize<S>>>(schema: O, options?: TypeSchemaOptions<NormalizeSerialize<S>, O>): TableReady<NormalizeSerialize<S>, O>;
+	table: Promise<Table<S, O>>;
+	ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
+	query(): ReturnType<Table<S, O>["query"]>;
+	insert: Table<S, O>["insert"];
+	selectAll(): ReturnType<Table<S, O>["selectAll"]>;
+	selectOne(): ReturnType<Table<S, O>["selectOne"]>;
+	selectFirst(): ReturnType<Table<S, O>["selectFirst"]>;
+	selectLast(): ReturnType<Table<S, O>["selectLast"]>;
+	length(): ReturnType<Table<S, O>["length"]>;
+	on: Table<S, O>["on"];
+	once: Table<S, O>["once"];
+	off(...args: Parameters<Table<S, O>["off"]>): void;
+	offOnce(...args: Parameters<Table<S, O>["offOnce"]>): void;
+	schema<O extends SerializableClassType<S>>(schema: O, options?: TypeSchemaOptions<S, O>): TableReady<S, O>;
 }
 
 export type ExtractTableRow<T extends TableReady<any, any> | Table<any, any> | Promise<Table<any, any>> | Promise<Table<any, any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<

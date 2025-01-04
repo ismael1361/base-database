@@ -1,4 +1,4 @@
-import { DataType, OptionsDataType, NormalizeSerialize, Row, Serialize, SerializeDataType } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
 
 export const Operators = {
 	EQUAL: "=",
@@ -42,7 +42,7 @@ export const generateUUID = (separator: string = "") => {
 	});
 };
 
-export const columns = <S extends Serialize>(columns: S): NormalizeSerialize<S> => {
+export const columns = <S extends Serialize>(columns: S): S => {
 	return Object.keys(columns).reduce((acc, key) => {
 		acc[key] = {
 			type: columns[key].type,

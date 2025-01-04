@@ -1,4 +1,4 @@
-import { DataType, OptionsDataType, NormalizeSerialize, Row, Serialize, SerializeDataType } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
 export declare const Operators: {
     readonly EQUAL: "=";
     readonly NOT_EQUAL: "!=";
@@ -23,7 +23,7 @@ export declare const Types: {
     NULL: null;
 };
 export declare const generateUUID: (separator?: string) => string;
-export declare const columns: <S extends Serialize>(columns: S) => NormalizeSerialize<S>;
+export declare const columns: <S extends Serialize>(columns: S) => S;
 export declare const isLiteralObject: (obj: any) => boolean;
 export declare const cloneObject: <T>(obj: T) => T;
 /**

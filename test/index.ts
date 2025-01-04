@@ -39,6 +39,7 @@ class Test {
 }
 
 const test = database.table("test", testColumns);
+
 const TestTable = test.schema(Test);
 
 TestTable.on("insert", (row) => {
@@ -48,10 +49,12 @@ TestTable.on("insert", (row) => {
 TestTable.ready(async (table) => {
 	const query = table.query().where("name", "LIKE", /^(m)/i);
 
-	await table.insert(new Test({ name: "Maria", gender: "Female" }));
-	await table.insert(new Test({ name: "João", gender: "Male" }));
-	await table.insert(new Test({ name: "Pedro", gender: "Male" }));
-	await table.insert(new Test({ name: "Martha", gender: "Female" }));
+	await table.insert([
+		new Test({ name: "Maria", gender: "Female" }),
+		new Test({ name: "João", gender: "Male" }),
+		new Test({ name: "Pedro", gender: "Male" }),
+		new Test({ name: "Martha", gender: "Female" }),
+	]);
 
 	console.log("query::", await query.get());
 });

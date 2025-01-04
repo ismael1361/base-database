@@ -1,5 +1,5 @@
 import BasicEventEmitter, { BasicEventHandler } from "basic-event-emitter";
-import { NormalizeSerialize, Row, Serialize, TableReady } from "./Types";
+import { Row, Serialize, TableReady } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
@@ -82,7 +82,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *    date: { type: Database.Types.DATETIME },
 	 * });
 	 */
-	forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<NormalizeSerialize<S>, O>> {
+	forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>> {
 		return this.ready(() => {
 			if (this.custom.disconnected) throw new Error("Database is disconnected");
 
@@ -91,7 +91,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 				table = new Table(this.custom, name, columns);
 				this.tables.set(name, table);
 			}
-			return Promise.resolve(table as Table<NormalizeSerialize<S>, O>);
+			return Promise.resolve(table as Table<S, O>);
 		});
 	}
 
@@ -126,7 +126,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	readyTable<S extends Serialize, O = Row<S>>(name: string | Promise<Table<S, O>>, columns?: S): TableReady<S, O> {
 		const table: any =
 			typeof name === "string" && this.tables.has(name)
-				? Promise.resolve(this.tables.get(name) as Table<NormalizeSerialize<S>, O>)
+				? Promise.resolve(this.tables.get(name) as Table<S, O>)
 				: typeof name === "string" && columns
 				? this.forTable<S, O>(name, columns!)
 				: name instanceof Promise

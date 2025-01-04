@@ -31,7 +31,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * query.where("active", Database.Operators.EQUAL, true);
      * query.where("price", Database.Operators.LESS_THAN, 100);
      */
-    where<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K>;
+    where<C extends keyof S, T extends Operator>(column: C, operator: T, compare: WheresCompareType<S[C]["type"], T>): Query<S, O, K>;
     /**
      * Filter clause for the query
      * @param column The column
@@ -44,7 +44,7 @@ export declare class Query<S extends Serialize, O = Row<S>, K extends keyof S = 
      * query.filter("active", Database.Operators.EQUAL, true);
      * query.filter("price", Database.Operators.LESS_THAN, 100);
      */
-    filter<C extends keyof S, O extends Operator>(column: C, operator: O, compare: WheresCompareType<S[C]["type"], O>): Query<S, O, K>;
+    filter<C extends keyof S, T extends Operator>(column: C, operator: T, compare: WheresCompareType<S[C]["type"], T>): Query<S, O, K>;
     /**
      * Take clause for the query
      * @param take The number of rows to take
