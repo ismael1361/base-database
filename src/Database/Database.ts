@@ -5,8 +5,8 @@ import { Table } from "./Table";
 import { Query } from "./Query";
 // import { TableReady } from "./TableReady";
 
-export * from "./Types";
 export * from "./Utils";
+export * from "./Types";
 export * from "./Custom";
 export * from "./Table";
 

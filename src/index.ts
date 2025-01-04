@@ -1,4 +1,1 @@
-import * as Database from "./Database";
-export * from "./Database";
-export * as SQLiteRegex from "./SQLiteRegex";
-export default Database;
+export { Database, SQLiteRegex } from "./Database";

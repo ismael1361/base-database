@@ -1,4 +1,4 @@
-import Database from "../src";
+import { Database } from "../src";
 import { ModelDatabase } from "./DB";
 import { SQLite } from "./SQLite";
 

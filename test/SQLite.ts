@@ -1,5 +1,5 @@
 import sqlite3 from "sqlite3";
-import Database, { SQLiteRegex } from "../src";
+import { Database, SQLiteRegex } from "../src";
 
 const formatDateToSQL = (date: Date): string => {
 	const pad = (n: number) => (n < 10 ? "0" + n : n);
