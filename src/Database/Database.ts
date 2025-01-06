@@ -43,6 +43,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	constructor(custom: CustomConstructor<db>, readonly database: string) {
 		super();
 		this.custom = new custom(database);
+		this.prepared = true;
 	}
 
 	/**
@@ -55,7 +56,8 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * });
 	 */
 	async ready<R = void>(callback?: (db: Database<db>) => Promise<R>): Promise<R> {
-		return this.custom.ready(() => callback?.(this) ?? Promise.resolve(undefined as any));
+		await super.ready();
+		return await this.custom.ready(() => callback?.(this) ?? Promise.resolve(undefined as any));
 	}
 
 	/**

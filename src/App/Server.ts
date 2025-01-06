@@ -9,7 +9,8 @@ export class Server extends App {
 	readonly isServer: boolean = true;
 
 	constructor(readonly settings: ServerSettings) {
-		super(settings);
+		super(settings, false);
+		this.initialize();
 	}
 
 	initialize() {

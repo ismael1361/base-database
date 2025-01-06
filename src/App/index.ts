@@ -1,4 +1,4 @@
-import { AppError, ERROR_FACTORY } from "../Error";
+import { Errors, ERROR_FACTORY } from "../Error";
 import { deepEqual } from "../Utils";
 import { AppSettings, App } from "./App";
 import { _apps, _servers, DEFAULT_ENTRY_NAME } from "./internal";
@@ -10,7 +10,7 @@ function appendNewApp(app: App | Server) {
 		if (deepEqual(app.settings, existingApp.settings)) {
 			return existingApp;
 		} else {
-			throw ERROR_FACTORY.create(AppError.DUPLICATE_APP, { appName: app.name });
+			throw ERROR_FACTORY.create(Errors.DUPLICATE_APP, { appName: app.name });
 		}
 	}
 
@@ -42,7 +42,7 @@ export const serverExists = (name: string = DEFAULT_ENTRY_NAME): boolean => {
 export const getApp = (name: string = DEFAULT_ENTRY_NAME): App => {
 	const app = _apps.get(name);
 	if (!app) {
-		throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
+		throw ERROR_FACTORY.create(Errors.NO_APP, { appName: name });
 	}
 	return app;
 };
@@ -50,7 +50,7 @@ export const getApp = (name: string = DEFAULT_ENTRY_NAME): App => {
 export const getServer = (name: string = DEFAULT_ENTRY_NAME): Server => {
 	const server = _servers.get(name);
 	if (!server) {
-		throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
+		throw ERROR_FACTORY.create(Errors.NO_APP, { appName: name });
 	}
 	return server;
 };
@@ -70,7 +70,7 @@ export const getFirstApp = (): App => {
 	}
 	app = !app ? getApps()[0] : app;
 	if (!app) {
-		throw ERROR_FACTORY.create(AppError.NO_APP, { appName: DEFAULT_ENTRY_NAME });
+		throw ERROR_FACTORY.create(Errors.NO_APP, { appName: DEFAULT_ENTRY_NAME });
 	}
 	return app;
 };
@@ -82,7 +82,7 @@ export const getFirstServer = (): Server => {
 	}
 	server = !server ? getServers()[0] : server;
 	if (!server) {
-		throw ERROR_FACTORY.create(AppError.NO_APP, { appName: DEFAULT_ENTRY_NAME });
+		throw ERROR_FACTORY.create(Errors.NO_APP, { appName: DEFAULT_ENTRY_NAME });
 	}
 	return server;
 };

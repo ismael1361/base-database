@@ -1,6 +1,6 @@
 import { ErrorFactory, ErrorMap } from "./util";
 
-export const enum AppError {
+export const enum Errors {
 	NO_APP = "no-app",
 	BAD_APP_NAME = "bad-app-name",
 	DUPLICATE_APP = "duplicate-app",
@@ -11,26 +11,26 @@ export const enum AppError {
 	INVALID_ARGUMENT = "invalid-argument",
 }
 
-const ERRORS: ErrorMap<AppError> = {
-	[AppError.NO_APP]: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
-	[AppError.BAD_APP_NAME]: "Nome de aplicativo ilegal: '{$appName}",
-	[AppError.DUPLICATE_APP]: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
-	[AppError.APP_DELETED]: "Aplicativo chamado '{$appName}' já excluído",
-	[AppError.DB_DISCONNECTED]: "Banco de dados '{$dbName}' desconectado",
-	[AppError.DB_CONNECTION_ERROR]: "Database connection error: {$error}",
-	[AppError.DB_NOT_FOUND]: "Banco de dados '{$dbName}' não encontrado",
-	[AppError.INVALID_ARGUMENT]: "Invalid argument: {$message}",
+const ERRORS: ErrorMap<Errors> = {
+	[Errors.NO_APP]: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
+	[Errors.BAD_APP_NAME]: "Nome de aplicativo ilegal: '{$appName}",
+	[Errors.DUPLICATE_APP]: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
+	[Errors.APP_DELETED]: "Aplicativo chamado '{$appName}' já excluído",
+	[Errors.DB_DISCONNECTED]: "Banco de dados '{$dbName}' desconectado",
+	[Errors.DB_CONNECTION_ERROR]: "Database connection error: {$error}",
+	[Errors.DB_NOT_FOUND]: "Banco de dados '{$dbName}' não encontrado",
+	[Errors.INVALID_ARGUMENT]: "Invalid argument: {$message}",
 };
 
 interface ErrorParams {
-	[AppError.NO_APP]: { appName: string };
-	[AppError.BAD_APP_NAME]: { appName: string };
-	[AppError.DUPLICATE_APP]: { appName: string };
-	[AppError.APP_DELETED]: { appName: string };
-	[AppError.DB_DISCONNECTED]: { dbName: string };
-	[AppError.DB_CONNECTION_ERROR]: { error: string };
-	[AppError.DB_NOT_FOUND]: { dbName: string };
-	[AppError.INVALID_ARGUMENT]: { message: string };
+	[Errors.NO_APP]: { appName: string };
+	[Errors.BAD_APP_NAME]: { appName: string };
+	[Errors.DUPLICATE_APP]: { appName: string };
+	[Errors.APP_DELETED]: { appName: string };
+	[Errors.DB_DISCONNECTED]: { dbName: string };
+	[Errors.DB_CONNECTION_ERROR]: { error: string };
+	[Errors.DB_NOT_FOUND]: { dbName: string };
+	[Errors.INVALID_ARGUMENT]: { message: string };
 }
 
-export const ERROR_FACTORY = new ErrorFactory<AppError, ErrorParams>("app", "base-database", ERRORS);
+export const ERROR_FACTORY = new ErrorFactory<Errors, ErrorParams>("app", "base-database", ERRORS);
