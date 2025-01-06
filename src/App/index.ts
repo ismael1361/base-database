@@ -21,12 +21,12 @@ function appendNewApp(app: App | Server) {
 	return app;
 }
 
-export const initializeApp = (options: AppSettings): App => {
+export const initializeApp = (options: AppSettings = {}): App => {
 	const newApp = new App(options);
 	return appendNewApp(newApp);
 };
 
-export const initializeServerApp = (options: ServerSettings): Server => {
+export const initializeServerApp = (options: ServerSettings = {}): Server => {
 	const newApp = new Server(options);
 	return appendNewApp(newApp);
 };
