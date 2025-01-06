@@ -1,20 +1,25 @@
-import { Database } from "../src";
+import { Database, initializeApp, getDatabase } from "../src";
 import { ModelDatabase } from "./DB";
 import { SQLite } from "./SQLite";
 
-const database = new Database.Database(SQLite, ":memory:");
-
-const testColumns = Database.columns({
-	name: {
-		type: Database.Types.TEXT,
-	},
-	createdAt: {
-		type: Database.Types.DATETIME,
-		default: () => new Date(),
-	},
-	gender: {
-		type: Database.Types.TEXT,
-		options: ["Female", "Male", "Other"] as const,
+const app = initializeApp({});
+const db = app.createDatabase({
+	database: ":memory:",
+	custom: SQLite,
+	tables: {
+		test: Database.columns({
+			name: {
+				type: Database.Types.TEXT,
+			},
+			createdAt: {
+				type: Database.Types.DATETIME,
+				default: () => new Date(),
+			},
+			gender: {
+				type: Database.Types.TEXT,
+				options: ["Female", "Male", "Other"] as const,
+			},
+		}),
 	},
 });
 
@@ -23,13 +28,13 @@ class Test {
 	public createdAt: Date;
 	public gender: "Female" | "Male" | "Other";
 
-	constructor(row: Partial<Database.Row<typeof testColumns>>) {
+	constructor(row: Partial<Database.Row<typeof db.test>>) {
 		this.name = row.name ?? "";
 		this.createdAt = row.createdAt ?? new Date();
 		this.gender = row.gender ?? "Other";
 	}
 
-	serialize(): Partial<Database.Row<typeof testColumns>> {
+	serialize(): Partial<Database.Row<typeof db.test>> {
 		return {
 			name: this.name,
 			createdAt: this.createdAt,
@@ -38,7 +43,7 @@ class Test {
 	}
 }
 
-const test = database.table("test", testColumns);
+const test = getDatabase<typeof db>().table("test");
 
 const TestTable = test.schema(Test);
 

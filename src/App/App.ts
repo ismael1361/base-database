@@ -7,13 +7,15 @@ export interface AppSettings {
 	name?: string;
 }
 
-export type Tables = Record<PropertyKey, Database.Serialize>;
+export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<PropertyKey, Database.Serialize>> = {
+	[K in keyof T]: T[K];
+};
 
-export interface DatabaseSettings<D = never> {
+export interface DatabaseSettings<T extends Tables, D = never> {
 	name?: string;
 	database: string;
 	custom: Database.CustomConstructor<D>;
-	tables: Tables;
+	tables: T;
 }
 
 export class App extends BasicEventEmitter<{}> {
@@ -32,7 +34,7 @@ export class App extends BasicEventEmitter<{}> {
 		this.prepared = true;
 	}
 
-	createDatabase<D = never>({ name = DEFAULT_ENTRY_NAME, database, custom, tables }: DatabaseSettings<D>): Tables {
+	createDatabase<T extends Tables, D = never>({ name = DEFAULT_ENTRY_NAME, database, custom, tables }: DatabaseSettings<T, D>): T {
 		const db = new Database.Database(custom, database);
 		_database.set(name, db);
 

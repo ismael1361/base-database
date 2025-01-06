@@ -10,15 +10,15 @@ export * as Database from "./Database";
 export * as SQLiteRegex from "./SQLiteRegex";
 
 interface DataBase<T extends Tables> {
-	table<N extends keyof T>(name: N): Database.TableReady<T[keyof N]>;
+	table<N extends keyof T>(name: N): Database.TableReady<T[N]>;
 }
 
 export function getDatabase<T extends Tables>(): DataBase<T>;
 export function getDatabase<T extends Tables>(dbname: string): DataBase<T>;
 export function getDatabase<T extends Tables>(app: App | Server, dbname: string): DataBase<T>;
-export function getDatabase<T extends Tables, D = never>(options: DatabaseSettings<D>): DataBase<T>;
-export function getDatabase<T extends Tables, D = never>(app: App | Server, options: DatabaseSettings<D>): DataBase<T>;
-export function getDatabase<T extends Tables, D = never>(app?: App | Server | DatabaseSettings<D> | string, dbname?: string | DatabaseSettings<D>): DataBase<T> {
+export function getDatabase<T extends Tables, D = never>(options: DatabaseSettings<T, D>): DataBase<T>;
+export function getDatabase<T extends Tables, D = never>(app: App | Server, options: DatabaseSettings<T, D>): DataBase<T>;
+export function getDatabase<T extends Tables, D = never>(app?: App | Server | DatabaseSettings<T, D> | string, dbname?: string | DatabaseSettings<T, D>): DataBase<T> {
 	let database: Database.Database<any>;
 
 	if (typeof app === "string") {
@@ -33,7 +33,7 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 			if (typeof dbname === "string") {
 				dbname = dbname as string;
 			} else if (typeof dbname === "object") {
-				app.createDatabase({ name: DEFAULT_ENTRY_NAME, ...dbname });
+				app.createDatabase({ name: DEFAULT_ENTRY_NAME, ...(dbname as any) });
 			}
 		} else {
 			app = appExists() ? getApp() : getServer();
@@ -57,13 +57,13 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 	});
 
 	return {
-		table<N extends keyof T>(name: N) {
-			let table: Database.TableReady<T[keyof N]>;
+		table(name) {
+			let table: Database.TableReady<any>;
 
 			if (_tables.has(`${dbname}_${String(name)}`)) {
-				table = _tables.get(`${dbname}_${String(name)}`) as Database.TableReady<T[keyof N]>;
+				table = _tables.get(`${dbname}_${String(name)}`) as Database.TableReady<any>;
 			} else {
-				const serialize = _serialize.get(`${dbname}_${String(name)}`) as T[keyof N];
+				const serialize = _serialize.get(`${dbname}_${String(name)}`) as any;
 				table = database.table(String(name), serialize);
 				_tables.set(`${dbname}_${String(name)}`, table);
 			}
