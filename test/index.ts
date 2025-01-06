@@ -2,7 +2,7 @@ import { Database, initializeApp, getDatabase } from "../src";
 import { ModelDatabase } from "./DB";
 import { SQLite } from "./SQLite";
 
-const app = initializeApp({});
+const app = initializeApp();
 const db = app.createDatabase({
 	database: ":memory:",
 	custom: SQLite,

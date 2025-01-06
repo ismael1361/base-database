@@ -12,7 +12,6 @@ export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<Pr
 };
 
 export interface DatabaseSettings<T extends Tables, D = never> {
-	name?: string;
 	database: string;
 	custom: Database.CustomConstructor<D>;
 	tables: T;
@@ -34,7 +33,14 @@ export class App extends BasicEventEmitter<{}> {
 		this.prepared = true;
 	}
 
-	createDatabase<T extends Tables, D = never>({ name = DEFAULT_ENTRY_NAME, database, custom, tables }: DatabaseSettings<T, D>): T {
+	createDatabase<T extends Tables, D = never>(options: DatabaseSettings<T, D>): T;
+	createDatabase<T extends Tables, D = never>(name: string, options: DatabaseSettings<T, D>): T;
+	createDatabase<T extends Tables, D = never>(name: string | DatabaseSettings<T, D>, options?: DatabaseSettings<T, D>): T {
+		options = typeof name === "string" ? options : name;
+		name = typeof name === "string" ? name : DEFAULT_ENTRY_NAME;
+
+		const { database, custom, tables } = options as DatabaseSettings<T, D>;
+
 		const db = new Database.Database(custom, database);
 		_database.set(name, db);
 
