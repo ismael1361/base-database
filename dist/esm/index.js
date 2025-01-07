@@ -1,5 +1,4 @@
-import * as Database from "./Database";
+export { Database, SQLiteRegex } from "./Database";
+export * from "./App";
 export * from "./Database";
-export * as SQLiteRegex from "./SQLiteRegex";
-export default Database;
 //# sourceMappingURL=index.js.map

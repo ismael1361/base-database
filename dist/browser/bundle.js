@@ -1,5 +1,179 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.PocketSafe = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.App = void 0;
+const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
+const Database_1 = require("../Database");
+const internal_1 = require("./internal");
+const internal_2 = require("../Database/internal");
+class App extends basic_event_emitter_1.default {
+    settings;
+    isServer = false;
+    name;
+    isDeleted = false;
+    constructor(settings, initialize = true) {
+        super();
+        this.settings = settings;
+        this.name = settings.name ?? internal_1.DEFAULT_ENTRY_NAME;
+        if (initialize)
+            this.initialize();
+    }
+    initialize() {
+        this.prepared = true;
+    }
+    createDatabase(name, options) {
+        options = typeof name === "string" ? options : name;
+        name = typeof name === "string" ? name : internal_1.DEFAULT_ENTRY_NAME;
+        const { database, custom, tables } = options;
+        const db = new Database_1.Database.Database(custom, database);
+        db.tablesNames = Object.keys(tables);
+        internal_2._database.set(name, db);
+        for (const [key, value] of Object.entries(tables)) {
+            internal_2._serialize.set(`${name}_${key}`, value);
+        }
+        return tables;
+    }
+}
+exports.App = App;
+
+},{"../Database":12,"../Database/internal":13,"./internal":4,"basic-event-emitter":18}],2:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Server = void 0;
+const App_1 = require("./App");
+class Server extends App_1.App {
+    settings;
+    isServer = true;
+    constructor(settings) {
+        super(settings, false);
+        this.settings = settings;
+        this.initialize();
+    }
+    initialize() {
+        super.initialize();
+    }
+}
+exports.Server = Server;
+
+},{"./App":1}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteServer = exports.deleteApp = exports.getFirstServer = exports.getFirstApp = exports.getServers = exports.getApps = exports.getServer = exports.getApp = exports.serverExists = exports.appExists = exports.initializeServerApp = exports.initializeApp = void 0;
+const Error_1 = require("../Error");
+const Utils_1 = require("../Utils");
+const App_1 = require("./App");
+const internal_1 = require("./internal");
+const Server_1 = require("./Server");
+function appendNewApp(app) {
+    const existingApp = (app.isServer ? internal_1._servers : internal_1._apps).get(app.name);
+    if (existingApp) {
+        if ((0, Utils_1.deepEqual)(app.settings, existingApp.settings)) {
+            return existingApp;
+        }
+        else {
+            throw Error_1.ERROR_FACTORY.create("duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
+        }
+    }
+    (app.isServer ? internal_1._servers : internal_1._apps).set(app.name, app);
+    app.initialize();
+    return app;
+}
+const initializeApp = (options = {}) => {
+    const newApp = new App_1.App(options);
+    return appendNewApp(newApp);
+};
+exports.initializeApp = initializeApp;
+const initializeServerApp = (options = {}) => {
+    const newApp = new Server_1.Server(options);
+    return appendNewApp(newApp);
+};
+exports.initializeServerApp = initializeServerApp;
+const appExists = (name = internal_1.DEFAULT_ENTRY_NAME) => {
+    return typeof name === "string" && internal_1._apps.has(name);
+};
+exports.appExists = appExists;
+const serverExists = (name = internal_1.DEFAULT_ENTRY_NAME) => {
+    return typeof name === "string" && internal_1._servers.has(name);
+};
+exports.serverExists = serverExists;
+const getApp = (name = internal_1.DEFAULT_ENTRY_NAME) => {
+    const app = internal_1._apps.get(name);
+    if (!app) {
+        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+    }
+    return app;
+};
+exports.getApp = getApp;
+const getServer = (name = internal_1.DEFAULT_ENTRY_NAME) => {
+    const server = internal_1._servers.get(name);
+    if (!server) {
+        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+    }
+    return server;
+};
+exports.getServer = getServer;
+const getApps = () => {
+    return Array.from(internal_1._apps.values());
+};
+exports.getApps = getApps;
+const getServers = () => {
+    return Array.from(internal_1._servers.values());
+};
+exports.getServers = getServers;
+const getFirstApp = () => {
+    let app;
+    if (internal_1._apps.has(internal_1.DEFAULT_ENTRY_NAME)) {
+        app = internal_1._apps.get(internal_1.DEFAULT_ENTRY_NAME);
+    }
+    app = !app ? (0, exports.getApps)()[0] : app;
+    if (!app) {
+        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
+    }
+    return app;
+};
+exports.getFirstApp = getFirstApp;
+const getFirstServer = () => {
+    let server;
+    if (internal_1._servers.has(internal_1.DEFAULT_ENTRY_NAME)) {
+        server = internal_1._servers.get(internal_1.DEFAULT_ENTRY_NAME);
+    }
+    server = !server ? (0, exports.getServers)()[0] : server;
+    if (!server) {
+        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
+    }
+    return server;
+};
+exports.getFirstServer = getFirstServer;
+const deleteApp = (app) => {
+    const name = app.name;
+    if (internal_1._apps.has(name)) {
+        internal_1._apps.delete(name);
+        app.isDeleted = true;
+    }
+};
+exports.deleteApp = deleteApp;
+const deleteServer = (server) => {
+    const name = server.name;
+    if (internal_1._servers.has(name)) {
+        internal_1._servers.delete(name);
+        server.isDeleted = true;
+    }
+};
+exports.deleteServer = deleteServer;
+
+},{"../Error":14,"../Utils":16,"./App":1,"./Server":2,"./internal":4}],4:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports._servers = exports._apps = exports.DEFAULT_ENTRY_NAME = void 0;
+exports.DEFAULT_ENTRY_NAME = "[DEFAULT]";
+exports._apps = new Map();
+exports._servers = new Map();
+
+},{}],5:[function(require,module,exports){
+"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Custom = void 0;
 /**
@@ -65,7 +239,7 @@ class Custom {
 }
 exports.Custom = Custom;
 
-},{}],2:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -90,8 +264,8 @@ const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Table_1 = require("./Table");
 const Query_1 = require("./Query");
 // import { TableReady } from "./TableReady";
-__exportStar(require("./Types"), exports);
 __exportStar(require("./Utils"), exports);
+__exportStar(require("./Types"), exports);
 __exportStar(require("./Custom"), exports);
 __exportStar(require("./Table"), exports);
 /**
@@ -108,6 +282,10 @@ class Database extends basic_event_emitter_1.default {
      */
     tables = new Map();
     /**
+     * The tables names
+     */
+    tablesNames = [];
+    /**
      * Create a database
      * @param custom The custom database class
      * @param database The database name
@@ -118,6 +296,7 @@ class Database extends basic_event_emitter_1.default {
         super();
         this.database = database;
         this.custom = new custom(database);
+        this.prepared = true;
     }
     /**
      * The database is ready
@@ -129,7 +308,8 @@ class Database extends basic_event_emitter_1.default {
      * });
      */
     async ready(callback) {
-        return this.custom.ready(() => callback?.(this) ?? Promise.resolve(undefined));
+        await super.ready();
+        return await this.custom.ready(() => callback?.(this) ?? Promise.resolve(undefined));
     }
     /**
      * Disconnect from the database
@@ -162,6 +342,7 @@ class Database extends basic_event_emitter_1.default {
             if (!table) {
                 table = new Table_1.Table(this.custom, name, columns);
                 this.tables.set(name, table);
+                this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
             }
             return Promise.resolve(table);
         });
@@ -277,6 +458,7 @@ class Database extends basic_event_emitter_1.default {
                 throw new Error("Database is disconnected");
             await this.custom.deleteTable(name);
             this.tables.delete(name);
+            this.tablesNames = this.tablesNames.filter((value) => value !== name);
             this.emit("deleteTable", name);
         });
     }
@@ -293,12 +475,13 @@ class Database extends basic_event_emitter_1.default {
         await this.custom.deleteDatabase();
         this.tables.forEach((table) => table.disconnect());
         this.tables.clear();
+        this.tablesNames = [];
         this.emit("delete");
     }
 }
 exports.Database = Database;
 
-},{"./Custom":1,"./Query":3,"./Table":5,"./Types":6,"./Utils":7,"basic-event-emitter":9}],3:[function(require,module,exports){
+},{"./Custom":5,"./Query":7,"./Table":9,"./Types":10,"./Utils":11,"basic-event-emitter":18}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Query = void 0;
@@ -508,7 +691,7 @@ class Query {
 }
 exports.Query = Query;
 
-},{"./Utils":7}],4:[function(require,module,exports){
+},{"./Utils":11}],8:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getLoadablePath = void 0;
@@ -517,7 +700,7 @@ const getLoadablePath = () => {
 };
 exports.getLoadablePath = getLoadablePath;
 
-},{}],5:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -883,11 +1066,11 @@ class Table extends basic_event_emitter_1.default {
 }
 exports.Table = Table;
 
-},{"./Query":3,"./Utils":7,"basic-event-emitter":9}],6:[function(require,module,exports){
+},{"./Query":7,"./Utils":11,"basic-event-emitter":18}],10:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
-},{}],7:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.cloneObject = exports.isLiteralObject = exports.columns = exports.generateUUID = exports.Types = exports.Operators = void 0;
@@ -1158,7 +1341,7 @@ const serializeDataForGet = (serialize, data) => {
 };
 exports.serializeDataForGet = serializeDataForGet;
 
-},{}],8:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1193,17 +1376,248 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SQLiteRegex = exports.Database = void 0;
+exports.getDatabase = getDatabase;
+const App_1 = require("../App");
+const App_2 = require("../App/App");
+const Server_1 = require("../App/Server");
+const internal_1 = require("../App/internal");
+const internal_2 = require("./internal");
+const Error_1 = require("../Error");
+const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
+exports.Database = __importStar(require("./Database"));
+exports.SQLiteRegex = __importStar(require("./SQLiteRegex"));
+function getDatabase(app, dbname) {
+    let database;
+    if (typeof app === "string") {
+        dbname = app;
+        app = undefined;
+    }
+    if (typeof app === "object") {
+        if (app instanceof App_2.App || app instanceof Server_1.Server) {
+            app = app;
+            if (typeof dbname === "string") {
+                dbname = dbname;
+            }
+            else if (typeof dbname === "object") {
+                app.createDatabase({ name: internal_1.DEFAULT_ENTRY_NAME, ...dbname });
+            }
+        }
+        else {
+            app = (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
+            app.createDatabase({ name: internal_1.DEFAULT_ENTRY_NAME, ...app });
+        }
+    }
+    dbname = typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME;
+    app = app instanceof App_2.App || app instanceof Server_1.Server ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
+    if (!internal_2._database.has(dbname)) {
+        throw Error_1.ERROR_FACTORY.create("db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
+    }
+    database = internal_2._database.get(dbname);
+    database.prepared = false;
+    app?.ready(() => {
+        database.prepared = true;
+    });
+    const events = new basic_event_emitter_1.default();
+    return {
+        tablesNames: [...database.tablesNames],
+        async ready(callback) {
+            await super.ready();
+            return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined));
+        },
+        async disconnect() {
+            await database.disconnect();
+            database.prepared = false;
+            internal_2._database.delete(dbname);
+            internal_2._serialize.forEach((value, key) => {
+                if (key.startsWith(`${dbname}_`)) {
+                    internal_2._serialize.delete(key);
+                }
+            });
+            internal_2._tables.forEach((value, key) => {
+                if (key.startsWith(`${dbname}_`)) {
+                    internal_2._tables.delete(key);
+                }
+            });
+        },
+        table(name) {
+            let table;
+            if (internal_2._tables.has(`${dbname}_${String(name)}`)) {
+                table = internal_2._tables.get(`${dbname}_${String(name)}`);
+            }
+            else {
+                const serialize = internal_2._serialize.get(`${dbname}_${String(name)}`);
+                table = database.table(String(name), serialize);
+                internal_2._tables.set(`${dbname}_${String(name)}`, table);
+            }
+            table.on("insert", (inserted) => {
+                events.emit("insert", name, inserted);
+            });
+            table.on("update", (updated, previous) => {
+                events.emit("update", name, updated, previous);
+            });
+            table.on("delete", (removed) => {
+                events.emit("delete", name, removed);
+            });
+            return table;
+        },
+        async deleteTable(name) {
+            await database.deleteTable(String(name));
+            database.tablesNames = database.tablesNames.filter((value) => value !== String(name));
+            internal_2._serialize.delete(`${dbname}_${String(name)}`);
+            internal_2._tables.delete(`${dbname}_${String(name)}`);
+        },
+        on: events.on.bind(events),
+        once: events.once.bind(events),
+        off: events.off.bind(events),
+        offOnce: events.offOnce.bind(events),
+        async deleteDatabase() {
+            await this.disconnect();
+            await database.deleteDatabase();
+        },
+    };
+}
+
+},{"../App":3,"../App/App":1,"../App/Server":2,"../App/internal":4,"../Error":14,"./Database":6,"./SQLiteRegex":8,"./internal":13,"basic-event-emitter":18}],13:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports._tables = exports._serialize = exports._database = void 0;
+exports._database = new Map();
+exports._serialize = new Map();
+exports._tables = new Map();
+
+},{}],14:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ERROR_FACTORY = void 0;
+const util_1 = require("./util");
+const ERRORS = {
+    ["no-app" /* Errors.NO_APP */]: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
+    ["bad-app-name" /* Errors.BAD_APP_NAME */]: "Nome de aplicativo ilegal: '{$appName}",
+    ["duplicate-app" /* Errors.DUPLICATE_APP */]: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
+    ["app-deleted" /* Errors.APP_DELETED */]: "Aplicativo chamado '{$appName}' já excluído",
+    ["db-disconnected" /* Errors.DB_DISCONNECTED */]: "Banco de dados '{$dbName}' desconectado",
+    ["db-connection-error" /* Errors.DB_CONNECTION_ERROR */]: "Database connection error: {$error}",
+    ["db-not-found" /* Errors.DB_NOT_FOUND */]: "Banco de dados '{$dbName}' não encontrado",
+    ["invalid-argument" /* Errors.INVALID_ARGUMENT */]: "Invalid argument: {$message}",
+};
+exports.ERROR_FACTORY = new util_1.ErrorFactory("app", "base-database", ERRORS);
+
+},{"./util":15}],15:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ErrorFactory = exports.MainError = void 0;
+const ERROR_NAME = "Error";
+class MainError extends Error {
+    code;
+    customData;
+    name = ERROR_NAME;
+    constructor(code, message, customData) {
+        super(message);
+        this.code = code;
+        this.customData = customData;
+        Object.setPrototypeOf(this, MainError.prototype);
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, ErrorFactory.prototype.create);
+        }
+    }
+}
+exports.MainError = MainError;
+const PATTERN = /\{\$([^}]+)}/g;
+function replaceTemplate(template, data) {
+    return template.replace(PATTERN, (_, key) => {
+        const value = data[key];
+        return value != null ? String(value) : `<${key}?>`;
+    });
+}
+class ErrorFactory {
+    service;
+    serviceName;
+    errors;
+    constructor(service, serviceName, errors) {
+        this.service = service;
+        this.serviceName = serviceName;
+        this.errors = errors;
+    }
+    create(code, ...data) {
+        const customData = data[0] || {};
+        const fullCode = `${this.service}/${code}`;
+        const template = this.errors[code];
+        const message = template ? replaceTemplate(template, customData) : "Error";
+        const fullMessage = `${this.serviceName}: ${message} (${fullCode}).`;
+        const error = new MainError(fullCode, fullMessage, customData);
+        return error;
+    }
+}
+exports.ErrorFactory = ErrorFactory;
+
+},{}],16:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deepEqual = exports.isObject = void 0;
+const isObject = (thing) => {
+    return thing !== null && typeof thing === "object";
+};
+exports.isObject = isObject;
+const deepEqual = (a, b) => {
+    if (a === b) {
+        return true;
+    }
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    for (const k of aKeys) {
+        if (!bKeys.includes(k)) {
+            return false;
+        }
+        const aProp = a[k];
+        const bProp = b[k];
+        if ((0, exports.isObject)(aProp) && (0, exports.isObject)(bProp)) {
+            if (!(0, exports.deepEqual)(aProp, bProp)) {
+                return false;
+            }
+        }
+        else if (aProp !== bProp) {
+            return false;
+        }
+    }
+    for (const k of bKeys) {
+        if (!aKeys.includes(k)) {
+            return false;
+        }
+    }
+    return true;
+};
+exports.deepEqual = deepEqual;
+
+},{}],17:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
 var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SQLiteRegex = void 0;
-const Database = __importStar(require("./Database"));
+exports.SQLiteRegex = exports.Database = void 0;
+var Database_1 = require("./Database");
+Object.defineProperty(exports, "Database", { enumerable: true, get: function () { return Database_1.Database; } });
+Object.defineProperty(exports, "SQLiteRegex", { enumerable: true, get: function () { return Database_1.SQLiteRegex; } });
+__exportStar(require("./App"), exports);
 __exportStar(require("./Database"), exports);
-exports.SQLiteRegex = __importStar(require("./SQLiteRegex"));
-exports.default = Database;
 
-},{"./Database":2,"./SQLiteRegex":4}],9:[function(require,module,exports){
+},{"./App":3,"./Database":12}],18:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasicEventEmitter = void 0;
@@ -1556,5 +1970,5 @@ class BasicEventEmitter {
 exports.BasicEventEmitter = BasicEventEmitter;
 exports.default = BasicEventEmitter;
 
-},{}]},{},[8])(8)
+},{}]},{},[17])(17)
 });

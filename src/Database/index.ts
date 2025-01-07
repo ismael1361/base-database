@@ -5,16 +5,34 @@ import { DEFAULT_ENTRY_NAME } from "../App/internal";
 import { Database } from "./";
 import { _database, _serialize, _tables } from "./internal";
 import { Errors, ERROR_FACTORY } from "../Error";
+import { Row, RowDeserialize, Serialize } from "./Types";
+import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 
 export * as Database from "./Database";
 export * as SQLiteRegex from "./SQLiteRegex";
 
+type TableEvents<T extends Tables> = EventsListeners<{
+	insert<N extends keyof T>(table: N, inserted: RowDeserialize<T[N], Row<T[N]>>): void;
+	update<N extends keyof T>(table: N, updated: Array<RowDeserialize<T[N], Row<T[N]>>>, previous: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
+	delete<N extends keyof T>(table: N, removed: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
+}>;
+
 interface DataBase<T extends Tables> {
+	ready<R = void>(callback?: (db: DataBase<T>) => Promise<R>): Promise<R>;
+	disconnect(): Promise<void>;
+	tablesNames: Array<keyof T>;
 	table<N extends keyof T>(name: N): Database.TableReady<T[N]>;
+	deleteTable(name: keyof T): Promise<void>;
+	on: BasicEventEmitter<TableEvents<T>>["on"];
+	once: BasicEventEmitter<TableEvents<T>>["once"];
+	off: BasicEventEmitter<TableEvents<T>>["off"];
+	offOnce: BasicEventEmitter<TableEvents<T>>["offOnce"];
+	deleteDatabase(): Promise<void>;
 }
 
 export function getDatabase<T extends Tables>(): DataBase<T>;
 export function getDatabase<T extends Tables>(dbname: string): DataBase<T>;
+export function getDatabase<T extends Tables>(app: App | Server): DataBase<T>;
 export function getDatabase<T extends Tables>(app: App | Server, dbname: string): DataBase<T>;
 export function getDatabase<T extends Tables, D = never>(options: DatabaseSettings<T, D>): DataBase<T>;
 export function getDatabase<T extends Tables, D = never>(app: App | Server, options: DatabaseSettings<T, D>): DataBase<T>;
@@ -56,7 +74,29 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 		database.prepared = true;
 	});
 
+	const events = new BasicEventEmitter<TableEvents<T>>();
+
 	return {
+		tablesNames: [...database.tablesNames] as Array<keyof T>,
+		async ready(callback) {
+			await super.ready();
+			return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined as any));
+		},
+		async disconnect() {
+			await database.disconnect();
+			database.prepared = false;
+			_database.delete(dbname);
+			_serialize.forEach((value, key) => {
+				if (key.startsWith(`${dbname}_`)) {
+					_serialize.delete(key);
+				}
+			});
+			_tables.forEach((value, key) => {
+				if (key.startsWith(`${dbname}_`)) {
+					_tables.delete(key);
+				}
+			});
+		},
 		table(name) {
 			let table: Database.TableReady<any>;
 
@@ -68,7 +108,33 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 				_tables.set(`${dbname}_${String(name)}`, table);
 			}
 
+			table.on("insert", (inserted: any) => {
+				events.emit("insert", name, inserted);
+			});
+
+			table.on("update", (updated: any, previous: any) => {
+				events.emit("update", name, updated, previous);
+			});
+
+			table.on("delete", (removed: any) => {
+				events.emit("delete", name, removed);
+			});
+
 			return table;
+		},
+		async deleteTable(name) {
+			await database.deleteTable(String(name));
+			database.tablesNames = database.tablesNames.filter((value) => value !== String(name));
+			_serialize.delete(`${dbname}_${String(name)}`);
+			_tables.delete(`${dbname}_${String(name)}`);
+		},
+		on: events.on.bind(events),
+		once: events.once.bind(events),
+		off: events.off.bind(events),
+		offOnce: events.offOnce.bind(events),
+		async deleteDatabase() {
+			await this.disconnect();
+			await database.deleteDatabase();
 		},
 	};
 }

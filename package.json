@@ -1,6 +1,6 @@
 {
 	"name": "base-database",
-	"version": "0.7.2",
+	"version": "1.0.0",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",
 	"types": "./dist/types/index.d.ts",
@@ -29,8 +29,8 @@
 		"lib"
 	],
 	"browser": {
-		"./dist/cjs/SQLiteRegex/index.js": "./dist/cjs/SQLiteRegex/browser.js",
-		"./dist/esm/SQLiteRegex/index.js": "./dist/esm/SQLiteRegex/browser.js"
+		"./dist/cjs/Database/SQLiteRegex/index.js": "./dist/cjs/Database/SQLiteRegex/browser.js",
+		"./dist/esm/Database/SQLiteRegex/index.js": "./dist/esm/Database/SQLiteRegex/browser.js"
 	},
 	"scripts": {
 		"start": "nodemon",

@@ -32,6 +32,10 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * The tables
 	 */
 	private tables: Map<string, Table<any>> = new Map();
+	/**
+	 * The tables names
+	 */
+	public tablesNames: Array<string> = [];
 
 	/**
 	 * Create a database
@@ -92,6 +96,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 			if (!table) {
 				table = new Table(this.custom, name, columns);
 				this.tables.set(name, table);
+				this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
 			}
 			return Promise.resolve(table as Table<S, O>);
 		});
@@ -246,6 +251,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 			if (this.custom.disconnected) throw new Error("Database is disconnected");
 			await this.custom.deleteTable(name);
 			this.tables.delete(name);
+			this.tablesNames = this.tablesNames.filter((value) => value !== name);
 			this.emit("deleteTable", name);
 		});
 	}
@@ -263,6 +269,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 		await this.custom.deleteDatabase();
 		this.tables.forEach((table) => table.disconnect());
 		this.tables.clear();
+		this.tablesNames = [];
 		this.emit("delete");
 	}
 }

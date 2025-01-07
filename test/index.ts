@@ -7,7 +7,7 @@ const db = app.createDatabase({
 	database: ":memory:",
 	custom: SQLite,
 	tables: {
-		test: Database.columns({
+		myTable: Database.columns({
 			name: {
 				type: Database.Types.TEXT,
 			},
@@ -23,18 +23,20 @@ const db = app.createDatabase({
 	},
 });
 
+type MainDatabase = typeof db;
+
 class Test {
 	public name: string;
 	public createdAt: Date;
 	public gender: "Female" | "Male" | "Other";
 
-	constructor(row: Partial<Database.Row<typeof db.test>>) {
+	constructor(row: Partial<Database.Row<(typeof db)["myTable"]>>) {
 		this.name = row.name ?? "";
 		this.createdAt = row.createdAt ?? new Date();
 		this.gender = row.gender ?? "Other";
 	}
 
-	serialize(): Partial<Database.Row<typeof db.test>> {
+	serialize(): Partial<Database.Row<(typeof db)["myTable"]>> {
 		return {
 			name: this.name,
 			createdAt: this.createdAt,
@@ -43,7 +45,7 @@ class Test {
 	}
 }
 
-const test = getDatabase<typeof db>().table("test");
+const test = getDatabase<MainDatabase>().table("myTable");
 
 const TestTable = test.schema(Test);
 

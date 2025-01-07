@@ -42,6 +42,7 @@ export class App extends BasicEventEmitter<{}> {
 		const { database, custom, tables } = options as DatabaseSettings<T, D>;
 
 		const db = new Database.Database(custom, database);
+		db.tablesNames = Object.keys(tables);
 		_database.set(name, db);
 
 		for (const [key, value] of Object.entries(tables)) {
