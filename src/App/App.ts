@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Database } from "../Database";
+import * as Database from "../Database/Database";
 import { DEFAULT_ENTRY_NAME } from "./internal";
 import { _database, _serialize } from "../Database/internal";
 
@@ -13,7 +13,7 @@ export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<Pr
 
 export interface DatabaseSettings<T extends Tables, D = never> {
 	database: string;
-	custom: Database.CustomConstructor<D>;
+	storage: Database.CustomConstructor<D>;
 	tables: T;
 }
 
@@ -39,9 +39,9 @@ export class App extends BasicEventEmitter<{}> {
 		options = typeof name === "string" ? options : name;
 		name = typeof name === "string" ? name : DEFAULT_ENTRY_NAME;
 
-		const { database, custom, tables } = options as DatabaseSettings<T, D>;
+		const { database, storage, tables } = options as DatabaseSettings<T, D>;
 
-		const db = new Database.Database(custom, database);
+		const db = new Database.Database(storage, database);
 		db.tablesNames = Object.keys(tables);
 		_database.set(name, db);
 

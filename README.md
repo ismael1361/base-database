@@ -3,66 +3,66 @@
 **Base-Database** é uma biblioteca projetada para oferecer uma padronização eficiente no gerenciamento de dados, permitindo integração com diversos tipos de armazenamento. Através de sua estrutura modular, o desenvolvedor pode criar soluções personalizadas ao estender a classe abstrata `Database.Custom`, que serve como base para diferentes estratégias de armazenamento.
 
 - [Base-Database](#base-database)
-	- [Funcionalidades](#funcionalidades)
-	- [Como funciona](#como-funciona)
-	- [Exemplos de Uso](#exemplos-de-uso)
-	- [Instalação](#instalação)
-	- [Exemplo de Implementação](#exemplo-de-implementação)
-	- [Aplicação](#aplicação)
-		- [`initializeApp`](#initializeapp)
-		- [`initializeServer`](#initializeserver)
-	- [Banco de dados](#banco-de-dados)
-		- [`createDatabase`](#createdatabase)
-		- [``getDatabase``](#getdatabase)
-			- [``ready``](#ready)
-			- [``disconnect``](#disconnect)
-			- [``table``](#table)
-				- [``ready``](#ready-1)
-				- [``query``](#query)
-					- [``where``](#where)
-					- [``filter``](#filter)
-					- [``take``](#take)
-					- [``skip``](#skip)
-					- [``sort``](#sort)
-					- [``order``](#order)
-					- [``columns``](#columns)
-					- [``get``](#get)
-					- [``first``](#first)
-					- [``last``](#last)
-					- [``one``](#one)
-					- [``exists``](#exists)
-					- [``count``](#count)
-					- [``length``](#length)
-					- [``set``](#set)
-					- [``update``](#update)
-					- [``delete``](#delete)
-				- [``insert``](#insert)
-				- [``selectAll``](#selectall)
-				- [``selectOne``](#selectone)
-				- [``selectFirst``](#selectfirst)
-				- [``selectLast``](#selectlast)
-				- [``length``](#length-1)
-				- [``on``, ``once``, ``off`` e ``offOnce``](#on-once-off-e-offonce)
-				- [``schema``](#schema)
-				- [``bindSchema``](#bindschema)
-			- [``deleteTable``](#deletetable)
-			- [``deleteDatabase``](#deletedatabase)
-		- [``Database.Custom<db = never>``](#databasecustomdb--never)
-			- [``constructor(database: string)``](#constructordatabase-string)
-			- [``connect(database: string): Promise<db>``](#connectdatabase-string-promisedb)
-			- [``disconnect(): Promise<void>``](#disconnect-promisevoid)
-			- [``selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>>``](#selectalltable-string-query-databasequeryoptions-promisearraydatabaserow)
-			- [``selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``](#selectonetable-string-query-databasequeryoptions-promisedatabaserow--null)
-			- [``selectFirst(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``](#selectfirsttable-string-query-databasequeryoptions-promisedatabaserow--null)
-			- [``selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``](#selectlasttable-string-query-databasequeryoptions-promisedatabaserow--null)
-			- [``insert(table: string, data: Database.Row): Promise<Database.Row>``](#inserttable-string-data-databaserow-promisedatabaserow)
-			- [``update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void>``](#updatetable-string-data-partialdatabaserow-query-databasequeryoptions-promisevoid)
-			- [``delete(table: string, query: Database.QueryOptions): Promise<void>``](#deletetable-string-query-databasequeryoptions-promisevoid)
-			- [``length(table: string, query?: Database.QueryOptions): Promise<number>``](#lengthtable-string-query-databasequeryoptions-promisenumber)
-			- [``createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void>``](#createtabletable-string-columns-databaseserializedatatypeany-promisevoid)
-			- [``deleteTable(table: string): Promise<void>``](#deletetabletable-string-promisevoid)
-			- [``deleteDatabase(): Promise<void>``](#deletedatabase-promisevoid)
-			- [Exemplo utilizando SQLite](#exemplo-utilizando-sqlite)
+  - [Funcionalidades](#funcionalidades)
+  - [Como funciona](#como-funciona)
+  - [Exemplos de Uso](#exemplos-de-uso)
+  - [Instalação](#instalação)
+  - [Exemplo de Implementação](#exemplo-de-implementação)
+  - [Aplicação](#aplicação)
+    - [`initializeApp`](#initializeapp)
+    - [`initializeServer`](#initializeserver)
+  - [Banco de dados](#banco-de-dados)
+    - [`createDatabase`](#createdatabase)
+    - [``getDatabase``](#getdatabase)
+      - [``ready``](#ready)
+      - [``disconnect``](#disconnect)
+      - [``table``](#table)
+        - [``ready``](#ready-1)
+        - [``query``](#query)
+          - [``where``](#where)
+          - [``filter``](#filter)
+          - [``take``](#take)
+          - [``skip``](#skip)
+          - [``sort``](#sort)
+          - [``order``](#order)
+          - [``columns``](#columns)
+          - [``get``](#get)
+          - [``first``](#first)
+          - [``last``](#last)
+          - [``one``](#one)
+          - [``exists``](#exists)
+          - [``count``](#count)
+          - [``length``](#length)
+          - [``set``](#set)
+          - [``update``](#update)
+          - [``delete``](#delete)
+        - [``insert``](#insert)
+        - [``selectAll``](#selectall)
+        - [``selectOne``](#selectone)
+        - [``selectFirst``](#selectfirst)
+        - [``selectLast``](#selectlast)
+        - [``length``](#length-1)
+        - [``on``, ``once``, ``off`` e ``offOnce``](#on-once-off-e-offonce)
+        - [``schema``](#schema)
+        - [``bindSchema``](#bindschema)
+      - [``deleteTable``](#deletetable)
+      - [``deleteDatabase``](#deletedatabase)
+    - [``Database.Custom<db = never>``](#databasecustomdb--never)
+      - [``constructor(database: string)``](#constructordatabase-string)
+      - [``connect(database: string): Promise<db>``](#connectdatabase-string-promisedb)
+      - [``disconnect(): Promise<void>``](#disconnect-promisevoid)
+      - [``selectAll(table: string, query?: Database.QueryOptions): Promise<Array<Database.Row>>``](#selectalltable-string-query-databasequeryoptions-promisearraydatabaserow)
+      - [``selectOne(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``](#selectonetable-string-query-databasequeryoptions-promisedatabaserow--null)
+      - [``selectFirst(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``](#selectfirsttable-string-query-databasequeryoptions-promisedatabaserow--null)
+      - [``selectLast(table: string, query?: Database.QueryOptions): Promise<Database.Row | null>``](#selectlasttable-string-query-databasequeryoptions-promisedatabaserow--null)
+      - [``insert(table: string, data: Database.Row): Promise<Database.Row>``](#inserttable-string-data-databaserow-promisedatabaserow)
+      - [``update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void>``](#updatetable-string-data-partialdatabaserow-query-databasequeryoptions-promisevoid)
+      - [``delete(table: string, query: Database.QueryOptions): Promise<void>``](#deletetable-string-query-databasequeryoptions-promisevoid)
+      - [``length(table: string, query?: Database.QueryOptions): Promise<number>``](#lengthtable-string-query-databasequeryoptions-promisenumber)
+      - [``createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void>``](#createtabletable-string-columns-databaseserializedatatypeany-promisevoid)
+      - [``deleteTable(table: string): Promise<void>``](#deletetabletable-string-promisevoid)
+      - [``deleteDatabase(): Promise<void>``](#deletedatabase-promisevoid)
+      - [Exemplo utilizando SQLite](#exemplo-utilizando-sqlite)
 
 ## Funcionalidades
 
@@ -108,7 +108,7 @@ class MyDatabase extends Database.Custom {
 
 const db = app.createDatabase({
   database: ":memory:",
-  custom: MyDatabase,
+  storage: MyDatabase,
   tables: {
     test: Database.columns({
       name: {
@@ -176,7 +176,7 @@ class MyDatabase extends Database.Custom {
 
 const db = app.createDatabase({
   database: ":memory:",
-  custom: MyDatabase,
+  storage: MyDatabase,
   tables: {
     myTable: Database.columns({
       name: {
@@ -214,16 +214,48 @@ Cada coluna da tabela deve ser definida com um objeto que contém as seguintes p
 
 ```ts
 const columns = {
-  id: { type: Database.Types.INTEGER, primaryKey: true },
-  name: { type: Database.Types.TEXT, notNull: true },
-  date: { type: Database.Types.DATETIME },
-  amount: { type: Database.Types.FLOAT },
-  isValid: { type: Database.Types.BOOLEAN, default: false },
-  variant: { type: Database.Types.BIGINT, notNull: true },
-  email: { type: Database.Types.TEXT, unique: true, check: (value) => {
-    if (!value.includes("@")) throw new Error("Invalid email");
-  }},
-  options: { type: Database.Types.TEXT, options: ["Option 1", "Option 2", "Option 3"] as const },
+  id: { 
+    type: Database.Types.INTEGER, 
+    primaryKey: true 
+  },
+  uuid: { 
+    type: Database.Types.TEXT, 
+    unique: true, 
+    notNull: true,
+    default(){
+      return Database.generateUUID();
+    }
+  },
+  name: { 
+    type: Database.Types.TEXT, 
+    notNull: true
+  },
+  date: { 
+    type: Database.Types.DATETIME 
+  },
+  amount: { 
+    type: Database.Types.FLOAT,
+    default: 0
+  },
+  isValid: { 
+    type: Database.Types.BOOLEAN, 
+    default: false 
+  },
+  variant: { 
+    type: Database.Types.BIGINT, 
+    notNull: true 
+  },
+  email: { 
+    type: Database.Types.TEXT, 
+    unique: true, 
+    check(value){
+      if (!value.includes("@")) throw new Error("Invalid email");
+    }
+  },
+  options: { 
+    type: Database.Types.TEXT, 
+    options: ["Option 1", "Option 2", "Option 3"] as const 
+  },
 };
 ```
 

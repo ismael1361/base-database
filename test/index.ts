@@ -5,7 +5,7 @@ import { SQLite } from "./SQLite";
 const app = initializeApp();
 const db = app.createDatabase({
 	database: ":memory:",
-	custom: SQLite,
+	storage: SQLite,
 	tables: {
 		myTable: Database.columns({
 			name: {
@@ -45,9 +45,7 @@ class Test {
 	}
 }
 
-const test = getDatabase<MainDatabase>().table("myTable");
-
-const TestTable = test.schema(Test);
+const TestTable = getDatabase<MainDatabase>().table("myTable").schema(Test);
 
 TestTable.on("insert", (row) => {
 	console.log("insert schema", row);

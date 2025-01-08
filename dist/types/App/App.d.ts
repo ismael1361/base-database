@@ -1,5 +1,5 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Database } from "../Database";
+import * as Database from "../Database/Database";
 export interface AppSettings {
     name?: string;
 }
@@ -8,7 +8,7 @@ export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<Pr
 };
 export interface DatabaseSettings<T extends Tables, D = never> {
     database: string;
-    custom: Database.CustomConstructor<D>;
+    storage: Database.CustomConstructor<D>;
     tables: T;
 }
 export declare class App extends BasicEventEmitter<{}> {
