@@ -22,21 +22,17 @@ function replaceTemplate(template, data) {
 }
 export class ErrorFactory {
     service;
-    serviceName;
     errors;
-    constructor(service, serviceName, errors) {
+    constructor(service, errors) {
         this.service = service;
-        this.serviceName = serviceName;
         this.errors = errors;
     }
-    create(code, ...data) {
+    create(serviceName, code, ...data) {
         const customData = data[0] || {};
-        const fullCode = `${this.service}/${code}`;
-        const template = this.errors[code];
+        const fullCode = `${this.service}/${String(code)}`;
+        const { template } = this.errors[code];
         const message = template ? replaceTemplate(template, customData) : "Error";
-        const fullMessage = `${this.serviceName}: ${message} (${fullCode}).`;
-        const error = new MainError(fullCode, fullMessage, customData);
-        return error;
+        return new MainError(fullCode, `${serviceName}: ${message} (${fullCode}).`, customData);
     }
 }
 //# sourceMappingURL=util.js.map

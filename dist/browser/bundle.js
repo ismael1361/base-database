@@ -74,7 +74,7 @@ function appendNewApp(app) {
             return existingApp;
         }
         else {
-            throw Error_1.ERROR_FACTORY.create("duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
+            throw Error_1.ERROR_FACTORY.create("App", "duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
         }
     }
     (app.isServer ? internal_1._servers : internal_1._apps).set(app.name, app);
@@ -102,7 +102,7 @@ exports.serverExists = serverExists;
 const getApp = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     const app = internal_1._apps.get(name);
     if (!app) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+        throw Error_1.ERROR_FACTORY.create("getApp", "no-app" /* Errors.NO_APP */, { appName: name });
     }
     return app;
 };
@@ -110,7 +110,7 @@ exports.getApp = getApp;
 const getServer = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     const server = internal_1._servers.get(name);
     if (!server) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+        throw Error_1.ERROR_FACTORY.create("getServer", "no-app" /* Errors.NO_APP */, { appName: name });
     }
     return server;
 };
@@ -130,7 +130,7 @@ const getFirstApp = () => {
     }
     app = !app ? (0, exports.getApps)()[0] : app;
     if (!app) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
+        throw Error_1.ERROR_FACTORY.create("getFirstApp", "no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
     }
     return app;
 };
@@ -142,7 +142,7 @@ const getFirstServer = () => {
     }
     server = !server ? (0, exports.getServers)()[0] : server;
     if (!server) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
+        throw Error_1.ERROR_FACTORY.create("getFirstServer", "no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
     }
     return server;
 };
@@ -176,6 +176,7 @@ exports._servers = new Map();
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Custom = void 0;
+const Error_1 = require("../Error");
 /**
  * Custom database class
  */
@@ -232,14 +233,14 @@ class Custom {
      */
     async ready(callback) {
         if (this._disconnected)
-            throw new Error("Database is disconnected");
+            throw Error_1.ERROR_FACTORY.create("Database.Custom", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.databaseName });
         const db = await this.database;
         return callback ? await callback(db) : undefined;
     }
 }
 exports.Custom = Custom;
 
-},{}],6:[function(require,module,exports){
+},{"../Error":14}],6:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -263,7 +264,7 @@ exports.Database = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Table_1 = require("./Table");
 const Query_1 = require("./Query");
-// import { TableReady } from "./TableReady";
+const Error_1 = require("../Error");
 __exportStar(require("./Utils"), exports);
 __exportStar(require("./Types"), exports);
 __exportStar(require("./Custom"), exports);
@@ -337,7 +338,7 @@ class Database extends basic_event_emitter_1.default {
     forTable(name, columns) {
         return this.ready(() => {
             if (this.custom.disconnected)
-                throw new Error("Database is disconnected");
+                throw Error_1.ERROR_FACTORY.create("Database.forTable", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.database });
             let table = this.tables.get(name);
             if (!table) {
                 table = new Table_1.Table(this.custom, name, columns);
@@ -354,13 +355,14 @@ class Database extends basic_event_emitter_1.default {
                 ? this.forTable(name, columns)
                 : name instanceof Promise
                     ? name
-                    : Promise.reject(new Error("Invalid arguments"));
+                    : Promise.reject(Error_1.ERROR_FACTORY.create("Database.readyTable", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: "Valid arguments: (name: string, columns: Serialize) or (table: Promise<Table<S, O>>)" }));
+        const self = this;
         return {
             table,
             async ready(callback) {
                 const t = await this.table;
                 if (!t)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return t.ready(callback);
             },
             query() {
@@ -368,32 +370,32 @@ class Database extends basic_event_emitter_1.default {
             },
             async insert(data) {
                 if (!this.table)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return await this.table.then((t) => t.insert(data));
             },
             async selectAll() {
                 if (!this.table)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return await this.table.then((t) => t.selectAll());
             },
             async selectOne() {
                 if (!this.table)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return await this.table.then((t) => t.selectOne());
             },
             async selectFirst() {
                 if (!this.table)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return await this.table.then((t) => t.selectFirst());
             },
             async selectLast() {
                 if (!this.table)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return await this.table.then((t) => t.selectLast());
             },
             async length() {
                 if (!this.table)
-                    throw new Error("Table not found");
+                    throw Error_1.ERROR_FACTORY.create("Database.readyTable", "db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
                 return await this.table.then((t) => t.length());
             },
             on(name, callback) {
@@ -455,7 +457,7 @@ class Database extends basic_event_emitter_1.default {
     deleteTable(name) {
         return this.ready(async () => {
             if (this.custom.disconnected)
-                throw new Error("Database is disconnected");
+                throw Error_1.ERROR_FACTORY.create("Database.deleteTable", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.database });
             await this.custom.deleteTable(name);
             this.tables.delete(name);
             this.tablesNames = this.tablesNames.filter((value) => value !== name);
@@ -470,7 +472,7 @@ class Database extends basic_event_emitter_1.default {
      * await database.deleteDatabase();
      */
     async deleteDatabase() {
-        // if (this.custom.disconnected) throw new Error("Database is disconnected");
+        // if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
         this.custom.disconnected = true;
         await this.custom.deleteDatabase();
         this.tables.forEach((table) => table.disconnect());
@@ -481,7 +483,7 @@ class Database extends basic_event_emitter_1.default {
 }
 exports.Database = Database;
 
-},{"./Custom":5,"./Query":7,"./Table":9,"./Types":10,"./Utils":11,"basic-event-emitter":18}],7:[function(require,module,exports){
+},{"../Error":14,"./Custom":5,"./Query":7,"./Table":9,"./Types":10,"./Utils":11,"basic-event-emitter":18}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Query = void 0;
@@ -694,13 +696,17 @@ exports.Query = Query;
 },{"./Utils":11}],8:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLoadablePath = void 0;
+exports.getLoadablePath = exports.implementable = void 0;
+const Error_1 = require("../../Error");
+exports.implementable = false;
 const getLoadablePath = () => {
-    throw new Error("Unsupported platform for sqlite-regex, on a browser environment. Consult the sqlite-regex NPM package README for details.");
+    throw Error_1.ERROR_FACTORY.create("SQLiteRegex", "not-implemented" /* Errors.NOT_IMPLEMENTED */, {
+        message: "Unsupported platform for sqlite-regex, on a browser environment. Consult the sqlite-regex NPM package README for details.",
+    });
 };
 exports.getLoadablePath = getLoadablePath;
 
-},{}],9:[function(require,module,exports){
+},{"../../Error":14}],9:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -710,6 +716,7 @@ exports.Table = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Utils_1 = require("./Utils");
 const Query_1 = require("./Query");
+const Error_1 = require("../Error");
 const eventsEmitters = new Map();
 /**
  * Table class
@@ -810,7 +817,7 @@ class Table extends basic_event_emitter_1.default {
      */
     async ready(callback) {
         if (this._disconnected)
-            throw new Error("Database is disconnected");
+            throw Error_1.ERROR_FACTORY.create("Table.ready", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.custom.databaseName });
         await this.initialPromise;
         return callback ? await callback(this) : undefined;
     }
@@ -864,7 +871,7 @@ class Table extends basic_event_emitter_1.default {
      */
     bindSchema(schema, options = {}) {
         if (typeof schema !== "function") {
-            throw new TypeError("constructor must be a function");
+            throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: "constructor must be a function" });
         }
         if (typeof options.serializer === "undefined") {
             if (typeof schema.prototype.serialize === "function") {
@@ -876,11 +883,11 @@ class Table extends basic_event_emitter_1.default {
                 options.serializer = schema.prototype[options.serializer];
             }
             else {
-                throw new TypeError(`${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer`);
+                throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer` });
             }
         }
         else if (typeof options.serializer !== "function") {
-            throw new TypeError(`serializer for class ${schema.name} must be a function, or the name of a prototype method`);
+            throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `serializer for class ${schema.name} must be a function, or the name of a prototype method` });
         }
         if (typeof options.creator === "undefined") {
             if (typeof schema.create === "function") {
@@ -892,11 +899,11 @@ class Table extends basic_event_emitter_1.default {
                 options.creator = schema[options.creator];
             }
             else {
-                throw new TypeError(`${schema.name}.${options.creator} is not a function, cannot use it as creator`);
+                throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `${schema.name}.${options.creator} is not a function, cannot use it as creator` });
             }
         }
         else if (typeof options.creator !== "function") {
-            throw new TypeError(`creator for class ${schema.name} must be a function, or the name of a static method`);
+            throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `creator for class ${schema.name} must be a function, or the name of a static method` });
         }
         const prepare = {
             schema: schema,
@@ -1066,7 +1073,7 @@ class Table extends basic_event_emitter_1.default {
 }
 exports.Table = Table;
 
-},{"./Query":7,"./Utils":11,"basic-event-emitter":18}],10:[function(require,module,exports){
+},{"../Error":14,"./Query":7,"./Utils":11,"basic-event-emitter":18}],10:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -1415,7 +1422,7 @@ function getDatabase(app, dbname) {
     dbname = typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME;
     app = app instanceof App_2.App || app instanceof Server_1.Server ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
     if (!internal_2._database.has(dbname)) {
-        throw Error_1.ERROR_FACTORY.create("db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
+        throw Error_1.ERROR_FACTORY.create("getDatabase", "db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
     }
     database = internal_2._database.get(dbname);
     database.prepared = false;
@@ -1495,17 +1502,52 @@ exports._tables = new Map();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ERROR_FACTORY = void 0;
 const util_1 = require("./util");
-const ERRORS = {
-    ["no-app" /* Errors.NO_APP */]: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
-    ["bad-app-name" /* Errors.BAD_APP_NAME */]: "Nome de aplicativo ilegal: '{$appName}",
-    ["duplicate-app" /* Errors.DUPLICATE_APP */]: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
-    ["app-deleted" /* Errors.APP_DELETED */]: "Aplicativo chamado '{$appName}' já excluído",
-    ["db-disconnected" /* Errors.DB_DISCONNECTED */]: "Banco de dados '{$dbName}' desconectado",
-    ["db-connection-error" /* Errors.DB_CONNECTION_ERROR */]: "Database connection error: {$error}",
-    ["db-not-found" /* Errors.DB_NOT_FOUND */]: "Banco de dados '{$dbName}' não encontrado",
-    ["invalid-argument" /* Errors.INVALID_ARGUMENT */]: "Invalid argument: {$message}",
-};
-exports.ERROR_FACTORY = new util_1.ErrorFactory("app", "base-database", ERRORS);
+exports.ERROR_FACTORY = new util_1.ErrorFactory("base-database", {
+    ["no-app" /* Errors.NO_APP */]: {
+        template: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
+        params: ["appName"],
+    },
+    ["bad-app-name" /* Errors.BAD_APP_NAME */]: {
+        template: "Nome de aplicativo ilegal: '{$appName}",
+        params: ["appName"],
+    },
+    ["duplicate-app" /* Errors.DUPLICATE_APP */]: {
+        template: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
+        params: ["appName"],
+    },
+    ["app-deleted" /* Errors.APP_DELETED */]: {
+        template: "Aplicativo chamado '{$appName}' já excluído",
+        params: ["appName"],
+    },
+    ["db-disconnected" /* Errors.DB_DISCONNECTED */]: {
+        template: "Banco de dados '{$dbName}' desconectado",
+        params: ["dbName"],
+    },
+    ["db-connection-error" /* Errors.DB_CONNECTION_ERROR */]: {
+        template: "Database connection error: {$error}",
+        params: ["error"],
+    },
+    ["db-not-found" /* Errors.DB_NOT_FOUND */]: {
+        template: "Banco de dados '{$dbName}' não encontrado",
+        params: ["dbName"],
+    },
+    ["db-table-not-found" /* Errors.DB_TABLE_NOT_FOUND */]: {
+        template: "Tabela '{$tableName}' não encontrada no banco de dados '{$dbName}'",
+        params: ["dbName", "tableName"],
+    },
+    ["not-implemented" /* Errors.NOT_IMPLEMENTED */]: {
+        template: "Not implemented: {$message}",
+        params: ["message"],
+    },
+    ["invalid-argument" /* Errors.INVALID_ARGUMENT */]: {
+        template: "Invalid argument: {$message}",
+        params: ["message"],
+    },
+    ["internal-error" /* Errors.INTERNAL_ERROR */]: {
+        template: "Internal error: {$message}",
+        params: ["message"],
+    },
+});
 
 },{"./util":15}],15:[function(require,module,exports){
 "use strict";
@@ -1536,21 +1578,17 @@ function replaceTemplate(template, data) {
 }
 class ErrorFactory {
     service;
-    serviceName;
     errors;
-    constructor(service, serviceName, errors) {
+    constructor(service, errors) {
         this.service = service;
-        this.serviceName = serviceName;
         this.errors = errors;
     }
-    create(code, ...data) {
+    create(serviceName, code, ...data) {
         const customData = data[0] || {};
-        const fullCode = `${this.service}/${code}`;
-        const template = this.errors[code];
+        const fullCode = `${this.service}/${String(code)}`;
+        const { template } = this.errors[code];
         const message = template ? replaceTemplate(template, customData) : "Error";
-        const fullMessage = `${this.serviceName}: ${message} (${fullCode}).`;
-        const error = new MainError(fullCode, fullMessage, customData);
-        return error;
+        return new MainError(fullCode, `${serviceName}: ${message} (${fullCode}).`, customData);
     }
 }
 exports.ErrorFactory = ErrorFactory;
@@ -1610,10 +1648,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SQLiteRegex = exports.Database = void 0;
-var Database_1 = require("./Database");
-Object.defineProperty(exports, "Database", { enumerable: true, get: function () { return Database_1.Database; } });
-Object.defineProperty(exports, "SQLiteRegex", { enumerable: true, get: function () { return Database_1.SQLiteRegex; } });
 __exportStar(require("./App"), exports);
 __exportStar(require("./Database"), exports);
 

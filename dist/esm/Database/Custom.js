@@ -1,3 +1,4 @@
+import { ERROR_FACTORY } from "../Error";
 /**
  * Custom database class
  */
@@ -54,7 +55,7 @@ export class Custom {
      */
     async ready(callback) {
         if (this._disconnected)
-            throw new Error("Database is disconnected");
+            throw ERROR_FACTORY.create("Database.Custom", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.databaseName });
         const db = await this.database;
         return callback ? await callback(db) : undefined;
     }

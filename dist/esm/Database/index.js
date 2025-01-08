@@ -31,7 +31,7 @@ export function getDatabase(app, dbname) {
     dbname = typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME;
     app = app instanceof App || app instanceof Server ? app : appExists() ? getApp() : getServer();
     if (!_database.has(dbname)) {
-        throw ERROR_FACTORY.create("db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
+        throw ERROR_FACTORY.create("getDatabase", "db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
     }
     database = _database.get(dbname);
     database.prepared = false;

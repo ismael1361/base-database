@@ -10,7 +10,7 @@ function appendNewApp(app) {
             return existingApp;
         }
         else {
-            throw ERROR_FACTORY.create("duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
+            throw ERROR_FACTORY.create("App", "duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
         }
     }
     (app.isServer ? _servers : _apps).set(app.name, app);
@@ -34,14 +34,14 @@ export const serverExists = (name = DEFAULT_ENTRY_NAME) => {
 export const getApp = (name = DEFAULT_ENTRY_NAME) => {
     const app = _apps.get(name);
     if (!app) {
-        throw ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+        throw ERROR_FACTORY.create("getApp", "no-app" /* Errors.NO_APP */, { appName: name });
     }
     return app;
 };
 export const getServer = (name = DEFAULT_ENTRY_NAME) => {
     const server = _servers.get(name);
     if (!server) {
-        throw ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+        throw ERROR_FACTORY.create("getServer", "no-app" /* Errors.NO_APP */, { appName: name });
     }
     return server;
 };
@@ -58,7 +58,7 @@ export const getFirstApp = () => {
     }
     app = !app ? getApps()[0] : app;
     if (!app) {
-        throw ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: DEFAULT_ENTRY_NAME });
+        throw ERROR_FACTORY.create("getFirstApp", "no-app" /* Errors.NO_APP */, { appName: DEFAULT_ENTRY_NAME });
     }
     return app;
 };
@@ -69,7 +69,7 @@ export const getFirstServer = () => {
     }
     server = !server ? getServers()[0] : server;
     if (!server) {
-        throw ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: DEFAULT_ENTRY_NAME });
+        throw ERROR_FACTORY.create("getFirstServer", "no-app" /* Errors.NO_APP */, { appName: DEFAULT_ENTRY_NAME });
     }
     return server;
 };

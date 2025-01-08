@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Custom = void 0;
+const Error_1 = require("../Error");
 /**
  * Custom database class
  */
@@ -57,7 +58,7 @@ class Custom {
      */
     async ready(callback) {
         if (this._disconnected)
-            throw new Error("Database is disconnected");
+            throw Error_1.ERROR_FACTORY.create("Database.Custom", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.databaseName });
         const db = await this.database;
         return callback ? await callback(db) : undefined;
     }

@@ -14,10 +14,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SQLiteRegex = exports.Database = void 0;
-var Database_1 = require("./Database");
-Object.defineProperty(exports, "Database", { enumerable: true, get: function () { return Database_1.Database; } });
-Object.defineProperty(exports, "SQLiteRegex", { enumerable: true, get: function () { return Database_1.SQLiteRegex; } });
 __exportStar(require("./App"), exports);
 __exportStar(require("./Database"), exports);
 //# sourceMappingURL=index.js.map

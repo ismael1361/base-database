@@ -13,7 +13,7 @@ function appendNewApp(app) {
             return existingApp;
         }
         else {
-            throw Error_1.ERROR_FACTORY.create("duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
+            throw Error_1.ERROR_FACTORY.create("App", "duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
         }
     }
     (app.isServer ? internal_1._servers : internal_1._apps).set(app.name, app);
@@ -41,7 +41,7 @@ exports.serverExists = serverExists;
 const getApp = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     const app = internal_1._apps.get(name);
     if (!app) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+        throw Error_1.ERROR_FACTORY.create("getApp", "no-app" /* Errors.NO_APP */, { appName: name });
     }
     return app;
 };
@@ -49,7 +49,7 @@ exports.getApp = getApp;
 const getServer = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     const server = internal_1._servers.get(name);
     if (!server) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: name });
+        throw Error_1.ERROR_FACTORY.create("getServer", "no-app" /* Errors.NO_APP */, { appName: name });
     }
     return server;
 };
@@ -69,7 +69,7 @@ const getFirstApp = () => {
     }
     app = !app ? (0, exports.getApps)()[0] : app;
     if (!app) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
+        throw Error_1.ERROR_FACTORY.create("getFirstApp", "no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
     }
     return app;
 };
@@ -81,7 +81,7 @@ const getFirstServer = () => {
     }
     server = !server ? (0, exports.getServers)()[0] : server;
     if (!server) {
-        throw Error_1.ERROR_FACTORY.create("no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
+        throw Error_1.ERROR_FACTORY.create("getFirstServer", "no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
     }
     return server;
 };

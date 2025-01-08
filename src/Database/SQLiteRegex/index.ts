@@ -1,6 +1,7 @@
 import { join, dirname } from "path";
 import { arch, platform } from "process";
 import { statSync } from "fs";
+import { ERROR_FACTORY, Errors } from "../../Error";
 
 const supportedPlatforms = [
 	["darwin", "x64"],
@@ -34,13 +35,15 @@ const getLocalPath = () => {
 	);
 };
 
+export const implementable = validPlatform(platform, arch);
+
 export const getLoadablePath = () => {
-	if (!validPlatform(platform, arch)) {
-		throw new Error(
-			`Unsupported platform for sqlite-regex, on a ${platform}-${arch} machine, but not in supported platforms (${supportedPlatforms
+	if (!implementable) {
+		throw ERROR_FACTORY.create("SQLiteRegex.getLoadablePath", Errors.INTERNAL_ERROR, {
+			message: `Unsupported platform for sqlite-regex, on a ${platform}-${arch} machine, but not in supported platforms (${supportedPlatforms
 				.map(([p, a]) => `${p}-${a}`)
 				.join(",")}). Consult the sqlite-regex NPM package README for details. `,
-		);
+		});
 	}
 
 	const packageName = platformPackageName(platform, arch);
@@ -57,9 +60,9 @@ export const getLoadablePath = () => {
 	}
 
 	if (!statSync(loadablePath, { throwIfNoEntry: false })) {
-		throw new Error(
-			`Loadble extension for sqlite-regex not found. Was the ${packageName} package installed? Avoid using the --no-optional flag, as the optional dependencies for sqlite-regex are required.`,
-		);
+		throw ERROR_FACTORY.create("SQLiteRegex.getLoadablePath", Errors.INTERNAL_ERROR, {
+			message: `Loadble extension for sqlite-regex not found. Was the ${packageName} package installed? Avoid using the --no-optional flag, as the optional dependencies for sqlite-regex are required.`,
+		});
 	}
 
 	return loadablePath;

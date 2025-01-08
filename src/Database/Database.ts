@@ -3,7 +3,7 @@ import { Row, Serialize, TableReady } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
-// import { TableReady } from "./TableReady";
+import { Errors, ERROR_FACTORY } from "../Error";
 
 export * from "./Utils";
 export * from "./Types";
@@ -90,7 +90,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 */
 	forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>> {
 		return this.ready(() => {
-			if (this.custom.disconnected) throw new Error("Database is disconnected");
+			if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.forTable", Errors.DB_DISCONNECTED, { dbName: this.database });
 
 			let table = this.tables.get(name);
 			if (!table) {
@@ -138,14 +138,17 @@ export class Database<db = never> extends BasicEventEmitter<{
 				? this.forTable<S, O>(name, columns!)
 				: name instanceof Promise
 				? name
-				: Promise.reject(new Error("Invalid arguments"));
+				: Promise.reject(
+						ERROR_FACTORY.create("Database.readyTable", Errors.INVALID_ARGUMENT, { message: "Valid arguments: (name: string, columns: Serialize) or (table: Promise<Table<S, O>>)" }),
+				  );
+		const self = this;
 
 		return {
 			table,
 
 			async ready(callback) {
 				const t = await this.table;
-				if (!t) throw new Error("Table not found");
+				if (!t) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return t.ready(callback);
 			},
 
@@ -154,32 +157,32 @@ export class Database<db = never> extends BasicEventEmitter<{
 			},
 
 			async insert(data) {
-				if (!this.table) throw new Error("Table not found");
+				if (!this.table) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return await this.table.then((t) => t.insert(data));
 			},
 
 			async selectAll() {
-				if (!this.table) throw new Error("Table not found");
+				if (!this.table) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return await this.table.then((t) => t.selectAll());
 			},
 
 			async selectOne() {
-				if (!this.table) throw new Error("Table not found");
+				if (!this.table) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return await this.table.then((t) => t.selectOne());
 			},
 
 			async selectFirst() {
-				if (!this.table) throw new Error("Table not found");
+				if (!this.table) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return await this.table.then((t) => t.selectFirst());
 			},
 
 			async selectLast() {
-				if (!this.table) throw new Error("Table not found");
+				if (!this.table) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return await this.table.then((t) => t.selectLast());
 			},
 
 			async length() {
-				if (!this.table) throw new Error("Table not found");
+				if (!this.table) throw ERROR_FACTORY.create("Database.readyTable", Errors.DB_TABLE_NOT_FOUND, { dbName: self.database, tableName: typeof name === "string" ? name : "" });
 				return await this.table.then((t) => t.length());
 			},
 
@@ -248,7 +251,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 */
 	deleteTable(name: string): Promise<void> {
 		return this.ready(async () => {
-			if (this.custom.disconnected) throw new Error("Database is disconnected");
+			if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
 			await this.custom.deleteTable(name);
 			this.tables.delete(name);
 			this.tablesNames = this.tablesNames.filter((value) => value !== name);
@@ -264,7 +267,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * await database.deleteDatabase();
 	 */
 	async deleteDatabase(): Promise<void> {
-		// if (this.custom.disconnected) throw new Error("Database is disconnected");
+		// if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
 		this.custom.disconnected = true;
 		await this.custom.deleteDatabase();
 		this.tables.forEach((table) => table.disconnect());

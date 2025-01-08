@@ -8,10 +8,13 @@ export const enum Errors {
 	DB_DISCONNECTED = "db-disconnected",
 	DB_CONNECTION_ERROR = "db-connection-error",
 	DB_NOT_FOUND = "db-not-found",
+	DB_TABLE_NOT_FOUND = "db-table-not-found",
 	INVALID_ARGUMENT = "invalid-argument",
+	NOT_IMPLEMENTED = "not-implemented",
+	INTERNAL_ERROR = "internal-error",
 }
 
-export const ERROR_FACTORY = new ErrorFactory("app", "base-database", {
+export const ERROR_FACTORY = new ErrorFactory("base-database", {
 	[Errors.NO_APP]: {
 		template: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
 		params: ["appName"],
@@ -40,8 +43,20 @@ export const ERROR_FACTORY = new ErrorFactory("app", "base-database", {
 		template: "Banco de dados '{$dbName}' não encontrado",
 		params: ["dbName"],
 	},
+	[Errors.DB_TABLE_NOT_FOUND]: {
+		template: "Tabela '{$tableName}' não encontrada no banco de dados '{$dbName}'",
+		params: ["dbName", "tableName"],
+	},
+	[Errors.NOT_IMPLEMENTED]: {
+		template: "Not implemented: {$message}",
+		params: ["message"],
+	},
 	[Errors.INVALID_ARGUMENT]: {
 		template: "Invalid argument: {$message}",
+		params: ["message"],
+	},
+	[Errors.INTERNAL_ERROR]: {
+		template: "Internal error: {$message}",
 		params: ["message"],
 	},
 } as const);

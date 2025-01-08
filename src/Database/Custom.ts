@@ -1,3 +1,4 @@
+import { ERROR_FACTORY, Errors } from "../Error";
 import { QueryOptions, Row, SerializeDataType } from "./Types";
 
 /**
@@ -59,7 +60,7 @@ export abstract class Custom<db = never> {
 	 * });
 	 */
 	async ready<R = never>(callback?: (db: db) => R | Promise<R>): Promise<R> {
-		if (this._disconnected) throw new Error("Database is disconnected");
+		if (this._disconnected) throw ERROR_FACTORY.create("Database.Custom", Errors.DB_DISCONNECTED, { dbName: this.databaseName });
 		const db = await this.database;
 		return callback ? await callback(db) : (undefined as any);
 	}

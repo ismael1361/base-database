@@ -3,6 +3,7 @@ import { CreatorFunction, DataType, Row, RowDeserialize, RowSerialize, Serializa
 import { getDatatype, serializeDataForGet, serializeDataForSet } from "./Utils";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
+import { ERROR_FACTORY, Errors } from "../Error";
 
 type TableEvents<S extends Serialize, O = Row<S>> = EventsListeners<{
 	insert: (inserted: RowDeserialize<S, O>) => void;
@@ -134,7 +135,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * });
 	 */
 	async ready<R = never>(callback?: (table: Table<S, O>) => R | Promise<R>): Promise<R> {
-		if (this._disconnected) throw new Error("Database is disconnected");
+		if (this._disconnected) throw ERROR_FACTORY.create("Table.ready", Errors.DB_DISCONNECTED, { dbName: this.custom.databaseName });
 		await this.initialPromise;
 		return callback ? await callback(this) : (undefined as any);
 	}
@@ -192,7 +193,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 */
 	bindSchema<O extends SerializableClassType<S>>(schema: O, options: TypeSchemaOptions<S, O> = {}): Table<S, O> {
 		if (typeof schema !== "function") {
-			throw new TypeError("constructor must be a function");
+			throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: "constructor must be a function" });
 		}
 
 		if (typeof options.serializer === "undefined") {
@@ -203,10 +204,10 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			if (typeof schema.prototype[options.serializer] === "function") {
 				options.serializer = schema.prototype[options.serializer];
 			} else {
-				throw new TypeError(`${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer`);
+				throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: `${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer` });
 			}
 		} else if (typeof options.serializer !== "function") {
-			throw new TypeError(`serializer for class ${schema.name} must be a function, or the name of a prototype method`);
+			throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: `serializer for class ${schema.name} must be a function, or the name of a prototype method` });
 		}
 
 		if (typeof options.creator === "undefined") {
@@ -217,10 +218,10 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			if (typeof (schema as any)[options.creator] === "function") {
 				options.creator = (schema as any)[options.creator] as CreatorFunction<S, O>;
 			} else {
-				throw new TypeError(`${schema.name}.${options.creator} is not a function, cannot use it as creator`);
+				throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: `${schema.name}.${options.creator} is not a function, cannot use it as creator` });
 			}
 		} else if (typeof options.creator !== "function") {
-			throw new TypeError(`creator for class ${schema.name} must be a function, or the name of a static method`);
+			throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: `creator for class ${schema.name} must be a function, or the name of a static method` });
 		}
 
 		const prepare: TableSchema<S, O> = {

@@ -7,6 +7,7 @@ exports.Table = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
 const Utils_1 = require("./Utils");
 const Query_1 = require("./Query");
+const Error_1 = require("../Error");
 const eventsEmitters = new Map();
 /**
  * Table class
@@ -107,7 +108,7 @@ class Table extends basic_event_emitter_1.default {
      */
     async ready(callback) {
         if (this._disconnected)
-            throw new Error("Database is disconnected");
+            throw Error_1.ERROR_FACTORY.create("Table.ready", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.custom.databaseName });
         await this.initialPromise;
         return callback ? await callback(this) : undefined;
     }
@@ -161,7 +162,7 @@ class Table extends basic_event_emitter_1.default {
      */
     bindSchema(schema, options = {}) {
         if (typeof schema !== "function") {
-            throw new TypeError("constructor must be a function");
+            throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: "constructor must be a function" });
         }
         if (typeof options.serializer === "undefined") {
             if (typeof schema.prototype.serialize === "function") {
@@ -173,11 +174,11 @@ class Table extends basic_event_emitter_1.default {
                 options.serializer = schema.prototype[options.serializer];
             }
             else {
-                throw new TypeError(`${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer`);
+                throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `${schema.name}.prototype.${options.serializer} is not a function, cannot use it as serializer` });
             }
         }
         else if (typeof options.serializer !== "function") {
-            throw new TypeError(`serializer for class ${schema.name} must be a function, or the name of a prototype method`);
+            throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `serializer for class ${schema.name} must be a function, or the name of a prototype method` });
         }
         if (typeof options.creator === "undefined") {
             if (typeof schema.create === "function") {
@@ -189,11 +190,11 @@ class Table extends basic_event_emitter_1.default {
                 options.creator = schema[options.creator];
             }
             else {
-                throw new TypeError(`${schema.name}.${options.creator} is not a function, cannot use it as creator`);
+                throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `${schema.name}.${options.creator} is not a function, cannot use it as creator` });
             }
         }
         else if (typeof options.creator !== "function") {
-            throw new TypeError(`creator for class ${schema.name} must be a function, or the name of a static method`);
+            throw Error_1.ERROR_FACTORY.create("Table.bindSchema", "invalid-argument" /* Errors.INVALID_ARGUMENT */, { message: `creator for class ${schema.name} must be a function, or the name of a static method` });
         }
         const prepare = {
             schema: schema,

@@ -76,7 +76,7 @@ export class SQLite extends Database.Custom<sqlite3.Database> {
 		return new Promise((resolve, reject) => {
 			try {
 				const db = (this.db = new sqlite3.Database(database));
-				db.loadExtension(SQLiteRegex.getLoadablePath());
+				if (SQLiteRegex.implementable) db.loadExtension(SQLiteRegex.getLoadablePath());
 				db.serialize(() => {
 					resolve(db);
 				});

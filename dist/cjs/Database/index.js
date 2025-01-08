@@ -71,7 +71,7 @@ function getDatabase(app, dbname) {
     dbname = typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME;
     app = app instanceof App_2.App || app instanceof Server_1.Server ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
     if (!internal_2._database.has(dbname)) {
-        throw Error_1.ERROR_FACTORY.create("db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
+        throw Error_1.ERROR_FACTORY.create("getDatabase", "db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
     }
     database = internal_2._database.get(dbname);
     database.prepared = false;

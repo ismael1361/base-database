@@ -37,15 +37,13 @@ function replaceTemplate(template: string, data: ErrorData): string {
 }
 
 export class ErrorFactory<Errors extends ErrorMap<any>> {
-	constructor(private readonly service: string, private readonly serviceName: string, private readonly errors: Errors) {}
+	constructor(private readonly service: string, private readonly errors: Errors) {}
 
-	create<K extends keyof Errors, P extends PropertyKey[] = Errors[K]["params"]>(code: K, ...data: K extends keyof Errors ? [ErrorData<P>] : []): MainError {
+	create<K extends keyof Errors, P extends PropertyKey[] = Errors[K]["params"]>(serviceName: string, code: K, ...data: K extends keyof Errors ? [ErrorData<P>] : []): MainError {
 		const customData = (data[0] as ErrorData) || {};
 		const fullCode = `${this.service}/${String(code)}`;
 		const { template } = this.errors[code];
-
 		const message = template ? replaceTemplate(template, customData) : "Error";
-
-		return new MainError(fullCode, `${this.serviceName}: ${message} (${fullCode}).`, customData);
+		return new MainError(fullCode, `${serviceName}: ${message} (${fullCode}).`, customData);
 	}
 }

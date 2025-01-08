@@ -7,34 +7,55 @@ export declare const enum Errors {
     DB_DISCONNECTED = "db-disconnected",
     DB_CONNECTION_ERROR = "db-connection-error",
     DB_NOT_FOUND = "db-not-found",
-    INVALID_ARGUMENT = "invalid-argument"
+    DB_TABLE_NOT_FOUND = "db-table-not-found",
+    INVALID_ARGUMENT = "invalid-argument",
+    NOT_IMPLEMENTED = "not-implemented",
+    INTERNAL_ERROR = "internal-error"
 }
-interface ErrorParams {
-    [Errors.NO_APP]: {
-        appName: string;
+export declare const ERROR_FACTORY: ErrorFactory<{
+    readonly "no-app": {
+        readonly template: string;
+        readonly params: ["appName"];
     };
-    [Errors.BAD_APP_NAME]: {
-        appName: string;
+    readonly "bad-app-name": {
+        readonly template: "Nome de aplicativo ilegal: '{$appName}";
+        readonly params: ["appName"];
     };
-    [Errors.DUPLICATE_APP]: {
-        appName: string;
+    readonly "duplicate-app": {
+        readonly template: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações";
+        readonly params: ["appName"];
     };
-    [Errors.APP_DELETED]: {
-        appName: string;
+    readonly "app-deleted": {
+        readonly template: "Aplicativo chamado '{$appName}' já excluído";
+        readonly params: ["appName"];
     };
-    [Errors.DB_DISCONNECTED]: {
-        dbName: string;
+    readonly "db-disconnected": {
+        readonly template: "Banco de dados '{$dbName}' desconectado";
+        readonly params: ["dbName"];
     };
-    [Errors.DB_CONNECTION_ERROR]: {
-        error: string;
+    readonly "db-connection-error": {
+        readonly template: "Database connection error: {$error}";
+        readonly params: ["error"];
     };
-    [Errors.DB_NOT_FOUND]: {
-        dbName: string;
+    readonly "db-not-found": {
+        readonly template: "Banco de dados '{$dbName}' não encontrado";
+        readonly params: ["dbName"];
     };
-    [Errors.INVALID_ARGUMENT]: {
-        message: string;
+    readonly "db-table-not-found": {
+        readonly template: "Tabela '{$tableName}' não encontrada no banco de dados '{$dbName}'";
+        readonly params: ["dbName", "tableName"];
     };
-}
-export declare const ERROR_FACTORY: ErrorFactory<Errors, ErrorParams>;
-export {};
+    readonly "not-implemented": {
+        readonly template: "Not implemented: {$message}";
+        readonly params: ["message"];
+    };
+    readonly "invalid-argument": {
+        readonly template: "Invalid argument: {$message}";
+        readonly params: ["message"];
+    };
+    readonly "internal-error": {
+        readonly template: "Internal error: {$message}";
+        readonly params: ["message"];
+    };
+}>;
 //# sourceMappingURL=index.d.ts.map

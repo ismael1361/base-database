@@ -5,7 +5,7 @@ import { DEFAULT_ENTRY_NAME } from "../App/internal";
 import { Database } from "./";
 import { _database, _serialize, _tables } from "./internal";
 import { Errors, ERROR_FACTORY } from "../Error";
-import { Row, RowDeserialize, Serialize } from "./Types";
+import { Row, RowDeserialize } from "./Types";
 import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 
 export * as Database from "./Database";
@@ -63,7 +63,7 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 	app = (app as any) instanceof App || (app as any) instanceof Server ? app : appExists() ? getApp() : getServer();
 
 	if (!_database.has(dbname)) {
-		throw ERROR_FACTORY.create(Errors.DB_NOT_FOUND, { dbName: dbname });
+		throw ERROR_FACTORY.create("getDatabase", Errors.DB_NOT_FOUND, { dbName: dbname });
 	}
 
 	database = _database.get(dbname) as Database.Database<any>;

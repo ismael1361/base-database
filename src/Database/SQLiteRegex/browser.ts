@@ -1,3 +1,9 @@
+import { ERROR_FACTORY, Errors } from "../../Error";
+
+export const implementable = false;
+
 export const getLoadablePath = () => {
-	throw new Error("Unsupported platform for sqlite-regex, on a browser environment. Consult the sqlite-regex NPM package README for details.");
+	throw ERROR_FACTORY.create("SQLiteRegex", Errors.NOT_IMPLEMENTED, {
+		message: "Unsupported platform for sqlite-regex, on a browser environment. Consult the sqlite-regex NPM package README for details.",
+	});
 };
