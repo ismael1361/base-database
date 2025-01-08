@@ -11,26 +11,37 @@ export const enum Errors {
 	INVALID_ARGUMENT = "invalid-argument",
 }
 
-const ERRORS: ErrorMap<Errors> = {
-	[Errors.NO_APP]: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
-	[Errors.BAD_APP_NAME]: "Nome de aplicativo ilegal: '{$appName}",
-	[Errors.DUPLICATE_APP]: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
-	[Errors.APP_DELETED]: "Aplicativo chamado '{$appName}' já excluído",
-	[Errors.DB_DISCONNECTED]: "Banco de dados '{$dbName}' desconectado",
-	[Errors.DB_CONNECTION_ERROR]: "Database connection error: {$error}",
-	[Errors.DB_NOT_FOUND]: "Banco de dados '{$dbName}' não encontrado",
-	[Errors.INVALID_ARGUMENT]: "Invalid argument: {$message}",
-};
-
-interface ErrorParams {
-	[Errors.NO_APP]: { appName: string };
-	[Errors.BAD_APP_NAME]: { appName: string };
-	[Errors.DUPLICATE_APP]: { appName: string };
-	[Errors.APP_DELETED]: { appName: string };
-	[Errors.DB_DISCONNECTED]: { dbName: string };
-	[Errors.DB_CONNECTION_ERROR]: { error: string };
-	[Errors.DB_NOT_FOUND]: { dbName: string };
-	[Errors.INVALID_ARGUMENT]: { message: string };
-}
-
-export const ERROR_FACTORY = new ErrorFactory<Errors, ErrorParams>("app", "base-database", ERRORS);
+export const ERROR_FACTORY = new ErrorFactory("app", "base-database", {
+	[Errors.NO_APP]: {
+		template: "Nenhum aplicativo '{$appName}' foi criado - " + "chame inicializeApp() primeiro",
+		params: ["appName"],
+	},
+	[Errors.BAD_APP_NAME]: {
+		template: "Nome de aplicativo ilegal: '{$appName}",
+		params: ["appName"],
+	},
+	[Errors.DUPLICATE_APP]: {
+		template: "O aplicativo chamado '{$appName}' já existe com diferentes opções ou configurações",
+		params: ["appName"],
+	},
+	[Errors.APP_DELETED]: {
+		template: "Aplicativo chamado '{$appName}' já excluído",
+		params: ["appName"],
+	},
+	[Errors.DB_DISCONNECTED]: {
+		template: "Banco de dados '{$dbName}' desconectado",
+		params: ["dbName"],
+	},
+	[Errors.DB_CONNECTION_ERROR]: {
+		template: "Database connection error: {$error}",
+		params: ["error"],
+	},
+	[Errors.DB_NOT_FOUND]: {
+		template: "Banco de dados '{$dbName}' não encontrado",
+		params: ["dbName"],
+	},
+	[Errors.INVALID_ARGUMENT]: {
+		template: "Invalid argument: {$message}",
+		params: ["message"],
+	},
+} as const);

@@ -1,10 +1,17 @@
-export type ErrorMap<ErrorCode extends string> = {
-	readonly [K in ErrorCode]: string;
+export type ErrorMap<ErrorCode extends PropertyKey> = {
+	readonly [K in ErrorCode]: {
+		readonly template: string;
+		readonly params: PropertyKey[];
+	};
 };
 
-export interface ErrorData {
-	[key: string]: unknown;
-}
+export type ErrorData<P extends PropertyKey[] = PropertyKey[]> = P extends Array<infer K>
+	? K extends PropertyKey
+		? {
+				[key in K]: string;
+		  }
+		: {}
+	: {};
 
 const ERROR_NAME = "Error";
 
@@ -29,20 +36,16 @@ function replaceTemplate(template: string, data: ErrorData): string {
 	});
 }
 
-export class ErrorFactory<ErrorCode extends string, ErrorParams extends { readonly [K in ErrorCode]?: ErrorData } = {}> {
-	constructor(private readonly service: string, private readonly serviceName: string, private readonly errors: ErrorMap<ErrorCode>) {}
+export class ErrorFactory<Errors extends ErrorMap<any>> {
+	constructor(private readonly service: string, private readonly serviceName: string, private readonly errors: Errors) {}
 
-	create<K extends ErrorCode>(code: K, ...data: K extends keyof ErrorParams ? [ErrorParams[K]] : []): MainError {
+	create<K extends keyof Errors, P extends PropertyKey[] = Errors[K]["params"]>(code: K, ...data: K extends keyof Errors ? [ErrorData<P>] : []): MainError {
 		const customData = (data[0] as ErrorData) || {};
-		const fullCode = `${this.service}/${code}`;
-		const template = this.errors[code];
+		const fullCode = `${this.service}/${String(code)}`;
+		const { template } = this.errors[code];
 
 		const message = template ? replaceTemplate(template, customData) : "Error";
 
-		const fullMessage = `${this.serviceName}: ${message} (${fullCode}).`;
-
-		const error = new MainError(fullCode, fullMessage, customData);
-
-		return error;
+		return new MainError(fullCode, `${this.serviceName}: ${message} (${fullCode}).`, customData);
 	}
 }
