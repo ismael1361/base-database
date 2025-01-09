@@ -188,7 +188,9 @@ const db = app.createDatabase({
       },
       createdAt: {
         type: Database.Types.DATETIME,
-        default: () => new Date(),
+        default(){
+          return new Date();
+        },
       },
     }),
   },
