@@ -33,13 +33,28 @@ export const Types: {
 	NULL: null,
 } as const;
 
-export const generateUUID = (separator: string = "") => {
-	let currentTime = Date.now();
-	return `xxxxxxxx${separator}xxxx${separator}4xxx${separator}yxxx${separator}xxxxxxxxxxxx`.replace(/[xy]/g, function (c) {
-		const r = (currentTime + Math.random() * 16) % 16 | 0;
-		currentTime = Math.floor(currentTime / 16);
-		return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-	});
+export const generateUUID = (separator: string = "", version: "v4" | "v7" = "v7") => {
+	switch (version) {
+		case "v7": {
+			return "tttttttt${separator}tttt${separator}7xxx${separator}yxxx${separator}xxxxxxxxxxxx"
+				.replace(/[xy]/g, function (c) {
+					const r = Math.trunc(Math.random() * 16);
+					const v = c == "x" ? r : (r & 0x3) | 0x8;
+					return v.toString(16);
+				})
+				.replace(/^[t]{8}-[t]{4}/, function () {
+					const unixtimestamp = Date.now().toString(16).padStart(12, "0");
+					return unixtimestamp.slice(0, 8) + "-" + unixtimestamp.slice(8);
+				});
+		}
+		default: {
+			let currentTime = Date.now();
+			return `xxxxxxxx${separator}xxxx${separator}4xxx${separator}yxxx${separator}xxxxxxxxxxxx`.replace(/[xy]/g, function (c) {
+				const r = (currentTime + Math.random() * 16) % 16 | 0;
+				return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+			});
+		}
+	}
 };
 
 export const columns = <S extends Serialize>(columns: S): S => {
