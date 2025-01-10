@@ -1,3 +1,5 @@
+import { dirname } from "path";
+
 export const isObject = (thing: unknown): thing is object => {
 	return thing !== null && typeof thing === "object";
 };
@@ -31,4 +33,18 @@ export const deepEqual = (a: object, b: object): boolean => {
 		}
 	}
 	return true;
+};
+
+export const getLocalPath = () => {
+	const trace = new Error().stack;
+	return dirname(
+		trace
+			?.split("\n")[2]
+			.split(" (")[1]
+			.replace(/\:(\d+)\:(\d+)\)$/g, "") ?? "./",
+	);
+};
+
+export const isInstanceOf = <O extends Function>(obj: any, constructor: O): obj is O => {
+	return obj != null && obj.constructor === constructor;
 };

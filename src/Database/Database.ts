@@ -88,18 +88,22 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *    date: { type: Database.Types.DATETIME },
 	 * });
 	 */
-	forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>> {
-		return this.ready(() => {
-			if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.forTable", Errors.DB_DISCONNECTED, { dbName: this.database });
+	async forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>> {
+		try {
+			return await this.ready(() => {
+				if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.forTable", Errors.DB_DISCONNECTED, { dbName: this.database });
 
-			let table = this.tables.get(name);
-			if (!table) {
-				table = new Table(this.custom, name, columns);
-				this.tables.set(name, table);
-				this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
-			}
-			return Promise.resolve(table as Table<S, O>);
-		});
+				let table = this.tables.get(name);
+				if (!table) {
+					table = new Table(this.custom, name, columns);
+					this.tables.set(name, table);
+					this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
+				}
+				return Promise.resolve(table as Table<S, O>);
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Database.forTable", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -249,14 +253,18 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * @example
 	 * await database.deleteTable("my-table");
 	 */
-	deleteTable(name: string): Promise<void> {
-		return this.ready(async () => {
-			if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
-			await this.custom.deleteTable(name);
-			this.tables.delete(name);
-			this.tablesNames = this.tablesNames.filter((value) => value !== name);
-			this.emit("deleteTable", name);
-		});
+	async deleteTable(name: string): Promise<void> {
+		try {
+			return await this.ready(async () => {
+				if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
+				await this.custom.deleteTable(name);
+				this.tables.delete(name);
+				this.tablesNames = this.tablesNames.filter((value) => value !== name);
+				this.emit("deleteTable", name);
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Database.deleteTable", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -268,11 +276,15 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 */
 	async deleteDatabase(): Promise<void> {
 		// if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
-		this.custom.disconnected = true;
-		await this.custom.deleteDatabase();
-		this.tables.forEach((table) => table.disconnect());
-		this.tables.clear();
-		this.tablesNames = [];
-		this.emit("delete");
+		try {
+			this.custom.disconnected = true;
+			await this.custom.deleteDatabase();
+			this.tables.forEach((table) => table.disconnect());
+			this.tables.clear();
+			this.tablesNames = [];
+			this.emit("delete");
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Database.deleteDatabase", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 }

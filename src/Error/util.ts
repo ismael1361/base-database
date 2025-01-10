@@ -1,7 +1,7 @@
 export type ErrorMap<ErrorCode extends PropertyKey> = {
 	readonly [K in ErrorCode]: {
 		readonly template: string;
-		readonly params: PropertyKey[];
+		readonly params?: PropertyKey[];
 	};
 };
 
@@ -39,7 +39,11 @@ function replaceTemplate(template: string, data: ErrorData): string {
 export class ErrorFactory<Errors extends ErrorMap<any>> {
 	constructor(private readonly service: string, private readonly errors: Errors) {}
 
-	create<K extends keyof Errors, P extends PropertyKey[] = Errors[K]["params"]>(serviceName: string, code: K, ...data: K extends keyof Errors ? [ErrorData<P>] : []): MainError {
+	create<K extends keyof Errors, P extends PropertyKey[] | undefined = Errors[K]["params"]>(
+		serviceName: string,
+		code: K,
+		...data: K extends keyof Errors ? (P extends PropertyKey[] ? [ErrorData<P>] : any[]) : any[]
+	): MainError {
 		const customData = (data[0] as ErrorData) || {};
 		const fullCode = `${this.service}/${String(code)}`;
 		const { template } = this.errors[code];

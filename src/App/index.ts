@@ -4,17 +4,17 @@ import { AppSettings, App } from "./App";
 import { _apps, _servers, DEFAULT_ENTRY_NAME } from "./internal";
 import { Server, ServerSettings } from "./Server";
 
-function appendNewApp(app: App | Server) {
+function appendNewApp<T extends App | Server>(app: T): T {
 	const existingApp = (app.isServer ? _servers : _apps).get(app.name);
 	if (existingApp) {
 		if (deepEqual(app.settings, existingApp.settings)) {
-			return existingApp;
+			return existingApp as T;
 		} else {
 			throw ERROR_FACTORY.create("App", Errors.DUPLICATE_APP, { appName: app.name });
 		}
 	}
 
-	(app.isServer ? _servers : _apps).set(app.name, app);
+	(app.isServer ? _servers : _apps).set(app.name, app as any);
 
 	app.initialize();
 
@@ -26,7 +26,7 @@ export const initializeApp = (options: AppSettings = {}): App => {
 	return appendNewApp(newApp);
 };
 
-export const initializeServerApp = (options: ServerSettings = {}): Server => {
+export const initializeServer = (options: ServerSettings = {}): Server => {
 	const newApp = new Server(options);
 	return appendNewApp(newApp);
 };

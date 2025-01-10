@@ -92,18 +92,23 @@ class Database extends basic_event_emitter_1.default {
      *    date: { type: Database.Types.DATETIME },
      * });
      */
-    forTable(name, columns) {
-        return this.ready(() => {
-            if (this.custom.disconnected)
-                throw Error_1.ERROR_FACTORY.create("Database.forTable", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.database });
-            let table = this.tables.get(name);
-            if (!table) {
-                table = new Table_1.Table(this.custom, name, columns);
-                this.tables.set(name, table);
-                this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
-            }
-            return Promise.resolve(table);
-        });
+    async forTable(name, columns) {
+        try {
+            return await this.ready(() => {
+                if (this.custom.disconnected)
+                    throw Error_1.ERROR_FACTORY.create("Database.forTable", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.database });
+                let table = this.tables.get(name);
+                if (!table) {
+                    table = new Table_1.Table(this.custom, name, columns);
+                    this.tables.set(name, table);
+                    this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
+                }
+                return Promise.resolve(table);
+            });
+        }
+        catch (e) {
+            throw Error_1.ERROR_FACTORY.create("Database.forTable", "internal-error" /* Errors.INTERNAL_ERROR */, { message: "message" in e ? e.message : String(e) });
+        }
     }
     readyTable(name, columns) {
         const table = typeof name === "string" && this.tables.has(name)
@@ -211,15 +216,20 @@ class Database extends basic_event_emitter_1.default {
      * @example
      * await database.deleteTable("my-table");
      */
-    deleteTable(name) {
-        return this.ready(async () => {
-            if (this.custom.disconnected)
-                throw Error_1.ERROR_FACTORY.create("Database.deleteTable", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.database });
-            await this.custom.deleteTable(name);
-            this.tables.delete(name);
-            this.tablesNames = this.tablesNames.filter((value) => value !== name);
-            this.emit("deleteTable", name);
-        });
+    async deleteTable(name) {
+        try {
+            return await this.ready(async () => {
+                if (this.custom.disconnected)
+                    throw Error_1.ERROR_FACTORY.create("Database.deleteTable", "db-disconnected" /* Errors.DB_DISCONNECTED */, { dbName: this.database });
+                await this.custom.deleteTable(name);
+                this.tables.delete(name);
+                this.tablesNames = this.tablesNames.filter((value) => value !== name);
+                this.emit("deleteTable", name);
+            });
+        }
+        catch (e) {
+            throw Error_1.ERROR_FACTORY.create("Database.deleteTable", "internal-error" /* Errors.INTERNAL_ERROR */, { message: "message" in e ? e.message : String(e) });
+        }
     }
     /**
      * Delete the database
@@ -230,12 +240,17 @@ class Database extends basic_event_emitter_1.default {
      */
     async deleteDatabase() {
         // if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.deleteTable", Errors.DB_DISCONNECTED, { dbName: this.database });
-        this.custom.disconnected = true;
-        await this.custom.deleteDatabase();
-        this.tables.forEach((table) => table.disconnect());
-        this.tables.clear();
-        this.tablesNames = [];
-        this.emit("delete");
+        try {
+            this.custom.disconnected = true;
+            await this.custom.deleteDatabase();
+            this.tables.forEach((table) => table.disconnect());
+            this.tables.clear();
+            this.tablesNames = [];
+            this.emit("delete");
+        }
+        catch (e) {
+            throw Error_1.ERROR_FACTORY.create("Database.deleteDatabase", "internal-error" /* Errors.INTERNAL_ERROR */, { message: "message" in e ? e.message : String(e) });
+        }
     }
 }
 exports.Database = Database;

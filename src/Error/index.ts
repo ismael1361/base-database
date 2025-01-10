@@ -12,6 +12,9 @@ export const enum Errors {
 	INVALID_ARGUMENT = "invalid-argument",
 	NOT_IMPLEMENTED = "not-implemented",
 	INTERNAL_ERROR = "internal-error",
+	INVALID_SERVER_INSTANCE = "invalid-server-instance",
+	SERVER_NOT_INITIALIZED = "server-not-initialized",
+	SERVER_NOT_SUPPORTED = "server-not-supported",
 }
 
 export const ERROR_FACTORY = new ErrorFactory("base-database", {
@@ -58,5 +61,14 @@ export const ERROR_FACTORY = new ErrorFactory("base-database", {
 	[Errors.INTERNAL_ERROR]: {
 		template: "Internal error: {$message}",
 		params: ["message"],
+	},
+	[Errors.INVALID_SERVER_INSTANCE]: {
+		template: "Invalid server instance.",
+	},
+	[Errors.SERVER_NOT_INITIALIZED]: {
+		template: "Server not initialized.",
+	},
+	[Errors.SERVER_NOT_SUPPORTED]: {
+		template: "Server not supported.",
 	},
 } as const);

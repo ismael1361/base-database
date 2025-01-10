@@ -73,7 +73,9 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			return acc;
 		}, {} as any);
 
-		this.initialPromise = this.custom.createTable(name, this.serialize);
+		this.initialPromise = this.custom.createTable(name, this.serialize).catch((e) => {
+			return Promise.reject(ERROR_FACTORY.create("Table.constructor", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) }));
+		});
 
 		this.pipeEvent();
 	}
@@ -260,11 +262,15 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
 	async selectAll<K extends keyof S>(query?: Query<S, O, K>): Promise<Array<RowDeserialize<S, O, K>>> {
-		return await this.ready(async () => {
-			const data = await this.custom.selectAll(this.name, query?.options);
-			const rows = await serializeDataForGet(this.serialize, data);
-			return rows.map((row) => this.schema.deserialize<K>(row));
-		});
+		try {
+			return await this.ready(async () => {
+				const data = await this.custom.selectAll(this.name, query?.options);
+				const rows = await serializeDataForGet(this.serialize, data);
+				return rows.map((row) => this.schema.deserialize<K>(row));
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.selectAll", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -275,11 +281,15 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
 	async selectOne<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null> {
-		return await this.ready(async () => {
-			const data = await this.custom.selectOne(this.name, query?.options);
-			const row = data ? await serializeDataForGet(this.serialize, data) : null;
-			return row ? this.schema.deserialize<K>(row) : null;
-		});
+		try {
+			return await this.ready(async () => {
+				const data = await this.custom.selectOne(this.name, query?.options);
+				const row = data ? await serializeDataForGet(this.serialize, data) : null;
+				return row ? this.schema.deserialize<K>(row) : null;
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.selectOne", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -290,11 +300,15 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
 	async selectFirst<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null> {
-		return await this.ready(async () => {
-			const data = await this.custom.selectFirst(this.name, query?.options);
-			const row = data ? await serializeDataForGet(this.serialize, data) : null;
-			return row ? this.schema.deserialize<K>(row) : null;
-		});
+		try {
+			return await this.ready(async () => {
+				const data = await this.custom.selectFirst(this.name, query?.options);
+				const row = data ? await serializeDataForGet(this.serialize, data) : null;
+				return row ? this.schema.deserialize<K>(row) : null;
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.selectFirst", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -305,11 +319,15 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
 	async selectLast<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null> {
-		return await this.ready(async () => {
-			const data = await this.custom.selectLast(this.name, query?.options);
-			const row = data ? await serializeDataForGet(this.serialize, data) : null;
-			return row ? this.schema.deserialize<K>(row) : null;
-		});
+		try {
+			return await this.ready(async () => {
+				const data = await this.custom.selectLast(this.name, query?.options);
+				const row = data ? await serializeDataForGet(this.serialize, data) : null;
+				return row ? this.schema.deserialize<K>(row) : null;
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.selectLast", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -320,10 +338,14 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
 	exists(query: Query<S, O, any>): Promise<boolean> {
-		return this.ready(async () => {
-			const data = await this.custom.selectOne(this.name, query.options);
-			return data !== null;
-		});
+		try {
+			return this.ready(async () => {
+				const data = await this.custom.selectOne(this.name, query.options);
+				return data !== null;
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.exists", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -341,14 +363,18 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			return (await Promise.all(data.map(async (row) => await this.insert(row)))) as any;
 		}
 
-		let value = this.schema.serialize(data);
-		value = await serializeDataForSet(this.serialize, value);
-		return (await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
-			row = await serializeDataForGet(this.serialize, row);
-			this._events.emit("insert", row as any);
-			// this.emit("insert", this.schema.deserialize(row));
-			return Promise.resolve(this.schema.deserialize(row));
-		})) as any;
+		try {
+			let value = this.schema.serialize(data);
+			value = await serializeDataForSet(this.serialize, value);
+			return (await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
+				row = await serializeDataForGet(this.serialize, row);
+				this._events.emit("insert", row as any);
+				// this.emit("insert", this.schema.deserialize(row));
+				return Promise.resolve(this.schema.deserialize(row));
+			})) as any;
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.insert", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -362,21 +388,25 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
 	async update<D extends RowSerialize<S, O>>(data: D, query: Query<S, O, any>): Promise<Array<RowDeserialize<S, O>>> {
-		let value = this.schema.serialize(data);
-		value = await serializeDataForSet(this.serialize, value, true);
-		const previous = await this.selectAll(query);
-		return await this.ready(() => this.custom.update(this.name, value, query.options))
-			.then(() => this.selectAll(query))
-			.then(async (updated) => {
-				this._events.emit(
-					"update",
-					updated.map((row) => this.schema.serialize(row) as any),
-					previous.map((row) => this.schema.serialize(row) as any),
-				);
-				// this.emit("update", updated, previous);
+		try {
+			let value = this.schema.serialize(data);
+			value = await serializeDataForSet(this.serialize, value, true);
+			const previous = await this.selectAll(query);
+			return await this.ready(() => this.custom.update(this.name, value, query.options))
+				.then(() => this.selectAll(query))
+				.then(async (updated) => {
+					this._events.emit(
+						"update",
+						updated.map((row) => this.schema.serialize(row) as any),
+						previous.map((row) => this.schema.serialize(row) as any),
+					);
+					// this.emit("update", updated, previous);
 
-				return Promise.resolve(updated.map((row) => this.schema.deserialize(row) as any));
-			});
+					return Promise.resolve(updated.map((row) => this.schema.deserialize(row) as any));
+				});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.update", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -387,15 +417,19 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
 	async delete(query: Query<S, O, any>): Promise<void> {
-		const removed = await this.selectAll(query);
-		return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
-			this._events.emit(
-				"delete",
-				removed.map((row) => this.schema.serialize(row) as any),
-			);
-			// this.emit("delete", removed);
-			return Promise.resolve();
-		});
+		try {
+			const removed = await this.selectAll(query);
+			return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
+				this._events.emit(
+					"delete",
+					removed.map((row) => this.schema.serialize(row) as any),
+				);
+				// this.emit("delete", removed);
+				return Promise.resolve();
+			});
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.delete", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 
 	/**
@@ -407,6 +441,10 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.length();
 	 */
 	length(query?: Query<S, O, any>): Promise<number> {
-		return this.ready(() => this.custom.length(this.name, query?.options));
+		try {
+			return this.ready(() => this.custom.length(this.name, query?.options));
+		} catch (e: any) {
+			throw ERROR_FACTORY.create("Table.length", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
+		}
 	}
 }

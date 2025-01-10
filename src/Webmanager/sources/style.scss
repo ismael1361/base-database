@@ -1,0 +1,40 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #212121;
+    color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+}
+
+table.grid-root {
+    div.grid-toolbar {
+        display: flex;
+        flex-direction: row;
+
+        >button {
+            display: flex;
+            align-items: center;
+            vertical-align: middle;
+            justify-content: center;
+            gap: 10px;
+            background-color: transparent;
+            transition: all .2s ease;
+            cursor: pointer;
+            box-shadow: none;
+            color: currentColor;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 25px;
+            margin: 0px;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, .2);
+            }
+
+            &:disabled {
+                opacity: .5;
+                pointer-events: none;
+            }
+        }
+    }
+}
