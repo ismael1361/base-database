@@ -56,7 +56,7 @@ export class App extends Browser.App {
 }`;
 			const currentContent = fs.existsSync(globalTypingPath) ? fs.readFileSync(globalTypingPath, { encoding: "utf-8" }) : "";
 
-			if (currentContent != resultContent) {
+			if (currentContent.trim().replace(/([\n\t\s]+)/gi, "") != resultContent.trim().replace(/([\n\t\s]+)/gi, "")) {
 				fs.writeFileSync(globalTypingPath, resultContent, { encoding: "utf-8" });
 			}
 		});
