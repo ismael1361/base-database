@@ -1,6 +1,6 @@
 import { Errors, ERROR_FACTORY } from "../Error";
 import { deepEqual } from "../Utils";
-import { AppSettings, App } from "./App";
+import { App, AppSettings } from "./App";
 import { _apps, _servers, DEFAULT_ENTRY_NAME } from "./internal";
 import { Server, ServerSettings } from "./Server";
 

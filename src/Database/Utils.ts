@@ -67,6 +67,7 @@ export const columns = <S extends Serialize>(columns: S): S => {
 			default: columns[key].default,
 			unique: columns[key].unique ?? false,
 			check: columns[key].check,
+			options: columns[key].options,
 		};
 		return acc;
 	}, {} as any);

@@ -66,17 +66,17 @@ export type DataValueType<T extends OptionsDataType> = T extends "NULL"
 	? Date
 	: never;
 
-export type SerializeValueDefault<T> = T extends OptionsDataType ? DataValueType<T> : T;
+export type SerializeValueDefault<T> = T extends OptionsDataType ? DataValueType<T> : T extends undefined ? never : T;
 
 type TypedOptions<T> = T extends { type: OptionsDataType; options: (infer O)[] }
-	? T extends { type: "TEXT"; options: (infer O)[] }
+	? T extends { type: "TEXT"; options: O[] }
 		? Omit<T, "type" | "default"> & { type: O; default: O | (() => O) }
 		: T
 	: T extends { type: string; options: (infer O)[] }
 	? Omit<T, "type" | "default"> & { type: O; default: O | (() => O) }
 	: T;
 
-type SerializeItemProperties<T> = TypedOptions<{
+export type SerializeItemProperties<T> = TypedOptions<{
 	type: SerializeValueDefault<T>;
 	primaryKey?: true | false;
 	autoIncrement?: true | false;
@@ -87,7 +87,9 @@ type SerializeItemProperties<T> = TypedOptions<{
 	options?: SerializeValueDefault<T> extends string ? Array<string> : never;
 }>;
 
-export type SerializeItemAny<T> = T extends { type: infer U }
+export type SerializeItemAny<T> = T extends SerializeItemProperties<infer V>
+	? SerializeItemProperties<V>
+	: T extends { type: infer U }
 	? U extends OptionsDataType
 		? SerializeItemProperties<DataValueType<U>>
 		: U extends SerializeValueType

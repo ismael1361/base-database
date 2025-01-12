@@ -31,6 +31,8 @@
 	"browser": {
 		"./dist/cjs/Database/SQLiteRegex/index.js": "./dist/cjs/Database/SQLiteRegex/browser.js",
 		"./dist/esm/Database/SQLiteRegex/index.js": "./dist/esm/Database/SQLiteRegex/browser.js",
+		"./dist/cjs/App/App/index.js": "./dist/cjs/App/App/browser.js",
+		"./dist/esm/App/App/index.js": "./dist/esm/App/App/browser.js",
 		"./dist/cjs/App/Server/index.js": "./dist/cjs/App/Server/browser.js",
 		"./dist/esm/App/Server/index.js": "./dist/esm/App/Server/browser.js"
 	},

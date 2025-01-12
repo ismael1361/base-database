@@ -1,5 +1,5 @@
-import { App } from "./App";
-import { Server } from "./Server";
+import type { App } from "./App";
+import type { Server } from "./Server";
 
 export const DEFAULT_ENTRY_NAME = "[DEFAULT]";
 

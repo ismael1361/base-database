@@ -1,7 +1,7 @@
 import BasicEventEmitter from "basic-event-emitter";
-import * as Database from "../Database/Database";
-import { DEFAULT_ENTRY_NAME } from "./internal";
-import { _database, _serialize } from "../Database/internal";
+import * as Database from "../../Database/Database";
+import { DEFAULT_ENTRY_NAME } from "../internal";
+import { _database, _serialize } from "../../Database/internal";
 
 export interface AppSettings {
 	name?: string;
@@ -17,7 +17,9 @@ export interface DatabaseSettings<T extends Tables, D = never> {
 	tables: T;
 }
 
-export class App extends BasicEventEmitter<{}> {
+export class App extends BasicEventEmitter<{
+	createDatabase(name: string, options: DatabaseSettings<Tables, any>): void;
+}> {
 	readonly isServer: boolean = false;
 	readonly name: string;
 	public isDeleted: boolean = false;
@@ -49,6 +51,7 @@ export class App extends BasicEventEmitter<{}> {
 			_serialize.set(`${name}_${key}`, value);
 		}
 
+		this.emit("createDatabase", name, options as DatabaseSettings<T, D>);
 		return tables;
 	}
 }

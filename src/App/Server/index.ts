@@ -5,7 +5,7 @@ import { Server as HttpsServer } from "https";
 import express, { Application } from "express";
 import cors from "cors";
 import { createRoutes } from "../../Webmanager";
-import { isInstanceOf } from "Utils";
+import { isInstanceOf } from "../../Utils";
 
 export { HttpServerFunction, ServerSettings } from "./browser";
 

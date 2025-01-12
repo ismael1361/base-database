@@ -11,32 +11,49 @@ import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 export * as Database from "./Database";
 export * as SQLiteRegex from "./SQLiteRegex";
 
-type TableEvents<T extends Tables> = EventsListeners<{
+type TableEvents<DB extends keyof DatabaseTyping, T extends DatabaseTables<DB> = DatabaseTables<DB>> = EventsListeners<{
 	insert<N extends keyof T>(table: N, inserted: RowDeserialize<T[N], Row<T[N]>>): void;
 	update<N extends keyof T>(table: N, updated: Array<RowDeserialize<T[N], Row<T[N]>>>, previous: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
 	delete<N extends keyof T>(table: N, removed: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
 }>;
 
-interface DataBase<T extends Tables> {
-	ready<R = void>(callback?: (db: DataBase<T>) => Promise<R>): Promise<R>;
+type RemoveNullable<T> = T extends null | undefined ? null : T extends Database.SerializeValueType ? T : null;
+
+type RemoveNullableFromObject<T> = {
+	[K in keyof T]: RemoveNullable<T[K]>;
+};
+
+type DatabaseTable<DB extends keyof DatabaseTyping, T extends DatabaseTyping[DB], N extends keyof T, C extends RemoveNullableFromObject<T[N]> = RemoveNullableFromObject<T[N]>> = Database.Serialize<{
+	[K in keyof C]: Database.SerializeItemAny<C[K]>;
+}>;
+
+type DatabaseTables<DB extends keyof DatabaseTyping, T extends DatabaseTyping[DB] = DatabaseTyping[DB]> = {
+	[K in keyof T]: DatabaseTable<DB, T, K>;
+};
+
+interface DataBase<DB extends keyof DatabaseTyping, T extends DatabaseTables<DB> = DatabaseTables<DB>> {
+	ready<R = void>(callback?: (db: DataBase<DB, T>) => Promise<R>): Promise<R>;
 	disconnect(): Promise<void>;
 	tablesNames: Array<keyof T>;
 	table<N extends keyof T>(name: N): Database.TableReady<T[N]>;
 	deleteTable(name: keyof T): Promise<void>;
-	on: BasicEventEmitter<TableEvents<T>>["on"];
-	once: BasicEventEmitter<TableEvents<T>>["once"];
-	off: BasicEventEmitter<TableEvents<T>>["off"];
-	offOnce: BasicEventEmitter<TableEvents<T>>["offOnce"];
+	on: BasicEventEmitter<TableEvents<DB>>["on"];
+	once: BasicEventEmitter<TableEvents<DB>>["once"];
+	off: BasicEventEmitter<TableEvents<DB>>["off"];
+	offOnce: BasicEventEmitter<TableEvents<DB>>["offOnce"];
 	deleteDatabase(): Promise<void>;
 }
 
-export function getDatabase<T extends Tables>(): DataBase<T>;
-export function getDatabase<T extends Tables>(dbname: string): DataBase<T>;
-export function getDatabase<T extends Tables>(app: App | Server): DataBase<T>;
-export function getDatabase<T extends Tables>(app: App | Server, dbname: string): DataBase<T>;
-export function getDatabase<T extends Tables, D = never>(options: DatabaseSettings<T, D>): DataBase<T>;
-export function getDatabase<T extends Tables, D = never>(app: App | Server, options: DatabaseSettings<T, D>): DataBase<T>;
-export function getDatabase<T extends Tables, D = never>(app?: App | Server | DatabaseSettings<T, D> | string, dbname?: string | DatabaseSettings<T, D>): DataBase<T> {
+export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME>(): DataBase<DB>;
+export function getDatabase<DB extends keyof DatabaseTyping>(dbname: DB): DataBase<DB>;
+export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME>(app: App | Server): DataBase<DB>;
+export function getDatabase<DB extends keyof DatabaseTyping>(app: App | Server, dbname: DB): DataBase<DB>;
+export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME, D = never>(options: DatabaseSettings<any, D>): DataBase<DB>;
+export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME, D = never>(app: App | Server, options: DatabaseSettings<any, D>): DataBase<DB>;
+export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME, D = never>(
+	app?: App | Server | DatabaseSettings<any, D> | DB,
+	dbname?: DB | DatabaseSettings<any, D>,
+): DataBase<DB> {
 	let database: Database.Database<any>;
 
 	if (typeof app === "string") {
@@ -49,7 +66,7 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 			app = app as App | Server;
 
 			if (typeof dbname === "string") {
-				dbname = dbname as string;
+				dbname = dbname as DB;
 			} else if (typeof dbname === "object") {
 				app.createDatabase({ name: DEFAULT_ENTRY_NAME, ...(dbname as any) });
 			}
@@ -59,7 +76,7 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 		}
 	}
 
-	dbname = typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME;
+	dbname = (typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME) as DB;
 	app = (app as any) instanceof App || (app as any) instanceof Server ? app : appExists() ? getApp() : getServer();
 
 	if (!_database.has(dbname)) {
@@ -74,10 +91,10 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 		database.prepared = true;
 	});
 
-	const events = new BasicEventEmitter<TableEvents<T>>();
+	const events = new BasicEventEmitter<TableEvents<DB>>();
 
 	return {
-		tablesNames: [...database.tablesNames] as Array<keyof T>,
+		tablesNames: [...database.tablesNames] as Array<keyof DatabaseTables<DB>>,
 		async ready(callback) {
 			await super.ready();
 			return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined as any));
@@ -109,15 +126,15 @@ export function getDatabase<T extends Tables, D = never>(app?: App | Server | Da
 			}
 
 			table.on("insert", (inserted: any) => {
-				events.emit("insert", name, inserted);
+				events.emit("insert", name as any, inserted);
 			});
 
 			table.on("update", (updated: any, previous: any) => {
-				events.emit("update", name, updated, previous);
+				events.emit("update", name as any, updated, previous);
 			});
 
 			table.on("delete", (removed: any) => {
-				events.emit("delete", name, removed);
+				events.emit("delete", name as any, removed);
 			});
 
 			return table;

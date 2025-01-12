@@ -1,5 +1,3 @@
-import { dirname } from "path";
-
 export const isObject = (thing: unknown): thing is object => {
 	return thing !== null && typeof thing === "object";
 };
@@ -33,6 +31,13 @@ export const deepEqual = (a: object, b: object): boolean => {
 		}
 	}
 	return true;
+};
+
+export const dirname = (path: string): string => {
+	const separador = path.includes("\\") ? "\\" : "/";
+	const parts = path.split(separador);
+	parts.pop();
+	return parts.join("/");
 };
 
 export const getLocalPath = () => {

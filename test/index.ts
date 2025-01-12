@@ -26,24 +26,39 @@ const db = app.createDatabase({
 				type: Database.Types.TEXT,
 				options: ["Female", "Male", "Other"] as const,
 			},
+			amount: {
+				type: Database.Types.INTEGER,
+				notNull: true,
+			},
 		}),
 	},
 });
 
 // type MainDatabase = typeof db;
 
+const myTable = getDatabase().table("myTable");
+
+myTable.ready(async (table) => {
+	await table.insert([
+		{ name: "Maria", gender: "Female", createdAt: new Date(), amount: 1 },
+		{ name: "João", gender: "Male" },
+		{ name: "Pedro", gender: "Male" },
+		{ name: "Martha", gender: "Female" },
+	]);
+});
+
 // class Test {
 // 	public name: string;
 // 	public createdAt: Date;
 // 	public gender: "Female" | "Male" | "Other";
 
-// 	constructor(row: Partial<Database.Row<(typeof db)["myTable"]>>) {
+// 	constructor(row: Partial<Database.Row<(typeof myTable)>>) {
 // 		this.name = row.name ?? "";
 // 		this.createdAt = row.createdAt ?? new Date();
 // 		this.gender = row.gender ?? "Other";
 // 	}
 
-// 	serialize(): Partial<Database.Row<(typeof db)["myTable"]>> {
+// 	serialize(): Partial<Database.Row<(typeof myDb)["myTable"]>> {
 // 		return {
 // 			name: this.name,
 // 			createdAt: this.createdAt,
@@ -52,7 +67,7 @@ const db = app.createDatabase({
 // 	}
 // }
 
-// const TestTable = getDatabase<MainDatabase>().table("myTable").schema(Test);
+// const TestTable = getDatabase().table("myTable").schema(Test);
 
 // TestTable.on("insert", (row) => {
 // 	console.log("insert schema", row);
@@ -62,7 +77,7 @@ const db = app.createDatabase({
 // 	const query = table.query().where("name", "LIKE", /^(m)/i);
 
 // 	await table.insert([
-// 		new Test({ name: "Maria", gender: "Female" }),
+// 		new Test({ name: "Maria", gender: "Other",  }),
 // 		new Test({ name: "João", gender: "Male" }),
 // 		new Test({ name: "Pedro", gender: "Male" }),
 // 		new Test({ name: "Martha", gender: "Female" }),
