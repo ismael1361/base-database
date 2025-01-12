@@ -28,7 +28,6 @@ const db = app.createDatabase({
 			},
 			amount: {
 				type: Database.Types.INTEGER,
-				notNull: true,
 			},
 		}),
 	},

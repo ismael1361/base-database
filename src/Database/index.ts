@@ -79,15 +79,15 @@ export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENT
 	dbname = (typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME) as DB;
 	app = (app as any) instanceof App || (app as any) instanceof Server ? app : appExists() ? getApp() : getServer();
 
-	if (!_database.has(dbname)) {
-		throw ERROR_FACTORY.create("getDatabase", Errors.DB_NOT_FOUND, { dbName: dbname });
+	if (!_database.has(dbname as any)) {
+		throw ERROR_FACTORY.create("getDatabase", Errors.DB_NOT_FOUND, { dbName: dbname as any });
 	}
 
-	database = _database.get(dbname) as Database.Database<any>;
+	database = _database.get(dbname as any) as Database.Database<any>;
 
 	database.prepared = false;
 
-	app?.ready(() => {
+	(app as any)?.ready(() => {
 		database.prepared = true;
 	});
 
@@ -102,7 +102,7 @@ export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENT
 		async disconnect() {
 			await database.disconnect();
 			database.prepared = false;
-			_database.delete(dbname);
+			_database.delete(dbname as any);
 			_serialize.forEach((value, key) => {
 				if (key.startsWith(`${dbname}_`)) {
 					_serialize.delete(key);

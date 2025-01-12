@@ -1,5 +1,4 @@
 import * as Browser from "./browser";
-import { getLocalPath } from "../../Utils";
 import { getDatatype } from "../../Database/Utils";
 import path from "path";
 import fs from "fs";
@@ -40,7 +39,7 @@ export class App extends Browser.App {
 				}
 			}
 
-			const globalTypingPath = path.join(getLocalPath(), "../../global.d.ts");
+			const globalTypingPath = path.join(process.cwd(), "database.d.ts");
 
 			const resultContent = `interface DatabaseTyping{
     ${Object.keys(tableTyping).map((table) => {
@@ -55,7 +54,7 @@ export class App extends Browser.App {
     }`;
 	})}
 }`;
-			const currentContent = fs.readFileSync(globalTypingPath, { encoding: "utf-8" });
+			const currentContent = fs.existsSync(globalTypingPath) ? fs.readFileSync(globalTypingPath, { encoding: "utf-8" }) : "";
 
 			if (currentContent != resultContent) {
 				fs.writeFileSync(globalTypingPath, resultContent, { encoding: "utf-8" });

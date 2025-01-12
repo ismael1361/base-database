@@ -8,3 +8,4 @@ test
 tsconfig-cjs.json
 tsconfig-esm.json
 tsconfig.json
+database.d.ts

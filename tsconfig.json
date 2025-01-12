@@ -32,7 +32,8 @@
     "compileOnSave": false,
     "include": [
         "src/**/*",
-        "test/**/*"
+        "test/**/*",
+        "database.d.ts"
     ],
     "exclude": [
         "node_modules",
