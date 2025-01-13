@@ -11,7 +11,7 @@ import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 export * as Database from "./Database";
 export * as SQLiteRegex from "./SQLiteRegex";
 
-type TableEvents<DB extends keyof DatabaseTyping, T extends DatabaseTables<DB> = DatabaseTables<DB>> = EventsListeners<{
+type TableEvents<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> = EventsListeners<{
 	insert<N extends keyof T>(table: N, inserted: RowDeserialize<T[N], Row<T[N]>>): void;
 	update<N extends keyof T>(table: N, updated: Array<RowDeserialize<T[N], Row<T[N]>>>, previous: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
 	delete<N extends keyof T>(table: N, removed: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
@@ -23,37 +23,37 @@ type RemoveNullableFromObject<T> = {
 	[K in keyof T]: RemoveNullable<T[K]>;
 };
 
-type DatabaseTable<DB extends keyof DatabaseTyping, T extends DatabaseTyping[DB], N extends keyof T, C extends RemoveNullableFromObject<T[N]> = RemoveNullableFromObject<T[N]>> = Database.Serialize<{
+type DatabaseTable<D extends DatabaseTyping, DB extends keyof D, T extends D[DB], N extends keyof T, C extends RemoveNullableFromObject<T[N]> = RemoveNullableFromObject<T[N]>> = Database.Serialize<{
 	[K in keyof C]: Database.SerializeItemAny<C[K]>;
 }>;
 
-type DatabaseTables<DB extends keyof DatabaseTyping, T extends DatabaseTyping[DB] = DatabaseTyping[DB]> = {
-	[K in keyof T]: DatabaseTable<DB, T, K>;
+export type DatabaseTables<D extends DatabaseTyping, DB extends keyof D, T extends D[DB] = D[DB]> = {
+	[K in keyof T]: DatabaseTable<D, DB, T, K>;
 };
 
-interface DataBase<DB extends keyof DatabaseTyping, T extends DatabaseTables<DB> = DatabaseTables<DB>> {
-	ready<R = void>(callback?: (db: DataBase<DB, T>) => Promise<R>): Promise<R>;
+interface DataBase<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> {
+	ready<R = void>(callback?: (db: DataBase<D, DB, T>) => Promise<R>): Promise<R>;
 	disconnect(): Promise<void>;
 	tablesNames: Array<keyof T>;
 	table<N extends keyof T>(name: N): Database.TableReady<T[N]>;
 	deleteTable(name: keyof T): Promise<void>;
-	on: BasicEventEmitter<TableEvents<DB>>["on"];
-	once: BasicEventEmitter<TableEvents<DB>>["once"];
-	off: BasicEventEmitter<TableEvents<DB>>["off"];
-	offOnce: BasicEventEmitter<TableEvents<DB>>["offOnce"];
+	on: BasicEventEmitter<TableEvents<D, DB>>["on"];
+	once: BasicEventEmitter<TableEvents<D, DB>>["once"];
+	off: BasicEventEmitter<TableEvents<D, DB>>["off"];
+	offOnce: BasicEventEmitter<TableEvents<D, DB>>["offOnce"];
 	deleteDatabase(): Promise<void>;
 }
 
-export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME>(): DataBase<DB>;
-export function getDatabase<DB extends keyof DatabaseTyping>(dbname: DB): DataBase<DB>;
-export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME>(app: App | Server): DataBase<DB>;
-export function getDatabase<DB extends keyof DatabaseTyping>(app: App | Server, dbname: DB): DataBase<DB>;
-export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME, D = never>(options: DatabaseSettings<any, D>): DataBase<DB>;
-export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME, D = never>(app: App | Server, options: DatabaseSettings<any, D>): DataBase<DB>;
-export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENTRY_NAME, D = never>(
-	app?: App | Server | DatabaseSettings<any, D> | DB,
-	dbname?: DB | DatabaseSettings<any, D>,
-): DataBase<DB> {
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME>(): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T>(dbname: DB): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME>(app: App | Server): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T>(app: App | Server, dbname: DB): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(options: DatabaseSettings<T, DB>): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(app: App | Server, options: DatabaseSettings<T, DB>): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(
+	app?: App | Server | DatabaseSettings<T, DB> | DB,
+	dbname?: DB | DatabaseSettings<T, DB>,
+): DataBase<T, DB> {
 	let database: Database.Database<any>;
 
 	if (typeof app === "string") {
@@ -91,10 +91,10 @@ export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENT
 		database.prepared = true;
 	});
 
-	const events = new BasicEventEmitter<TableEvents<DB>>();
+	const events = new BasicEventEmitter<TableEvents<T, DB>>();
 
 	return {
-		tablesNames: [...database.tablesNames] as Array<keyof DatabaseTables<DB>>,
+		tablesNames: [...database.tablesNames] as Array<keyof DatabaseTables<T, DB>>,
 		async ready(callback) {
 			await super.ready();
 			return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined as any));
@@ -104,12 +104,12 @@ export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENT
 			database.prepared = false;
 			_database.delete(dbname as any);
 			_serialize.forEach((value, key) => {
-				if (key.startsWith(`${dbname}_`)) {
+				if (key.startsWith(`${dbname as any}_`)) {
 					_serialize.delete(key);
 				}
 			});
 			_tables.forEach((value, key) => {
-				if (key.startsWith(`${dbname}_`)) {
+				if (key.startsWith(`${dbname as any}_`)) {
 					_tables.delete(key);
 				}
 			});
@@ -117,12 +117,12 @@ export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENT
 		table(name) {
 			let table: Database.TableReady<any>;
 
-			if (_tables.has(`${dbname}_${String(name)}`)) {
-				table = _tables.get(`${dbname}_${String(name)}`) as Database.TableReady<any>;
+			if (_tables.has(`${dbname as any}_${String(name)}`)) {
+				table = _tables.get(`${dbname as any}_${String(name)}`) as Database.TableReady<any>;
 			} else {
-				const serialize = _serialize.get(`${dbname}_${String(name)}`) as any;
+				const serialize = _serialize.get(`${dbname as any}_${String(name)}`) as any;
 				table = database.table(String(name), serialize);
-				_tables.set(`${dbname}_${String(name)}`, table);
+				_tables.set(`${dbname as any}_${String(name)}`, table);
 			}
 
 			table.on("insert", (inserted: any) => {
@@ -142,8 +142,8 @@ export function getDatabase<DB extends keyof DatabaseTyping = typeof DEFAULT_ENT
 		async deleteTable(name) {
 			await database.deleteTable(String(name));
 			database.tablesNames = database.tablesNames.filter((value) => value !== String(name));
-			_serialize.delete(`${dbname}_${String(name)}`);
-			_tables.delete(`${dbname}_${String(name)}`);
+			_serialize.delete(`${dbname as any}_${String(name)}`);
+			_tables.delete(`${dbname as any}_${String(name)}`);
 		},
 		on: events.on.bind(events),
 		once: events.once.bind(events),

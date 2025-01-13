@@ -10,11 +10,11 @@ server.listen(3000, () => {
 	console.log("Server running on http://localhost:3000 🚀");
 });
 
-const db = app.createDatabase({
+const db = app.createDatabase<DatabaseTyping>({
 	database: ":memory:",
 	storage: SQLite,
 	tables: {
-		myTable: Database.columns({
+		myTable: {
 			name: {
 				type: Database.Types.TEXT,
 			},
@@ -29,17 +29,17 @@ const db = app.createDatabase({
 			amount: {
 				type: Database.Types.INTEGER,
 			},
-		}),
+		},
 	},
 });
 
 // type MainDatabase = typeof db;
 
-const myTable = getDatabase().table("myTable");
+const myTable = getDatabase<DatabaseTyping>().table("myTable");
 
 myTable.ready(async (table) => {
 	await table.insert([
-		{ name: "Maria", gender: "Female", createdAt: new Date(), amount: 1 },
+		{ name: "Maria", gender: "Female", createdAt: new Date(), amount: 5 },
 		{ name: "João", gender: "Male" },
 		{ name: "Pedro", gender: "Male" },
 		{ name: "Martha", gender: "Female" },

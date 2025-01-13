@@ -1,5 +1,6 @@
 import BasicEventEmitter from "basic-event-emitter";
 import * as Database from "../../Database/Database";
+import type { DatabaseTables } from "../../Database";
 import { DEFAULT_ENTRY_NAME } from "../internal";
 import { _database, _serialize } from "../../Database/internal";
 
@@ -11,14 +12,22 @@ export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<Pr
 	[K in keyof T]: T[K];
 };
 
-export interface DatabaseSettings<T extends Tables, D = never> {
+type SimplifyTableTypes<T extends Database.Serialize> = {
+	[K in keyof T]: Omit<T[K], "type"> & { type: T[K]["type"] extends string ? string : T[K]["type"] };
+};
+
+type SimplifyTablesTypes<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> = {
+	[K in keyof T]: SimplifyTableTypes<T[K]>;
+};
+
+export interface DatabaseSettings<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> {
 	database: string;
-	storage: Database.CustomConstructor<D>;
-	tables: T;
+	storage: Database.CustomConstructor<any>;
+	tables: SimplifyTablesTypes<D, DB, T>;
 }
 
 export class App extends BasicEventEmitter<{
-	createDatabase(name: string, options: DatabaseSettings<Tables, any>): void;
+	createDatabase(name: string, options: DatabaseSettings<any, any>): void;
 }> {
 	readonly isServer: boolean = false;
 	readonly name: string;
@@ -35,23 +44,26 @@ export class App extends BasicEventEmitter<{
 		this.prepared = true;
 	}
 
-	createDatabase<T extends Tables, D = never>(options: DatabaseSettings<T, D>): T;
-	createDatabase<T extends Tables, D = never>(name: string, options: DatabaseSettings<T, D>): T;
-	createDatabase<T extends Tables, D = never>(name: string | DatabaseSettings<T, D>, options?: DatabaseSettings<T, D>): T {
-		options = typeof name === "string" ? options : name;
-		name = typeof name === "string" ? name : DEFAULT_ENTRY_NAME;
+	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(options: DatabaseSettings<D, DB, T>): T;
+	createDatabase<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(name: DB, options: DatabaseSettings<D, DB, T>): T;
+	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(
+		name: DB | DatabaseSettings<D, DB, T>,
+		options?: DatabaseSettings<D, DB, T>,
+	): T {
+		options = (typeof name === "string" ? options : name) as DatabaseSettings<D, DB, T>;
+		name = (typeof name === "string" ? name : DEFAULT_ENTRY_NAME) as DB;
 
-		const { database, storage, tables } = options as DatabaseSettings<T, D>;
+		const { database, storage, tables } = options as DatabaseSettings<D, DB, T>;
 
 		const db = new Database.Database(storage, database);
 		db.tablesNames = Object.keys(tables);
-		_database.set(name, db);
+		_database.set(name as any, db);
 
 		for (const [key, value] of Object.entries(tables)) {
-			_serialize.set(`${name}_${key}`, value);
+			_serialize.set(`${name as any}_${key}`, value as any);
 		}
 
-		this.emit("createDatabase", name, options as DatabaseSettings<T, D>);
-		return tables;
+		this.emit("createDatabase", name as any, options as DatabaseSettings<D, DB, T>);
+		return tables as any;
 	}
 }
