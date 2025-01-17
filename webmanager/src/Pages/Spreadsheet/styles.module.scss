@@ -1,0 +1,57 @@
+.table-root {
+    // width: 100%;
+    // max-width: 400px;
+    // overflow-x: scroll;
+    position: relative;
+
+    table {
+
+        tr {
+            // position: sticky;
+
+            th,
+            td {
+                padding: 5px;
+            }
+
+            :global(.Spreadsheet__cell) {
+                max-width: 600px;
+                word-break: break-all;
+                white-space: wrap;
+            }
+        }
+    }
+}
+
+.grid-root {
+    div.grid-toolbar {
+        display: flex;
+        flex-direction: row;
+
+        >button {
+            display: flex;
+            align-items: center;
+            vertical-align: middle;
+            justify-content: center;
+            gap: 10px;
+            background-color: transparent;
+            transition: all .2s ease;
+            cursor: pointer;
+            box-shadow: none;
+            color: currentColor;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 25px;
+            margin: 0px;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, .2);
+            }
+
+            &:disabled {
+                opacity: .5;
+                pointer-events: none;
+            }
+        }
+    }
+}
