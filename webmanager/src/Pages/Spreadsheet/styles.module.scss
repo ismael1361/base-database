@@ -4,20 +4,117 @@
     // overflow-x: scroll;
     position: relative;
 
-    table {
+    * {
+        &:focus-visible {
+            outline: none;
+        }
+    }
 
-        tr {
-            // position: sticky;
+    :global(.Spreadsheet) {
+        * {
+            cursor: auto !important;
+        }
 
-            th,
-            td {
-                padding: 5px;
+        table {
+            tr {
+                // position: sticky;
+
+                :global(.Spreadsheet__cell) {
+                    max-width: 600px;
+                    white-space: nowrap;
+                }
+            }
+        }
+
+        :global(.Spreadsheet__active-cell) {
+            z-index: 1;
+
+            &:global(.Spreadsheet__active-cell--edit) {
+                border-width: 0px;
+                width: auto !important;
+            }
+        }
+
+        :global(.Spreadsheet__floating-rect) {
+            z-index: 1;
+
+            &:global(.Spreadsheet__floating-rect--copied) {
+                z-index: 0;
+            }
+        }
+
+        .input-root {
+            position: relative;
+            width: auto;
+            max-width: 600px;
+            height: 100%;
+            white-space: nowrap;
+            padding: 5px;
+            border: 1px solid transparent;
+            pointer-events: none;
+
+            &:not(.input-editable) {
+                box-sizing: border-box;
             }
 
-            :global(.Spreadsheet__cell) {
-                max-width: 600px;
-                word-break: break-all;
-                white-space: wrap;
+            &.input-editable {
+                pointer-events: all;
+                box-sizing: border-box;
+                width: auto;
+                min-width: 200px;
+                height: 100%;
+                max-height: 100%;
+                background-color: var(--background-color);
+                border-color: var(--outline-color);
+                border-width: 2px;
+
+                >span {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+            }
+
+            &.input-modified {
+                background-color: #202020;
+                border-color: var(--outline-color);
+            }
+
+            >* {
+                color: currentColor;
+                font-size: 1rem;
+                font-family: inherit;
+            }
+
+            >input {
+                position: absolute;
+                top: 5px;
+                left: 5px;
+                bottom: 5px;
+                right: 5px;
+                padding: 0px 0px 0px 5px;
+                outline: none;
+                background-color: transparent;
+                border: none;
+
+                &::-webkit-calendar-picker-indicator {
+                    opacity: 0;
+                }
+            }
+
+            >.icon {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                pointer-events: none;
+                z-index: 99999999;
+
+                >svg {
+                    margin-bottom: -2px;
+                    width: 20px;
+                    height: 20px;
+                    fill: currentColor;
+                }
             }
         }
     }
