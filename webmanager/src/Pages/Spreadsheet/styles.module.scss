@@ -3,6 +3,8 @@
     width: 100%;
     position: relative;
     flex: 1 1 0%;
+    overflow: auto;
+    overscroll-behavior: none;
 
     --lightgray: var(--gray4);
     --thead-background: var(--gray6);
@@ -19,91 +21,86 @@
     --drag-border: transparent;
     --separator-border: var(--lightgray);
     --focus-border: transparent;
+    --column-width: 100px;
 
-    .table {
-        flex: 1 1 0%;
-        overflow: auto;
-        overscroll-behavior: none;
+    * {
+        cursor: auto !important;
+    }
 
-        * {
-            cursor: auto !important;
+    >.table {
+        position: relative;
+        height: auto;
+        width: auto;
+
+        >header {
+            position: sticky;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            background: var(--thead-background);
+            z-index: 3;
+
+            >.tr {
+                background: transparent !important;
+            }
         }
 
-        >.table-content {
+        .tr {
             position: relative;
-            height: auto;
-            width: auto;
+            width: 100%;
+            display: flex;
+            background: var(--even-row-background);
 
-            >header {
-                position: sticky;
-                top: 0px;
-                left: 0px;
-                width: 100%;
-                background: var(--thead-background);
-                z-index: 3;
+            &:nth-child(odd) {
+                background: var(--odd-row-background);
+            }
 
-                >.tr {
-                    background: transparent !important;
+            &:last-child {
+                border-bottom: 1px solid var(--lightgray);
+            }
+
+            // &:hover {
+            //     background: var(--row-hover-background);
+            // }
+
+            >.th,
+            >.td {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                margin: 0px;
+                border-right: 1px solid var(--lightgray);
+                min-width: 30px;
+                max-width: 400px;
+                user-select: none;
+                box-sizing: border-box;
+
+                &.selected {
+                    background-color: var(--row-hover-background);
+                }
+
+                &.row-indicator,
+                &.corner-indicator {
+                    justify-content: flex-end;
+                    background: var(--thead-background);
+                    position: sticky;
+                    left: 0px;
+                    z-index: 2;
+                    min-width: 40px;
+
+                    >span {
+                        padding: 0px 10px;
+                    }
                 }
             }
 
-            .tr {
-                position: relative;
-                width: 100%;
-                display: flex;
-                background: var(--even-row-background);
-
-                &:nth-child(odd) {
-                    background: var(--odd-row-background);
-                }
-
-                &:last-child {
-                    border-bottom: 1px solid var(--lightgray);
-                }
-
-                // &:hover {
-                //     background: var(--row-hover-background);
-                // }
-
-                >.th,
-                >.td {
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    margin: 0px;
-                    border-right: 1px solid var(--lightgray);
-                    min-width: 30px;
-                    max-width: 400px;
-                    user-select: none;
-                    box-sizing: border-box;
-
-                    &.selected {
-                        background-color: var(--row-hover-background);
-                    }
-
-                    &.row-indicator,
-                    &.corner-indicator {
-                        justify-content: flex-end;
-                        background: var(--thead-background);
-                        position: sticky;
-                        left: 0px;
-                        z-index: 2;
-                        min-width: 40px;
-
-                        >span {
-                            padding: 0px 10px;
-                        }
-                    }
-                }
-
-                >.td {
-                    min-width: 100px;
-                    line-height: 1.5rem;
-                    flex: 0 0 auto;
-                    // overflow: hidden;
-                    // white-space: nowrap;
-                    // text-overflow: ellipsis;
-                }
+            >.td {
+                min-width: 100px;
+                line-height: 1.5rem;
+                flex: 0 0 auto;
+                // overflow: hidden;
+                // white-space: nowrap;
+                // text-overflow: ellipsis;
             }
         }
     }
@@ -126,7 +123,7 @@
             pointer-events: all;
             box-sizing: border-box;
             width: auto;
-            min-width: 200px;
+            min-width: max(200px, 100%);
             height: 100%;
             max-height: 100%;
             background-color: var(--background-color);
@@ -139,9 +136,34 @@
             }
         }
 
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: transparent;
+            pointer-events: none;
+            opacity: .1;
+        }
+
         &.input-modified {
             border-left-width: 2px;
             border-left-color: var(--yellow);
+
+            &::after {
+                background-color: var(--yellow);
+            }
+        }
+
+        &.input-removed {
+            border-left-width: 2px;
+            border-left-color: var(--red);
+
+            &::after {
+                background-color: var(--red);
+            }
         }
 
         >* {
@@ -195,6 +217,7 @@
         &:global(.Spreadsheet__active-cell--edit) {
             border-width: 0px;
             width: auto !important;
+            min-width: var(--column-width);
         }
     }
 

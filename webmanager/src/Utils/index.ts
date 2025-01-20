@@ -31,3 +31,35 @@ export const getOffsetRect = (element: HTMLElement) => {
 		top,
 	};
 };
+
+export const isObjectLiteral = (value: any): value is Record<PropertyKey, any> => value !== null && typeof value === "object" && (value.constructor === Object || value.constructor === Array);
+
+export const isObjectIdentical = (a: any, b: any): boolean => {
+	if (!isObjectLiteral(a) && !isObjectLiteral(b)) {
+		try {
+			return a.toString() === b.toString();
+		} catch {
+			return false;
+		}
+	}
+	if (a === b) return true;
+	if (!isObjectLiteral(a) || !isObjectLiteral(b)) return false;
+	const keysA = Object.keys(a);
+	const keysB = Object.keys(b);
+	if (keysA.length !== keysB.length) return false;
+	for (const key of keysA) {
+		if (!keysB.includes(key) || !isObjectIdentical(a[key], b[key])) return false;
+	}
+	return true;
+};
+
+export const cloneObjectLiteral = <T>(obj: T): T => {
+	if (!isObjectLiteral(obj)) return obj;
+	const clone = (Array.isArray(obj) ? [] : {}) as T;
+	for (const key in obj) {
+		if (Object.prototype.hasOwnProperty.call(obj, key)) {
+			(clone as any)[key] = cloneObjectLiteral((obj as any)[key]);
+		}
+	}
+	return clone;
+};

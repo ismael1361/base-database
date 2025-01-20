@@ -17,8 +17,9 @@ import SpreadsheetComponent, {
 import styles from "./styles.module.scss";
 import { clsx, columnIndexToLabel, getOffsetRect } from "Utils";
 import { FormControl, MenuItem, Select } from "@mui/material";
+import { useHistory } from "UseHooks";
 
-const GridHeader: React.FC<{ isEditing: boolean; selected: boolean }> = ({ isEditing, selected }) => {
+const GridHeader: React.FC<{ isEditing: boolean; selected: boolean; onCancel?: () => void }> = ({ isEditing, selected, onCancel }) => {
 	return (
 		<>
 			<div className={styles["grid-toolbar"]}>
@@ -34,7 +35,10 @@ const GridHeader: React.FC<{ isEditing: boolean; selected: boolean }> = ({ isEdi
 					<Icon name="mdiSquareEditOutline" />
 					Update
 				</button>
-				<button disabled={!isEditing}>
+				<button
+					disabled={!isEditing}
+					onClick={onCancel}
+				>
 					<Icon name="mdiClose" />
 					Cancel
 				</button>
@@ -46,6 +50,7 @@ const GridHeader: React.FC<{ isEditing: boolean; selected: boolean }> = ({ isEdi
 interface DataRowsItem {
 	value: string | number | boolean | null;
 	current?: string | number | boolean | null;
+	removed?: boolean;
 	readOnly?: boolean;
 	style?: React.CSSProperties;
 }
@@ -67,7 +72,6 @@ interface Data {
 
 const DataContext = React.createContext<{
 	data: Data;
-	getData(): Data;
 	updateData(data: Data): void;
 	onColumnSize(calback: (i: number, w: number) => void): (i: number, w: number) => void;
 	setColumnSize(i: number, w: number): void;
@@ -75,12 +79,6 @@ const DataContext = React.createContext<{
 	data: {
 		columns: [],
 		rows: [],
-	},
-	getData() {
-		return {
-			columns: [],
-			rows: [],
-		};
 	},
 	updateData(data: Data) {},
 	onColumnSize(calback: (i: number, w: number) => void) {
@@ -97,7 +95,11 @@ const DataEditor: React.FC<{
 }> = ({ cell, column, row, onChange }) => {
 	const { data, updateData } = React.useContext(DataContext);
 	const { key, type = "string", options = [], style: s } = data.columns[column] ?? {};
-	const viewValue = String(data.rows[row][key]?.current ?? data.rows[row][key]?.value ?? cell?.value ?? "");
+
+	const isRemoved = data.rows[row][key]?.removed ?? false;
+
+	const viewValue = isRemoved ? "" : String(data.rows[row][key]?.current ?? data.rows[row][key]?.value ?? "");
+
 	const [value, setValue] = React.useState<string>(viewValue);
 
 	const style = data.rows[row][key]?.style ?? s ?? {};
@@ -108,11 +110,7 @@ const DataEditor: React.FC<{
 
 	const onInputChange: React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement> = ({ target: { value } }) => {
 		cell!.value = value;
-		if (data.rows[row] && data.rows[row][key]) {
-			data.rows[row][key].current = value;
-		} else {
-			data.rows[row][key] = { value: value, current: value };
-		}
+		data.rows[row][key] = { ...(data.rows?.[row]?.[key] ?? {}), current: value };
 		updateData(data);
 		setValue(value);
 		if (cell) onChange?.(cell);
@@ -120,7 +118,7 @@ const DataEditor: React.FC<{
 
 	return (
 		<div
-			className={clsx(styles["input-root"], typeof onChange === "function" ? styles["input-editable"] : "", isModified && styles["input-modified"])}
+			className={clsx(styles["input-root"], typeof onChange === "function" ? styles["input-editable"] : "", isModified && styles["input-modified"], isRemoved && styles["input-removed"])}
 			style={{ ...(typeof onChange === "function" ? {} : style) }}
 		>
 			<span>{["date", "datetime"].includes(type) && viewValue.trim() !== "" ? new Date(viewValue).toLocaleString() : viewValue.replace(/\s/gi, "\u00A0")}</span>
@@ -217,13 +215,11 @@ const TableComponent: React.FC<TableProps> = ({ columns, children, hideColumnInd
 	}, [columns, children]);
 
 	return (
-		<div className={styles.table}>
-			<div
-				ref={rootRef}
-				className={styles["table-content"]}
-			>
-				{children}
-			</div>
+		<div
+			ref={rootRef}
+			className={styles.table}
+		>
+			{children}
 		</div>
 	);
 };
@@ -245,7 +241,7 @@ const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataViewer, 
 
 		try {
 			if (root) {
-				while (parent && !parent.classList.contains(styles["table-content"])) {
+				while (parent && !parent.classList.contains(styles["table"])) {
 					parent = parent.parentElement;
 				}
 
@@ -255,6 +251,8 @@ const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataViewer, 
 
 				const rectParent = getOffsetRect(parent);
 				const rectRoot = getOffsetRect(root);
+
+				parent.parentElement?.style.setProperty("--column-width", `${rectRoot.width}px`);
 
 				return {
 					width: rectRoot.width,
@@ -413,17 +411,15 @@ const CornerIndicatorComponent: React.FC<CornerIndicatorProps> = ({ onSelect, se
 };
 
 const Table: React.FC = () => {
-	const [_, forceUpdate] = React.useState<number>(0);
-	const { getData, setColumnSize, updateData } = React.useContext(DataContext);
+	const { data, setColumnSize, updateData } = React.useContext(DataContext);
 	const modeChangeRef = React.useRef<Mode>("view");
 
-	const data = getData();
-	const columnLabels = data.columns.map(({ header }, i) => header) as string[];
-	const rowLabels = Object.keys(data.rows).map((header, i) => header ?? `${i + 1}`);
+	const columnLabels = data.columns.map(({ key, header }, i) => header ?? key) as string[];
+	const rowLabels = Object.keys(data.rows).map((header, i) => (Array.isArray(data.rows) ? `${i + 1}` : header));
 	const cells = Object.values(data.rows).map((row) =>
 		data.columns.map(({ key }) => {
-			const { value, current, ...props } = row[key] ?? {};
-			return { ...props, value: current ?? value };
+			const { value, current, removed, ...props } = row[key] ?? {};
+			return { ...props, value: removed ? undefined : current ?? value };
 		}),
 	) as Matrix<CellBase>;
 
@@ -435,25 +431,17 @@ const Table: React.FC = () => {
 			onChange={(d) => {
 				setColumnSize(0, 50);
 				if (modeChangeRef.current === "view") {
-					const data = getData();
-
 					d.forEach((row, j) => {
 						row.forEach((cell, i) => {
 							if (!cell) return;
-
 							const { value } = cell;
-
 							const key = data.columns[i].key;
-							if (data.rows[j] && data.rows[j][key]) {
-								data.rows[j][key].current = value;
-							} else {
-								data.rows[j][key] = { value: value, current: value };
-							}
+							const before = data.rows[j][key]?.value;
+							data.rows[j][key] = { ...(data.rows?.[j]?.[key] ?? {}), current: value, removed: value === undefined && before !== undefined };
 						});
 					});
 
 					updateData(data);
-					forceUpdate((i) => i + 1);
 				}
 			}}
 			onModeChange={(m) => (modeChangeRef.current = m)}
@@ -472,88 +460,119 @@ const Table: React.FC = () => {
 	);
 };
 
+const tableData: Data = {
+	columns: [
+		{ key: "flavour", header: "Flavour", width: 100, align: "center" },
+		{ key: "food", header: "Food", width: 100, align: "center" },
+		{ key: "none", header: "", width: 100, align: "center", options: ["", "auto", "default"] },
+		{ key: "date", header: "Date", width: 100, align: "center", type: "datetime" },
+	],
+	rows: [
+		{
+			flavour: { value: "Vanilla" },
+			food: { value: "Ice Cream" },
+			none: { value: "" },
+			date: { value: "2022-01-01T00:00" },
+		},
+		{
+			flavour: { value: "Chocolate" },
+			food: { value: "Cake" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Strawberry" },
+			food: { value: "Cookies" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Mint" },
+			food: { value: "Ice Cream" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Chocolate" },
+			food: { value: "Cake" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Vanilla" },
+			food: { value: "Cookies" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Strawberry" },
+			food: { value: "Ice Cream" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Mint" },
+			food: { value: "Cake" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Chocolate" },
+			food: { value: "Cookies" },
+			none: { value: "" },
+		},
+		{
+			flavour: { value: "Vanilla" },
+			food: { value: "Ice Cream" },
+			none: { value: "" },
+		},
+	],
+};
+
 export const Spreadsheet: React.FC = () => {
-	const data = React.useRef<Data>({
-		columns: [
-			{ key: "flavour", header: "Flavour", width: 100, align: "center" },
-			{ key: "food", header: "Food", width: 100, align: "center" },
-			{ key: "none", header: "", width: 100, align: "center", options: ["", "auto", "default"] },
-			{ key: "date", header: "Date", width: 100, align: "center", type: "datetime" },
-		],
-		rows: [
-			{
-				flavour: { value: "Vanilla" },
-				food: { value: "Ice Cream" },
-				none: { value: "" },
-				date: { value: "2022-01-01T00:00" },
-			},
-			{
-				flavour: { value: "Chocolate" },
-				food: { value: "Cake" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Strawberry" },
-				food: { value: "Cookies" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Mint" },
-				food: { value: "Ice Cream" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Chocolate" },
-				food: { value: "Cake" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Vanilla" },
-				food: { value: "Cookies" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Strawberry" },
-				food: { value: "Ice Cream" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Mint" },
-				food: { value: "Cake" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Chocolate" },
-				food: { value: "Cookies" },
-				none: { value: "" },
-			},
-			{
-				flavour: { value: "Vanilla" },
-				food: { value: "Ice Cream" },
-				none: { value: "" },
-			},
-		],
-	});
+	const { state, set, redo, undo, clear } = useHistory(tableData);
+	const rootRef = React.useRef<HTMLDivElement | null>(null);
+
 	const [isEditing, setIsEditing] = React.useState<boolean>(false);
 	const [selected, setSelected] = React.useState<string | null>(null);
 	const callbackColumnSize = React.useRef<(i: number, w: number) => void>(() => {});
 
+	React.useEffect(() => {
+		const root = rootRef.current;
+		if (root) {
+			const handleKeyDown = (event: KeyboardEvent) => {
+				if (event.key.toLowerCase() === "z" && event.ctrlKey) {
+					if (event.shiftKey) {
+						redo();
+					} else {
+						undo();
+					}
+				}
+			};
+
+			root.addEventListener("keydown", handleKeyDown);
+
+			return () => {
+				root.removeEventListener("keydown", handleKeyDown);
+			};
+		}
+	}, []);
+
+	React.useEffect(() => {
+		const time = setTimeout(() => {
+			const containsMutations = Object.values(state.rows).some((row) => Object.values(row).some((cell) => (cell?.current !== undefined || cell?.removed) && cell?.current !== cell.value));
+
+			if (containsMutations && !isEditing) {
+				setIsEditing(true);
+			} else if (!containsMutations && isEditing) {
+				setIsEditing(false);
+			}
+		}, 10);
+
+		return () => {
+			clearTimeout(time);
+		};
+	}, [state]);
+
 	return (
 		<DataContext.Provider
 			value={{
-				data: data.current,
-				getData() {
-					return { ...data.current };
-				},
+				data: state,
 				updateData(current: Data) {
-					data.current = { ...current };
-					const containsMutations = Object.values(current.rows).some((row) => Object.values(row).some((cell) => cell.current !== undefined && cell.current !== cell.value));
-
-					if (containsMutations && !isEditing) {
-						setIsEditing(true);
-					} else if (!containsMutations && isEditing) {
-						setIsEditing(false);
-					}
+					set(current);
 				},
 				onColumnSize(callback) {
 					callbackColumnSize.current = callback;
@@ -564,10 +583,16 @@ export const Spreadsheet: React.FC = () => {
 				},
 			}}
 		>
-			<div className={styles["grid-root"]}>
+			<div
+				ref={rootRef}
+				className={styles["grid-root"]}
+			>
 				<GridHeader
 					isEditing={isEditing}
 					selected={selected !== null}
+					onCancel={() => {
+						clear();
+					}}
 				/>
 				<Table />
 			</div>
