@@ -21,3 +21,13 @@ export const clsx = (...classes: (string | undefined | null | false | Record<Pro
 		})
 		.filter(Boolean)
 		.join(" ");
+
+export const getOffsetRect = (element: HTMLElement) => {
+	const { width, height, top, left } = element.getBoundingClientRect();
+	return {
+		width,
+		height,
+		left,
+		top,
+	};
+};

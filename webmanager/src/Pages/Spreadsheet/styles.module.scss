@@ -1,8 +1,187 @@
 .table-root {
-    // width: 100%;
-    // max-width: 400px;
-    // overflow-x: scroll;
+    display: flex;
+    width: 100%;
     position: relative;
+    flex: 1 1 0%;
+
+    --lightgray: var(--gray4);
+    --thead-background: var(--gray6);
+    --sidebar-background: var(--background);
+    --modal-background: var(--gray6);
+    --modal-border: none;
+    --overlay-background: rgba(0, 0, 0, 0.33);
+    --odd-row-background: rgba(130, 130, 130, 0.08);
+    --row-hover-background: var(--gray5);
+    --null: var(--gray4);
+    --muted: var(--gray);
+    --icon-color: var(--gray2);
+    --title-inactive-background: var(--gray2);
+    --drag-border: transparent;
+    --separator-border: var(--lightgray);
+    --focus-border: transparent;
+
+    .table {
+        flex: 1 1 0%;
+        overflow: auto;
+        overscroll-behavior: none;
+
+        * {
+            cursor: auto !important;
+        }
+
+        >.table-content {
+            position: relative;
+            height: auto;
+            width: auto;
+
+            >header {
+                position: sticky;
+                top: 0px;
+                left: 0px;
+                width: 100%;
+                background: var(--thead-background);
+                z-index: 3;
+
+                >.tr {
+                    background: transparent !important;
+                }
+            }
+
+            .tr {
+                position: relative;
+                width: 100%;
+                display: flex;
+                background: var(--even-row-background);
+
+                &:nth-child(odd) {
+                    background: var(--odd-row-background);
+                }
+
+                &:last-child {
+                    border-bottom: 1px solid var(--lightgray);
+                }
+
+                // &:hover {
+                //     background: var(--row-hover-background);
+                // }
+
+                >.th,
+                >.td {
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    margin: 0px;
+                    border-right: 1px solid var(--lightgray);
+                    min-width: 30px;
+                    max-width: 400px;
+                    user-select: none;
+                    box-sizing: border-box;
+
+                    &.selected {
+                        background-color: var(--row-hover-background);
+                    }
+
+                    &.row-indicator,
+                    &.corner-indicator {
+                        justify-content: flex-end;
+                        background: var(--thead-background);
+                        position: sticky;
+                        left: 0px;
+                        z-index: 2;
+                        min-width: 40px;
+
+                        >span {
+                            padding: 0px 10px;
+                        }
+                    }
+                }
+
+                >.td {
+                    min-width: 100px;
+                    line-height: 1.5rem;
+                    flex: 0 0 auto;
+                    // overflow: hidden;
+                    // white-space: nowrap;
+                    // text-overflow: ellipsis;
+                }
+            }
+        }
+    }
+
+    .input-root {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        height: 100%;
+        white-space: nowrap;
+        padding: 5px 10px;
+        border: 1px solid transparent;
+        pointer-events: none;
+
+        &:not(.input-editable) {
+            box-sizing: border-box;
+        }
+
+        &.input-editable {
+            pointer-events: all;
+            box-sizing: border-box;
+            width: auto;
+            min-width: 200px;
+            height: 100%;
+            max-height: 100%;
+            background-color: var(--background-color);
+            border-color: var(--outline-color);
+            border-width: 2px;
+
+            >span {
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
+
+        &.input-modified {
+            border-left-width: 2px;
+            border-left-color: var(--yellow);
+        }
+
+        >* {
+            color: currentColor;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        >input {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            bottom: 5px;
+            right: 5px;
+            padding: 0px 0px 0px 5px;
+            outline: none;
+            background-color: transparent;
+            border: none;
+
+            &::-webkit-calendar-picker-indicator {
+                opacity: 0;
+            }
+        }
+
+        >.icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 99999999;
+
+            >svg {
+                margin-bottom: -2px;
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+            }
+        }
+    }
 
     * {
         &:focus-visible {
@@ -10,117 +189,28 @@
         }
     }
 
-    :global(.Spreadsheet) {
-        * {
-            cursor: auto !important;
+    :global(.Spreadsheet__active-cell) {
+        z-index: 1;
+
+        &:global(.Spreadsheet__active-cell--edit) {
+            border-width: 0px;
+            width: auto !important;
         }
+    }
 
-        table {
-            tr {
-                // position: sticky;
+    :global(.Spreadsheet__floating-rect) {
+        z-index: 1;
 
-                :global(.Spreadsheet__cell) {
-                    max-width: 600px;
-                    white-space: nowrap;
-                }
-            }
-        }
-
-        :global(.Spreadsheet__active-cell) {
-            z-index: 1;
-
-            &:global(.Spreadsheet__active-cell--edit) {
-                border-width: 0px;
-                width: auto !important;
-            }
-        }
-
-        :global(.Spreadsheet__floating-rect) {
-            z-index: 1;
-
-            &:global(.Spreadsheet__floating-rect--copied) {
-                z-index: 0;
-            }
-        }
-
-        .input-root {
-            position: relative;
-            width: auto;
-            max-width: 600px;
-            height: 100%;
-            white-space: nowrap;
-            padding: 5px;
-            border: 1px solid transparent;
-            pointer-events: none;
-
-            &:not(.input-editable) {
-                box-sizing: border-box;
-            }
-
-            &.input-editable {
-                pointer-events: all;
-                box-sizing: border-box;
-                width: auto;
-                min-width: 200px;
-                height: 100%;
-                max-height: 100%;
-                background-color: var(--background-color);
-                border-color: var(--outline-color);
-                border-width: 2px;
-
-                >span {
-                    opacity: 0;
-                    pointer-events: none;
-                }
-            }
-
-            &.input-modified {
-                background-color: #202020;
-                border-color: var(--outline-color);
-            }
-
-            >* {
-                color: currentColor;
-                font-size: 1rem;
-                font-family: inherit;
-            }
-
-            >input {
-                position: absolute;
-                top: 5px;
-                left: 5px;
-                bottom: 5px;
-                right: 5px;
-                padding: 0px 0px 0px 5px;
-                outline: none;
-                background-color: transparent;
-                border: none;
-
-                &::-webkit-calendar-picker-indicator {
-                    opacity: 0;
-                }
-            }
-
-            >.icon {
-                position: absolute;
-                right: 10px;
-                top: 50%;
-                transform: translateY(-50%);
-                pointer-events: none;
-                z-index: 99999999;
-
-                >svg {
-                    margin-bottom: -2px;
-                    width: 20px;
-                    height: 20px;
-                    fill: currentColor;
-                }
-            }
+        &:global(.Spreadsheet__floating-rect--copied) {
+            z-index: 0;
         }
     }
 }
 
 .grid-root {
+    display: flex;
+    flex-direction: column;
+
     div.grid-toolbar {
         display: flex;
         flex-direction: row;

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Web site created using create-react-app" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
@@ -24,10 +24,62 @@
     -->
     <title>React App</title>
     <style>
+        html {
+            --gray: rgb(142, 142, 147);
+            --gray2: rgb(174, 174, 178);
+            --gray3: rgb(199, 199, 204);
+            --gray4: rgb(209, 209, 214);
+            --gray5: rgb(229, 229, 234);
+            --gray6: rgb(242, 242, 247);
+            --red: rgb(255, 59, 48);
+            --blue: rgb(0, 122, 255);
+            --green: rgb(52, 199, 89);
+            --cyan: rgb(50, 173, 230);
+            --magenta: rgb(255, 45, 85);
+            --yellow: rgb(255, 204, 0);
+            --purple: rgba(175, 82, 222);
+            --color: #000;
+            --background: #fefefe;
+            --borderDarkest: rgb(98, 98, 104);
+            --borderDark: var(--gray2);
+            --borderLight: var(--gray4);
+            --borderLighter: var(--gray6);
+            --borderLightest: var(--background);
+            --link-color: var(--purple);
+            --title-background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), linear-gradient(90deg, var(--purple) 0%, var(--red) 50%, var(--yellow) 100%);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html {
+                --gray: rgb(142, 142, 147);
+                --gray2: rgb(99, 99, 102);
+                --gray3: rgb(72, 72, 74);
+                --gray4: rgb(58, 58, 60);
+                --gray5: rgb(44, 44, 46);
+                --gray6: rgb(28, 28, 30);
+                --red: rgb(255, 69, 58);
+                --blue: rgb(10, 132, 255);
+                --green: rgb(48, 209, 88);
+                --cyan: rgb(100, 210, 255);
+                --magenta: rgb(255, 55, 95);
+                --yellow: rgb(255, 214, 10);
+                --purple: rgba(191, 90, 242);
+                --color: #c8c8c8;
+                --background: rgb(22, 22, 24);
+                --borderDarkest: #000;
+                --borderDark: var(--gray6);
+                --borderLight: var(--gray5);
+                --borderLighter: var(--gray4);
+                --borderLightest: var(--gray3);
+                --link-color: var(--purple);
+                --title-background: linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25)), linear-gradient(90deg, var(--purple) 0%, var(--red) 50%, var(--yellow) 100%);
+            }
+        }
+
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #212121;
-            color: #f5f5f5;
+            background-color: var(--background);
+            color: var(--color);
             margin: 0;
             padding: 0;
         }
