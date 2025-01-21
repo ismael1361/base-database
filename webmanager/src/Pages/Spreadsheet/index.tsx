@@ -46,10 +46,12 @@ export const DataContext = React.createContext<{
 
 const tableData: Data = {
 	columns: [
-		{ key: "flavour", header: "Flavour", width: 100, align: "center" },
-		{ key: "food", header: "Food", width: 100, align: "center" },
-		{ key: "none", header: "", width: 100, align: "center", options: ["", "auto", "default"] },
-		{ key: "date", header: "Date", width: 100, align: "center", type: "datetime" },
+		{ key: "flavour", header: "Flavour", width: 200, align: "center" },
+		{ key: "food", header: "Food", width: 200, align: "center" },
+		{ key: "none", header: "", width: 100, align: "center", options: ["auto", "default"] },
+		{ key: "date", header: "Date", width: 200, align: "center", type: "datetime" },
+		{ key: "amount", header: "Amount", width: 100, align: "center", type: "integer" },
+		{ key: "valido", width: 100, align: "center", type: "boolean" },
 	],
 	rows: [
 		{
@@ -108,13 +110,15 @@ const tableData: Data = {
 
 const prepareData = (data: Data): Data => {
 	const columns = data.columns.map((column) => {
-		const { key, header, width, align, style } = column;
+		const { key, header, width, align, style, options, type } = column;
 		return {
 			key,
-			header,
+			header: header && header.trim() !== "" ? header : key,
 			width: width ?? 100,
 			align: align ?? "left",
 			style: style ?? {},
+			options: options ?? [],
+			type: type ?? "string",
 		};
 	});
 
@@ -135,8 +139,16 @@ const prepareData = (data: Data): Data => {
 	};
 };
 
+export const getCellValue = (cell: DataRowsItem) => {
+	const { value, current, removed } = cell;
+	return {
+		value,
+		current: removed ? undefined : current,
+	};
+};
+
 export const Spreadsheet: React.FC = () => {
-	const { state, set, redo, undo, clear } = useHistory(prepareData(tableData));
+	const { state, set, redo, undo, clear, length, currentIndex } = useHistory(prepareData(tableData));
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
 
 	const [isEditing, setIsEditing] = React.useState<boolean>(false);
@@ -166,7 +178,7 @@ export const Spreadsheet: React.FC = () => {
 
 	React.useEffect(() => {
 		const time = setTimeout(() => {
-			const containsMutations = Object.values(state.rows).some((row) => Object.values(row).some((cell) => (cell?.current !== undefined || cell?.removed) && cell?.current !== cell.value));
+			const containsMutations = currentIndex > 0;
 
 			if (containsMutations && !isEditing) {
 				setIsEditing(true);
@@ -178,7 +190,7 @@ export const Spreadsheet: React.FC = () => {
 		return () => {
 			clearTimeout(time);
 		};
-	}, [state]);
+	}, [currentIndex]);
 
 	return (
 		<DataContext.Provider

@@ -115,6 +115,16 @@
         border: 1px solid transparent;
         pointer-events: none;
         overflow: hidden;
+        color: var(--prettify-orange-2);
+
+        &.input-number {
+            color: var(--prettify-green);
+            text-align: right;
+        }
+
+        &.input-type-boolean {
+            color: var(--prettify-blue);
+        }
 
         &:not(.input-editable) {
             box-sizing: border-box;
@@ -151,19 +161,19 @@
 
         &.input-modified {
             border-left-width: 2px;
-            border-left-color: var(--yellow);
+            border-left-color: var(--prettify-mono-1);
 
             &::after {
-                background-color: var(--yellow);
+                background-color: var(--prettify-mono-1);
             }
         }
 
         &.input-removed {
             border-left-width: 2px;
-            border-left-color: var(--red);
+            border-left-color: var(--prettify-red-2);
 
             &::after {
-                background-color: var(--red);
+                background-color: var(--prettify-red-2);
             }
         }
 
@@ -173,7 +183,8 @@
             font-family: inherit;
         }
 
-        >input {
+        >input,
+        >select {
             position: absolute;
             top: 5px;
             left: 5px;
@@ -186,6 +197,15 @@
 
             &::-webkit-calendar-picker-indicator {
                 opacity: 0;
+            }
+
+            >option {
+                color: initial;
+
+                &:disabled {
+                    color: gray;
+                    font-style: italic;
+                }
             }
         }
 

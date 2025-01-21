@@ -49,6 +49,16 @@ const initialStateHistory: { time: number; value: any; cloneValue: any; past: Ar
 	future: [],
 };
 
+const verifierCommitIdentical = (commit: CommitItem[][]) => {
+	return commit.filter((current, i, self) => {
+		if (i === 0) {
+			return true;
+		}
+		const before = self[i - 1];
+		return current.map((v) => JSON.stringify(v)).join() !== before.map((v) => JSON.stringify(v)).join();
+	});
+};
+
 /**
  * Função de redutor para gerenciar o histórico do estado.
  *
@@ -60,8 +70,11 @@ const initialStateHistory: { time: number; value: any; cloneValue: any; past: Ar
  * @returns {Object} O novo estado após a ação ser aplicada.
  */
 const reducerHistory = <T extends object = any>(state: typeof initialStateHistory, action: { type: "UNDO" | "REDO" | "SET" | "CLEAR"; newState?: T; initialState?: T }) => {
-	const { time, value, cloneValue, past, present, future } = state;
+	let { time, value, cloneValue, past, present, future } = state;
 	let newValue;
+
+	past = verifierCommitIdentical(past);
+	future = verifierCommitIdentical(future);
 
 	switch (action.type) {
 		case "UNDO":
@@ -112,7 +125,7 @@ const reducerHistory = <T extends object = any>(state: typeof initialStateHistor
 			}
 
 			if (
-				Date.now() - time < 2000 &&
+				Date.now() - time < 4000 &&
 				commit.length === 1 &&
 				present.length === 1 &&
 				commit[0].path.join("_") === present[0].path.join("_") &&
@@ -167,30 +180,30 @@ export const useHistory = <T extends object = any>(initialState: T) => {
 	});
 	const timeRef = React.useRef<NodeJS.Timeout>();
 
+	const length = state.past.length + state.future.length;
+	const currentIndex = state.past.length;
+
 	// Setup our callback functions
 	// We memoize with useCallback to prevent unnecessary re-renders
 	const undo = React.useCallback(() => {
 		dispatch({ type: "UNDO" });
-	}, [dispatch]);
+	}, []);
 
 	const redo = React.useCallback(() => {
 		dispatch({ type: "REDO" });
-	}, [dispatch]);
+	}, []);
 
-	const set = React.useCallback(
-		(newState: T) => {
-			clearTimeout(timeRef.current);
-			timeRef.current = setTimeout(() => {
-				dispatch({ type: "SET", newState });
-			}, 100);
-		},
-		[dispatch],
-	);
+	const set = React.useCallback((newState: T) => {
+		clearTimeout(timeRef.current);
+		timeRef.current = setTimeout(() => {
+			dispatch({ type: "SET", newState });
+		}, 100);
+	}, []);
 
 	const clear = React.useCallback(() => {
 		dispatch({ type: "CLEAR", initialState: cloneObjectLiteral(initialState) });
-	}, [dispatch]);
+	}, []);
 
 	// If needed we could also return past and future state
-	return { state: state.value as T, set, undo, redo, clear };
+	return { state: state.value as T, set, undo, redo, clear, length, currentIndex };
 };

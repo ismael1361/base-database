@@ -15,12 +15,35 @@ import SpreadsheetComponent, {
 import styles from "./styles.module.scss";
 import { clsx, columnIndexToLabel, getOffsetRect } from "Utils";
 import { DataEditor } from "./DataEditor";
-import { DataContext } from ".";
-import { useSizeEffect } from "UseHooks";
+import { DataContext, getCellValue } from ".";
 
 export const TableComponent: React.FC<TableProps> = ({ columns, children, hideColumnIndicators }) => {
-	const { onColumnSize } = React.useContext(DataContext);
+	const { data, onColumnSize } = React.useContext(DataContext);
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
+	const columnsSizes = React.useRef<number[]>(new Array(columns + 1).fill(0).map((_, i) => (i === 0 ? 50 : data.columns[i - 1].width ?? 200)));
+
+	const updateColumnsSizes = React.useCallback(() => {
+		const root = rootRef.current;
+		if (root) {
+			const rows = root.querySelectorAll<HTMLDivElement>(`div.${styles.tr}`);
+
+			root.querySelectorAll<HTMLDivElement>(`div.${styles["row-indicator"]}`).forEach((column) => {
+				column.style.width = column.style.minWidth = "";
+				columnsSizes.current[0] = Math.max(columnsSizes.current[0], column.offsetWidth);
+			});
+
+			const columnWidth: number[] = columnsSizes.current;
+
+			rows.forEach((row, i) => {
+				const columns = row.querySelectorAll<HTMLDivElement>(`div.${styles.td}, div.${styles.th}`);
+				columns.forEach((column, j) => {
+					column.style.width = column.style.minWidth = `${columnWidth[j]}px`;
+				});
+			});
+
+			root.style.width = `${columnWidth.reduce((a, b) => a + b, 0)}px`;
+		}
+	}, []);
 
 	React.useLayoutEffect(() => {
 		let time: NodeJS.Timeout;
@@ -28,30 +51,8 @@ export const TableComponent: React.FC<TableProps> = ({ columns, children, hideCo
 		const callback = onColumnSize((i, w) => {
 			clearTimeout(time);
 			time = setTimeout(() => {
-				const root = rootRef.current;
-				if (root) {
-					const rows = root.querySelectorAll<HTMLDivElement>(`div.${styles.tr}`);
-					const columnWidth: number[] = new Array(columns + 1).fill(0);
-
-					rows.forEach((row, i) => {
-						const columns = row.querySelectorAll<HTMLDivElement>(`div.${styles.td}, div.${styles.th}`);
-						columns.forEach((column, j) => {
-							column.style.width = column.style.minWidth = "";
-							const width = column.clientWidth;
-							columnWidth[j] = Math.max(columnWidth[j], width);
-						});
-					});
-
-					rows.forEach((row, i) => {
-						const columns = row.querySelectorAll<HTMLDivElement>(`div.${styles.td}, div.${styles.th}`);
-						columns.forEach((column, j) => {
-							column.style.width = column.style.minWidth = `${columnWidth[j]}px`;
-						});
-					});
-
-					root.style.width = `${columnWidth.reduce((a, b) => a + b, 0)}px`;
-				}
-			}, 10);
+				updateColumnsSizes();
+			}, 100);
 		});
 
 		const onResize = () => {
@@ -59,6 +60,8 @@ export const TableComponent: React.FC<TableProps> = ({ columns, children, hideCo
 		};
 
 		window.addEventListener("resize", onResize);
+
+		updateColumnsSizes();
 
 		return () => {
 			window.removeEventListener("resize", onResize);
@@ -78,7 +81,7 @@ export const TableComponent: React.FC<TableProps> = ({ columns, children, hideCo
 };
 
 export const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataViewer, selected, active, dragging, mode, data, evaluatedData, select, activate, setCellDimensions, setCellData }) => {
-	const { setColumnSize } = React.useContext(DataContext);
+	// const { setColumnSize } = React.useContext(DataContext);
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
 	const point = React.useMemo<Point>(
 		() => ({
@@ -127,7 +130,6 @@ export const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataV
 	const handleMouseDown = React.useCallback(
 		(event: React.MouseEvent<HTMLDivElement>) => {
 			if (mode === "view") {
-				setColumnSize(column, 100);
 				setCellDimensions(point, offsetRect());
 
 				if (event.shiftKey) {
@@ -143,7 +145,6 @@ export const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataV
 	const handleMouseOver = React.useCallback(
 		(event: React.MouseEvent<HTMLDivElement>) => {
 			if (dragging) {
-				setColumnSize(column, 100);
 				setCellDimensions(point, offsetRect());
 				select(point);
 			}
@@ -153,7 +154,6 @@ export const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataV
 
 	React.useEffect(() => {
 		const root = rootRef.current;
-		setColumnSize(column, 100);
 		if (selected && root) {
 			setCellDimensions(point, offsetRect());
 		}
@@ -209,6 +209,10 @@ export const HeaderRowComponent: React.FC<HeaderRowProps> = ({ children }) => {
 };
 
 export const RowComponent: React.FC<RowProps> = ({ row, children }) => {
+	const { data } = React.useContext(DataContext);
+	if (!data.rows[row]) {
+		return null;
+	}
 	return (
 		<div
 			className={styles.tr}
@@ -279,8 +283,9 @@ export const Table: React.FC = () => {
 	const rowLabels = Object.keys(data.rows).map((header, i) => (Array.isArray(data.rows) ? `${i + 1}` : header));
 	const cells = Object.values(data.rows).map((row) =>
 		data.columns.map(({ key }) => {
-			const { value, current, removed, ...props } = row[key] ?? {};
-			return { ...props, value: removed ? undefined : current ?? value };
+			const cell = row[key] ?? {};
+			const { current } = getCellValue(cell);
+			return { ...cell, value: current };
 		}),
 	) as Matrix<CellBase>;
 
@@ -294,14 +299,27 @@ export const Table: React.FC = () => {
 				if (modeChangeRef.current === "view") {
 					d.forEach((row, j) => {
 						row.forEach((cell, i) => {
-							if (!cell) return;
+							if (!cell || !data.columns[i] || !data.rows[j]) {
+								return;
+							}
 							const { value } = cell;
-							const key = data.columns[i].key;
-							const before = data.rows[j][key]?.value;
-							data.rows[j][key] = { ...(data.rows?.[j]?.[key] ?? {}), current: value, removed: value === undefined && before !== undefined };
+							const { key, type = "string" } = data.columns[i];
+							const c = data.rows?.[j]?.[key] ?? {};
+
+							const current =
+								value === null || value === undefined
+									? value
+									: type === "boolean"
+									? String(value) === "true"
+									: ["integer", "float"].includes(type)
+									? isNaN(parseFloat(value))
+										? 0
+										: parseFloat(value)
+									: value;
+
+							data.rows[j][key] = { ...c, current, removed: current === undefined && getCellValue(c).value !== undefined };
 						});
 					});
-
 					updateData(data);
 				}
 			}}

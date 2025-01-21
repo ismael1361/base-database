@@ -1,9 +1,11 @@
 import { Icon } from "Components";
-import React from "react";
+import React, { useEffect } from "react";
 import { CellBase } from "react-spreadsheet";
 import styles from "./styles.module.scss";
 import { clsx } from "Utils";
-import { DataContext } from ".";
+import { DataContext, getCellValue } from ".";
+
+const booleanOptions = ["False", "True"];
 
 export const DataEditor: React.FC<{
 	cell?: CellBase;
@@ -12,48 +14,75 @@ export const DataEditor: React.FC<{
 	onChange?: (cell: CellBase) => void;
 }> = ({ cell, column, row, onChange }) => {
 	const { data, updateData } = React.useContext(DataContext);
-	const timeDelay = React.useRef<NodeJS.Timeout>();
 	const { key, type = "string", options = [], style: s } = data.columns[column] ?? {};
+	const cellData = data.rows?.[row]?.[key] ?? {};
 
-	const isRemoved = data.rows[row][key]?.removed ?? false;
+	const isRemoved = cellData.removed ?? false;
 
-	const viewValue = isRemoved ? "" : String(data.rows[row][key]?.current ?? data.rows[row][key]?.value ?? "");
+	const viewValue = isRemoved ? "" : String(getCellValue(cellData).current ?? "");
 
 	const [value, setValue] = React.useState<string>(viewValue);
 
-	const style = data.rows[row][key]?.style ?? s ?? {};
+	const style = cellData.style ?? s ?? {};
 
-	const isOptions = type === "string" && options.length > 0;
+	const isOptions = (type === "string" && options.length > 0) || type === "boolean";
 
-	const isModified = data.rows[row][key]?.current !== undefined ? data.rows[row][key].current !== data.rows[row][key].value : false;
+	const isModified = cellData.current !== undefined ? cellData.current !== cellData.value : false;
 
-	const onInputChange = React.useCallback<React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement>>(({ target: { value } }) => {
-		clearTimeout(timeDelay.current);
-		setValue(value);
-		timeDelay.current = setTimeout(() => {
-			cell!.value = value;
-			data.rows[row][key] = { ...(data.rows?.[row]?.[key] ?? {}), current: value };
+	const inputType = type === "date" ? "date" : type === "datetime" ? "datetime-local" : ["integer", "float"].includes(type) ? "number" : "text";
+
+	useEffect(() => {
+		return () => {
 			updateData(data);
 			if (cell) onChange?.(cell);
-		}, 100);
+		};
 	}, []);
+
+	const onInputChange = React.useCallback<React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement>>(
+		({ target: { value } }) => {
+			if (inputType === "number") {
+				value = value.replace(/[^0-9\.\-]/g, "");
+				value = type === "integer" ? value.replace(/\.([\S]+)?$/, "") : value;
+			}
+			setValue(value);
+			cell!.value = type === "boolean" ? value === "true" : inputType === "number" ? (isNaN(parseFloat(value)) ? 0 : parseFloat(value)) : value;
+			if (data.rows[row]) data.rows[row][key] = { ...(data.rows?.[row]?.[key] ?? {}), current: cell!.value };
+		},
+		[type, inputType],
+	);
 
 	return (
 		<div
-			className={clsx(styles["input-root"], typeof onChange === "function" ? styles["input-editable"] : "", isModified && styles["input-modified"], isRemoved && styles["input-removed"])}
+			className={clsx(
+				styles["input-root"],
+				styles[`input-${inputType}`],
+				styles[`input-type-${type}`],
+				typeof onChange === "function" ? styles["input-editable"] : "",
+				isModified && styles["input-modified"],
+				isRemoved && styles["input-removed"],
+			)}
 			style={{ ...(typeof onChange === "function" ? {} : style) }}
 		>
-			<span>{["date", "datetime"].includes(type) && viewValue.trim() !== "" ? new Date(viewValue).toLocaleString() : viewValue.replace(/\s/gi, "\u00A0")}</span>
+			<span>
+				{type === "boolean"
+					? ["true", "false"].includes(viewValue.toLowerCase())
+						? booleanOptions[viewValue === "true" ? 1 : 0]
+						: ""
+					: ["date", "datetime"].includes(type) && viewValue.trim() !== ""
+					? new Date(viewValue).toLocaleString()
+					: viewValue.replace(/\s/gi, "\u00A0")}
+			</span>
 
-			{typeof onChange === "function" && ["string", "date", "datetime"].includes(type) && !isOptions && (
+			{typeof onChange === "function" && !isOptions && (
 				<>
 					<input
 						ref={(e) => {
 							e?.focus();
 						}}
-						type={type === "date" ? "date" : type === "datetime" ? "datetime-local" : "text"}
+						type={inputType === "number" ? "text" : inputType}
 						value={value}
 						onChange={onInputChange}
+						step={inputType === "number" ? (type === "float" ? "0.1" : "1") : undefined}
 					/>
 					{["date", "datetime"].includes(type) && (
 						<div className={styles["icon"]}>
@@ -77,10 +106,14 @@ export const DataEditor: React.FC<{
 					>
 						None
 					</option>
-					<option value="volvo">Volvo</option>
-					<option value="saab">Saab</option>
-					<option value="vw">VW</option>
-					<option value="audi">Audi</option>
+					{(type === "boolean" ? ["true", "false"] : options).map((option, i) => (
+						<option
+							value={option}
+							key={i}
+						>
+							{type === "boolean" ? booleanOptions[option === "true" ? 1 : 0] : option}
+						</option>
+					))}
 				</select>
 			)}
 		</div>
