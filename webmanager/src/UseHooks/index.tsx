@@ -1,1 +1,2 @@
-export * from "./use-history";
+export * from "./useHistory";
+export * from "./useSizeEffect";

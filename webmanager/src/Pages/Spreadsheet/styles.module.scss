@@ -114,6 +114,7 @@
         padding: 5px 10px;
         border: 1px solid transparent;
         pointer-events: none;
+        overflow: hidden;
 
         &:not(.input-editable) {
             box-sizing: border-box;

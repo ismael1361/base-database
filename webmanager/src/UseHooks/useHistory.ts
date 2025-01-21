@@ -40,7 +40,8 @@ const parseCommit = <T extends object = any>(type: "past" | "next", present: T, 
 	return present;
 };
 
-const initialStateHistory: { value: any; cloneValue: any; past: Array<CommitItem[]>; present: CommitItem[]; future: Array<CommitItem[]> } = {
+const initialStateHistory: { time: number; value: any; cloneValue: any; past: Array<CommitItem[]>; present: CommitItem[]; future: Array<CommitItem[]> } = {
+	time: 0,
 	cloneValue: null,
 	value: null,
 	past: [],
@@ -59,7 +60,7 @@ const initialStateHistory: { value: any; cloneValue: any; past: Array<CommitItem
  * @returns {Object} O novo estado após a ação ser aplicada.
  */
 const reducerHistory = <T extends object = any>(state: typeof initialStateHistory, action: { type: "UNDO" | "REDO" | "SET" | "CLEAR"; newState?: T; initialState?: T }) => {
-	const { value, cloneValue, past, present, future } = state;
+	const { time, value, cloneValue, past, present, future } = state;
 	let newValue;
 
 	switch (action.type) {
@@ -73,6 +74,7 @@ const reducerHistory = <T extends object = any>(state: typeof initialStateHistor
 			newValue = parseCommit("past", cloneValue, present);
 
 			return {
+				time: Date.now(),
 				value: newValue,
 				cloneValue: cloneObjectLiteral(newValue),
 				past: newPast,
@@ -89,6 +91,7 @@ const reducerHistory = <T extends object = any>(state: typeof initialStateHistor
 			newValue = parseCommit("next", cloneValue, next);
 
 			return {
+				time: Date.now(),
 				value: newValue,
 				cloneValue: cloneObjectLiteral(newValue),
 				past: [...past, present],
@@ -102,13 +105,31 @@ const reducerHistory = <T extends object = any>(state: typeof initialStateHistor
 				return state;
 			}
 
-			newValue = cloneObjectLiteral(newState);
+			const commit = getCommit(cloneValue, newState);
+
+			if (commit.length <= 0) {
+				return state;
+			}
+
+			if (
+				Date.now() - time < 2000 &&
+				commit.length === 1 &&
+				present.length === 1 &&
+				commit[0].path.join("_") === present[0].path.join("_") &&
+				typeof commit[0].next === typeof present[0].next &&
+				["number", "string"].includes(typeof commit[0].next)
+			) {
+				commit[0].past = present[0].past;
+			} else {
+				past.push(present);
+			}
 
 			return {
-				value: newValue,
-				cloneValue: cloneObjectLiteral(newValue),
-				past: [...past, present],
-				present: getCommit(cloneValue, newState),
+				time: Date.now(),
+				value: newState,
+				cloneValue: cloneObjectLiteral(newState),
+				past,
+				present: commit,
 				future: [],
 			};
 		case "CLEAR":
@@ -161,7 +182,7 @@ export const useHistory = <T extends object = any>(initialState: T) => {
 			clearTimeout(timeRef.current);
 			timeRef.current = setTimeout(() => {
 				dispatch({ type: "SET", newState });
-			}, 600);
+			}, 100);
 		},
 		[dispatch],
 	);
