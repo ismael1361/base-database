@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useCallbackRef } from "./useCallbackRef";
 
 export const useSizeEffect = <T extends HTMLElement = any>(
 	ref: React.MutableRefObject<T | null>,
 	callback: (size: { width: number; height: number }) => ReturnType<React.EffectCallback>,
 	deps: React.DependencyList = [],
 ) => {
+	const handleCallback = useCallbackRef(callback);
 	const elementRef = useRef<T | null>(null);
 	const resizeObserverRef = useRef<ResizeObserver | null>(null);
 	const timeRef = useRef<NodeJS.Timeout>();
@@ -15,7 +17,7 @@ export const useSizeEffect = <T extends HTMLElement = any>(
 		timeRef.current = setTimeout(() => {
 			destructorRef.current?.();
 			destructorRef.current = undefined;
-			destructorRef.current = callback(s);
+			destructorRef.current = handleCallback(s);
 		}, 100);
 	}, []);
 

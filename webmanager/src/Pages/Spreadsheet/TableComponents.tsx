@@ -295,7 +295,9 @@ export const CornerIndicatorComponent: React.FC<CornerIndicatorProps> = ({ onSel
 	);
 };
 
-export const Table: React.FC = () => {
+export const Table: React.FC<{
+	onSelect?: (selection: Selection) => void;
+}> = ({ onSelect }) => {
 	const { data, setColumnSize, updateData } = React.useContext(DataContext);
 	const modeChangeRef = React.useRef<Mode>("view");
 	const [selection, setSelection] = React.useState<Selection>(new EmptySelection());
@@ -311,11 +313,13 @@ export const Table: React.FC = () => {
 		});
 	}, [data.columns]);
 
-	const rowLabels = Object.keys(data.rows).map((header, i) => (Array.isArray(data.rows) ? `${i + 1}` : header));
+	const rowLabels = React.useMemo(() => {
+		return data.rows.map(({ rowid }, i) => rowid);
+	}, [data.rows]);
 
-	const cells = Object.values(data.rows).map((row) =>
+	const cells = data.rows.map(({ columns }) =>
 		data.columns.map(({ key }) => {
-			const cell = row[key] ?? {};
+			const cell = columns[key] ?? {};
 			const { current } = getCellValue(cell);
 			return { ...cell, value: current };
 		}),
@@ -341,7 +345,7 @@ export const Table: React.FC = () => {
 								}
 								const { value } = cell;
 								const { key, type = "string" } = data.columns[i];
-								const c = data.rows?.[j]?.[key] ?? {};
+								const c = data.rows?.[j]?.columns[key] ?? {};
 
 								const current =
 									value === null || value === undefined
@@ -354,14 +358,17 @@ export const Table: React.FC = () => {
 											: parseFloat(value)
 										: value;
 
-								data.rows[j][key] = { ...c, current, removed: current === undefined && getCellValue(c).value !== undefined };
+								data.rows[j].columns[key] = { ...c, current, removed: current === undefined && getCellValue(c).value !== undefined };
 							});
 						});
 						updateData(data);
 					}
 				}}
 				onModeChange={(m) => (modeChangeRef.current = m)}
-				onSelect={setSelection}
+				onSelect={(selected) => {
+					setSelection(selected);
+					onSelect?.(selected);
+				}}
 				columnLabels={columnLabels as any}
 				rowLabels={rowLabels}
 				Table={TableComponent}

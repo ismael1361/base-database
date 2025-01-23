@@ -15,7 +15,7 @@ export const DataEditor: React.FC<{
 }> = ({ cell, column, row, onChange }) => {
 	const { data, updateData } = React.useContext(DataContext);
 	const { key, type = "string", options = [], style: s } = data.columns[column] ?? {};
-	const cellData = data.rows?.[row]?.[key] ?? {};
+	const cellData = data.rows?.[row]?.columns[key] ?? {};
 
 	const isRemoved = cellData.removed ?? false;
 
@@ -46,7 +46,7 @@ export const DataEditor: React.FC<{
 			}
 			setValue(value);
 			cell!.value = type === "boolean" ? value === "true" : inputType === "number" ? (isNaN(parseFloat(value)) ? 0 : parseFloat(value)) : value;
-			if (data.rows[row]) data.rows[row][key] = { ...(data.rows?.[row]?.[key] ?? {}), current: cell!.value };
+			if (data.rows[row]) data.rows[row].columns[key] = { ...(data.rows?.[row]?.columns[key] ?? {}), current: cell!.value };
 		},
 		[type, inputType],
 	);

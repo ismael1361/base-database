@@ -1,8 +1,10 @@
 import React from "react";
 import styles from "./styles.module.scss";
-import { useHistory } from "UseHooks";
+import { useDebouncedCallback, useDebouncedEffect, useHistory } from "UseHooks";
 import { GridHeader } from "./GridHeader";
 import { Table } from "./TableComponents";
+import { EntireRowsSelection, Selection } from "react-spreadsheet";
+import { ScriptsHelper } from "Helpers";
 
 interface DataRowsItem {
 	value?: string | number | boolean | null;
@@ -24,7 +26,10 @@ interface DataColumnsItem {
 
 export interface Data {
 	columns: Array<DataColumnsItem>;
-	rows: Array<Record<PropertyKey, DataRowsItem>> | Record<PropertyKey, Record<PropertyKey, DataRowsItem>>;
+	rows: Array<{
+		columns: Record<PropertyKey, DataRowsItem>;
+		rowid: string;
+	}>;
 }
 
 export const DataContext = React.createContext<{
@@ -55,55 +60,44 @@ const tableData: Data = {
 	],
 	rows: [
 		{
-			flavour: { value: "Vanilla" },
-			food: { value: "Ice Cream" },
-			none: { value: "" },
-			date: { value: "2022-01-01T00:00" },
+			rowid: "1",
+			columns: { flavour: { value: "Vanilla" }, food: { value: "Ice Cream" }, none: { value: "" }, date: { value: "2022-01-01T00:00" } },
 		},
 		{
-			flavour: { value: "Chocolate" },
-			food: { value: "Cake" },
-			none: { value: "" },
+			rowid: "2",
+			columns: { flavour: { value: "Chocolate" }, food: { value: "Cake" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Strawberry" },
-			food: { value: "Cookies" },
-			none: { value: "" },
+			rowid: "5",
+			columns: { flavour: { value: "Strawberry" }, food: { value: "Cookies" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Mint" },
-			food: { value: "Ice Cream" },
-			none: { value: "" },
+			rowid: "6",
+			columns: { flavour: { value: "Mint" }, food: { value: "Ice Cream" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Chocolate" },
-			food: { value: "Cake" },
-			none: { value: "" },
+			rowid: "9",
+			columns: { flavour: { value: "Chocolate" }, food: { value: "Cake" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Vanilla" },
-			food: { value: "Cookies" },
-			none: { value: "" },
+			rowid: "10",
+			columns: { flavour: { value: "Vanilla" }, food: { value: "Cookies" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Strawberry" },
-			food: { value: "Ice Cream" },
-			none: { value: "" },
+			rowid: "11",
+			columns: { flavour: { value: "Strawberry" }, food: { value: "Ice Cream" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Mint" },
-			food: { value: "Cake" },
-			none: { value: "" },
+			rowid: "15",
+			columns: { flavour: { value: "Mint" }, food: { value: "Cake" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Chocolate" },
-			food: { value: "Cookies" },
-			none: { value: "" },
+			rowid: "16",
+			columns: { flavour: { value: "Chocolate" }, food: { value: "Cookies" }, none: { value: "" } },
 		},
 		{
-			flavour: { value: "Vanilla" },
-			food: { value: "Ice Cream" },
-			none: { value: "" },
+			rowid: "17",
+			columns: { flavour: { value: "Vanilla" }, food: { value: "Ice Cream" }, none: { value: "" } },
 		},
 	],
 };
@@ -129,7 +123,10 @@ const prepareData = (data: Data): Data => {
 
 	for (const rowId in data.rows) {
 		columns.forEach(({ key }) => {
-			data.rows[rowId][key] = normalizeCell(data.rows[rowId][key]);
+			if (!data.rows[rowId].columns) {
+				data.rows[rowId].columns = {};
+			}
+			data.rows[rowId].columns[key] = normalizeCell(data.rows[rowId].columns[key]);
 		});
 	}
 
@@ -148,36 +145,45 @@ export const getCellValue = (cell: DataRowsItem) => {
 };
 
 export const Spreadsheet: React.FC = () => {
+	const scripts = React.useRef<ScriptsHelper>(new ScriptsHelper());
 	const { state, set, redo, undo, clear, length, currentIndex } = useHistory(prepareData(tableData));
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
 
 	const [isEditing, setIsEditing] = React.useState<boolean>(false);
-	const [selected, setSelected] = React.useState<string | null>(null);
+	const [rowsSelection, setRowsSelection] = React.useState<[number, number] | null>(null);
 	const callbackColumnSize = React.useRef<(i: number, w: number) => void>(() => {});
 
 	React.useEffect(() => {
 		const root = rootRef.current;
-		if (root) {
-			const handleKeyDown = (event: KeyboardEvent) => {
-				if (event.key.toLowerCase() === "z" && event.ctrlKey) {
-					if (event.shiftKey) {
-						redo();
-					} else {
-						undo();
-					}
+
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key.toLowerCase() === "z" && event.ctrlKey) {
+				if (event.shiftKey) {
+					redo();
+				} else {
+					undo();
 				}
-			};
+			}
+		};
 
-			root.addEventListener("keydown", handleKeyDown);
+		root?.addEventListener("keydown", handleKeyDown);
 
-			return () => {
-				root.removeEventListener("keydown", handleKeyDown);
-			};
+		const event = scripts.current.onScript((lines) => {
+			console.log(ScriptsHelper.renderScript(scripts.current.initialScript, lines));
+		});
+
+		if (!scripts.current.isInitialized) {
+			scripts.current.initialize("table");
 		}
+
+		return () => {
+			event.stop();
+			root?.removeEventListener("keydown", handleKeyDown);
+		};
 	}, []);
 
-	React.useEffect(() => {
-		const time = setTimeout(() => {
+	useDebouncedEffect(
+		() => {
 			const containsMutations = currentIndex > 0;
 
 			if (containsMutations && !isEditing) {
@@ -185,12 +191,14 @@ export const Spreadsheet: React.FC = () => {
 			} else if (!containsMutations && isEditing) {
 				setIsEditing(false);
 			}
-		}, 10);
+		},
+		10,
+		[currentIndex],
+	);
 
-		return () => {
-			clearTimeout(time);
-		};
-	}, [currentIndex]);
+	const onSelect = useDebouncedCallback((selection: Selection) => {
+		setRowsSelection(selection instanceof EntireRowsSelection ? [selection.start, selection.end] : null);
+	}, 200);
 
 	return (
 		<DataContext.Provider
@@ -214,12 +222,28 @@ export const Spreadsheet: React.FC = () => {
 			>
 				<GridHeader
 					isEditing={isEditing}
-					selected={selected !== null}
+					selected={rowsSelection !== null}
 					onCancel={() => {
 						clear();
 					}}
+					onDelete={() => {
+						if (!rowsSelection) {
+							return;
+						}
+						const [start, end] = rowsSelection;
+						const rows = state.rows.slice(start, end + 1).map(({ rowid }) => rowid);
+						scripts.current.push({
+							isAsync: true,
+							type: "line",
+							content: [
+								{ name: "table.query", args: [] },
+								{ name: "rowid", args: rows },
+								{ name: "delete", args: [] },
+							],
+						});
+					}}
 				/>
-				<Table />
+				<Table onSelect={onSelect} />
 			</div>
 		</DataContext.Provider>
 	);
