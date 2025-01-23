@@ -1,21 +1,29 @@
-import React from "react";
+import React, { useContext } from "react";
 import SpreadsheetComponent, {
 	CellBase,
 	CellComponentProps,
 	ColumnIndicatorProps,
 	CornerIndicatorProps,
+	Selection,
 	HeaderRowProps,
 	Matrix,
 	Mode,
 	Point,
+	PointRange,
 	RowIndicatorProps,
 	RowProps,
 	TableProps,
+	EmptySelection,
+	RangeSelection,
 } from "react-spreadsheet";
 import styles from "./styles.module.scss";
 import { clsx, columnIndexToLabel, getOffsetRect } from "Utils";
 import { DataEditor } from "./DataEditor";
 import { DataContext, getCellValue } from ".";
+
+const ContextTable = React.createContext<{
+	selection: Selection;
+}>({ selection: new EmptySelection() });
 
 export const TableComponent: React.FC<TableProps> = ({ columns, children, hideColumnIndicators }) => {
 	const { data, onColumnSize } = React.useContext(DataContext);
@@ -210,9 +218,11 @@ export const HeaderRowComponent: React.FC<HeaderRowProps> = ({ children }) => {
 
 export const RowComponent: React.FC<RowProps> = ({ row, children }) => {
 	const { data } = React.useContext(DataContext);
+
 	if (!data.rows[row]) {
 		return null;
 	}
+
 	return (
 		<div
 			className={styles.tr}
@@ -224,15 +234,20 @@ export const RowComponent: React.FC<RowProps> = ({ row, children }) => {
 };
 
 export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ column, onSelect, selected, label }) => {
+	const { selection } = useContext(ContextTable);
+
 	const handleClick = React.useCallback(
 		(event: React.MouseEvent) => {
 			onSelect(column, event.shiftKey);
 		},
 		[onSelect, column],
 	);
+
+	const isSelected = selected || (selection instanceof RangeSelection && selection.range.start.column <= column && selection.range.end.column >= column);
+
 	return (
 		<div
-			className={clsx(styles.th, selected && styles.selected)}
+			className={clsx(styles.th, isSelected && styles.selected)}
 			role="columnheader"
 			onClick={handleClick}
 			tabIndex={0}
@@ -243,15 +258,20 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 };
 
 export const RowIndicatorComponent: React.FC<RowIndicatorProps> = ({ onSelect, row, selected, label }) => {
+	const { selection } = useContext(ContextTable);
+
 	const handleClick = React.useCallback(
 		(event: React.MouseEvent) => {
 			onSelect(row, event.shiftKey);
 		},
 		[onSelect, row],
 	);
+
+	const isSelected = selected || (selection instanceof RangeSelection && selection.range.start.row <= row && selection.range.end.row >= row);
+
 	return (
 		<div
-			className={clsx(styles.th, styles["row-indicator"], selected && styles.selected)}
+			className={clsx(styles.th, styles["row-indicator"], isSelected && styles.selected)}
 			role="columnheader"
 			onClick={handleClick}
 			tabIndex={0}
@@ -278,9 +298,21 @@ export const CornerIndicatorComponent: React.FC<CornerIndicatorProps> = ({ onSel
 export const Table: React.FC = () => {
 	const { data, setColumnSize, updateData } = React.useContext(DataContext);
 	const modeChangeRef = React.useRef<Mode>("view");
+	const [selection, setSelection] = React.useState<Selection>(new EmptySelection());
 
-	const columnLabels = data.columns.map(({ key, header }, i) => header ?? key) as string[];
+	const columnLabels = React.useMemo(() => {
+		return data.columns.map(({ key, info = "" }, i) => {
+			return (
+				<React.Fragment key={i}>
+					{key}
+					{info.trim() !== "" && <span className={styles["info"]}>{info}</span>}
+				</React.Fragment>
+			);
+		});
+	}, [data.columns]);
+
 	const rowLabels = Object.keys(data.rows).map((header, i) => (Array.isArray(data.rows) ? `${i + 1}` : header));
+
 	const cells = Object.values(data.rows).map((row) =>
 		data.columns.map(({ key }) => {
 			const cell = row[key] ?? {};
@@ -290,51 +322,58 @@ export const Table: React.FC = () => {
 	) as Matrix<CellBase>;
 
 	return (
-		<SpreadsheetComponent
-			className={styles["table-root"]}
-			darkMode={true}
-			data={cells}
-			onChange={(d) => {
-				setColumnSize(0, 50);
-				if (modeChangeRef.current === "view") {
-					d.forEach((row, j) => {
-						row.forEach((cell, i) => {
-							if (!cell || !data.columns[i] || !data.rows[j]) {
-								return;
-							}
-							const { value } = cell;
-							const { key, type = "string" } = data.columns[i];
-							const c = data.rows?.[j]?.[key] ?? {};
-
-							const current =
-								value === null || value === undefined
-									? value
-									: type === "boolean"
-									? String(value) === "true"
-									: ["integer", "float"].includes(type)
-									? isNaN(parseFloat(value))
-										? 0
-										: parseFloat(value)
-									: value;
-
-							data.rows[j][key] = { ...c, current, removed: current === undefined && getCellValue(c).value !== undefined };
-						});
-					});
-					updateData(data);
-				}
+		<ContextTable.Provider
+			value={{
+				selection,
 			}}
-			onModeChange={(m) => (modeChangeRef.current = m)}
-			columnLabels={columnLabels}
-			rowLabels={rowLabels}
-			Table={TableComponent}
-			ColumnIndicator={ColumnIndicatorComponent}
-			Cell={CellComponent}
-			DataEditor={DataEditor as any}
-			DataViewer={DataEditor as any}
-			HeaderRow={HeaderRowComponent}
-			Row={RowComponent}
-			RowIndicator={RowIndicatorComponent}
-			CornerIndicator={CornerIndicatorComponent}
-		/>
+		>
+			<SpreadsheetComponent
+				className={styles["table-root"]}
+				darkMode={true}
+				data={cells}
+				onChange={(d) => {
+					setColumnSize(0, 50);
+					if (modeChangeRef.current === "view") {
+						d.forEach((row, j) => {
+							row.forEach((cell, i) => {
+								if (!cell || !data.columns[i] || !data.rows[j]) {
+									return;
+								}
+								const { value } = cell;
+								const { key, type = "string" } = data.columns[i];
+								const c = data.rows?.[j]?.[key] ?? {};
+
+								const current =
+									value === null || value === undefined
+										? value
+										: type === "boolean"
+										? String(value) === "true"
+										: ["integer", "float"].includes(type)
+										? isNaN(parseFloat(value))
+											? 0
+											: parseFloat(value)
+										: value;
+
+								data.rows[j][key] = { ...c, current, removed: current === undefined && getCellValue(c).value !== undefined };
+							});
+						});
+						updateData(data);
+					}
+				}}
+				onModeChange={(m) => (modeChangeRef.current = m)}
+				onSelect={setSelection}
+				columnLabels={columnLabels as any}
+				rowLabels={rowLabels}
+				Table={TableComponent}
+				ColumnIndicator={ColumnIndicatorComponent}
+				Cell={CellComponent}
+				DataEditor={DataEditor as any}
+				DataViewer={DataEditor as any}
+				HeaderRow={HeaderRowComponent}
+				Row={RowComponent}
+				RowIndicator={RowIndicatorComponent}
+				CornerIndicator={CornerIndicatorComponent}
+			/>
+		</ContextTable.Provider>
 	);
 };

@@ -14,7 +14,7 @@ interface DataRowsItem {
 
 interface DataColumnsItem {
 	key: string;
-	header?: string;
+	info?: string;
 	width?: number;
 	align?: "left" | "center" | "right";
 	style?: React.CSSProperties;
@@ -46,11 +46,11 @@ export const DataContext = React.createContext<{
 
 const tableData: Data = {
 	columns: [
-		{ key: "flavour", header: "Flavour", width: 200, align: "center" },
-		{ key: "food", header: "Food", width: 200, align: "center" },
-		{ key: "none", header: "", width: 100, align: "center", options: ["auto", "default"] },
-		{ key: "date", header: "Date", width: 200, align: "center", type: "datetime" },
-		{ key: "amount", header: "Amount", width: 100, align: "center", type: "integer" },
+		{ key: "flavour", info: "TEXT", width: 200, align: "center" },
+		{ key: "food", width: 200, align: "center" },
+		{ key: "none", width: 100, align: "center", options: ["auto", "default"] },
+		{ key: "date", width: 200, align: "center", type: "datetime" },
+		{ key: "amount", width: 100, align: "center", type: "integer" },
 		{ key: "valido", width: 100, align: "center", type: "boolean" },
 	],
 	rows: [
@@ -110,10 +110,10 @@ const tableData: Data = {
 
 const prepareData = (data: Data): Data => {
 	const columns = data.columns.map((column) => {
-		const { key, header, width, align, style, options, type } = column;
+		const { key, info, width, align, style, options, type } = column;
 		return {
 			key,
-			header: header && header.trim() !== "" ? header : key,
+			info,
 			width: width ?? 100,
 			align: align ?? "left",
 			style: style ?? {},

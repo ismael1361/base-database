@@ -163,14 +163,16 @@ const reducerHistory = <T extends object = any>(state: typeof initialStateHistor
  * @param {T} initialState - O valor inicial do histórico.
  * @returns {{
  *   state: T,
- *   set: (newPresent: T) => void,
+ *   set: (newState: T) => void,
  *   undo: () => void,
  *   redo: () => void,
- *   clear: () => void
+ *   clear: (state?: T) => void,
+ *   length: number,
+ *   currentIndex: number,
  * }} Retorna o estado atual do valor do histórico e callbacks de navegação.
  *
  * @example
- * const { state, set, undo, redo, clear, canUndo, canRedo } = useHistory(initialValue);
+ * const { state, set, undo, redo, clear, length, currentIndex } = useHistory(initialValue);
  */
 export const useHistory = <T extends object = any>(initialState: T) => {
 	const [state, dispatch] = React.useReducer(reducerHistory, {
@@ -183,8 +185,6 @@ export const useHistory = <T extends object = any>(initialState: T) => {
 	const length = state.past.length + state.future.length;
 	const currentIndex = state.past.length;
 
-	// Setup our callback functions
-	// We memoize with useCallback to prevent unnecessary re-renders
 	const undo = React.useCallback(() => {
 		dispatch({ type: "UNDO" });
 	}, []);
@@ -200,10 +200,9 @@ export const useHistory = <T extends object = any>(initialState: T) => {
 		}, 100);
 	}, []);
 
-	const clear = React.useCallback(() => {
-		dispatch({ type: "CLEAR", initialState: cloneObjectLiteral(initialState) });
+	const clear = React.useCallback((state: T = initialState) => {
+		dispatch({ type: "CLEAR", initialState: cloneObjectLiteral(state) });
 	}, []);
 
-	// If needed we could also return past and future state
-	return { state: state.value as T, set, undo, redo, clear, length, currentIndex };
+	return { state: state.value as T, set, undo, redo, clear, length, currentIndex } as const;
 };

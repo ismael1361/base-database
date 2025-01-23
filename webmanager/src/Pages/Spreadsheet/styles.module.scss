@@ -13,7 +13,7 @@
     --modal-border: none;
     --overlay-background: rgba(0, 0, 0, 0.33);
     --odd-row-background: rgba(130, 130, 130, 0.08);
-    --row-hover-background: var(--gray5);
+    --row-hover-background: var(--blue);
     --null: var(--gray4);
     --muted: var(--gray);
     --icon-color: var(--gray2);
@@ -31,6 +31,8 @@
         position: relative;
         height: auto;
         width: auto;
+        border: 1px solid var(--lightgray);
+        border-right: 0px;
 
         >header {
             position: sticky;
@@ -38,10 +40,22 @@
             left: 0px;
             width: 100%;
             background: var(--thead-background);
+            border-bottom: 1px solid var(--lightgray);
             z-index: 3;
 
             >.tr {
                 background: transparent !important;
+
+                >.th {
+                    padding: 5px 10px;
+
+                    .info {
+                        margin-left: 15px;
+                        font-style: italic;
+                        font-size: .7rem;
+                        opacity: .5;
+                    }
+                }
             }
         }
 
@@ -55,8 +69,8 @@
                 background: var(--odd-row-background);
             }
 
-            &:last-child {
-                border-bottom: 1px solid var(--lightgray);
+            &.hover {
+                background: var(--row-hover-background);
             }
 
             // &:hover {
@@ -65,6 +79,7 @@
 
             >.th,
             >.td {
+                position: relative;
                 display: flex;
                 flex-direction: row;
                 align-items: center;
@@ -75,14 +90,22 @@
                 user-select: none;
                 box-sizing: border-box;
 
-                &.selected {
-                    background-color: var(--row-hover-background);
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: transparent;
+                    pointer-events: none;
+                    opacity: .2;
                 }
 
                 &.row-indicator,
                 &.corner-indicator {
                     justify-content: flex-end;
-                    background: var(--thead-background);
+                    background-color: var(--thead-background);
                     position: sticky;
                     left: 0px;
                     z-index: 2;
@@ -90,6 +113,12 @@
 
                     >span {
                         padding: 0px 10px;
+                    }
+                }
+
+                &.selected {
+                    &::after {
+                        background-color: var(--row-hover-background);
                     }
                 }
             }
