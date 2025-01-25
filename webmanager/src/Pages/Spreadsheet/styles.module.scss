@@ -55,6 +55,15 @@
                         font-size: .7rem;
                         opacity: .5;
                     }
+
+                    >.resizer {
+                        position: absolute;
+                        right: 0;
+                        top: 0;
+                        bottom: 0;
+                        width: 5px;
+                        cursor: col-resize !important;
+                    }
                 }
             }
         }

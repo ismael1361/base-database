@@ -1,4 +1,4 @@
-import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType, TableType } from "./Types";
 
 export const Operators = {
 	EQUAL: "=",
@@ -57,7 +57,7 @@ export const generateUUID = (separator: string = "", version: "v4" | "v7" = "v7"
 	}
 };
 
-export const columns = <S extends Serialize>(columns: S): S => {
+export const columns = <T extends TableType>(columns: Serialize<T>): Serialize<T> => {
 	return Object.keys(columns).reduce((acc, key) => {
 		acc[key] = {
 			type: columns[key].type,
@@ -165,11 +165,11 @@ export const verifyDatatype = <T extends OptionsDataType>(value: any, type: T): 
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export const serializeDataForSet = <S extends Serialize, P extends boolean = false>(
-	serialize: SerializeDataType<S>,
-	data: Partial<Row<S>>,
+export const serializeDataForSet = <T extends TableType, P extends boolean = false>(
+	serialize: SerializeDataType<T>,
+	data: Partial<Row<T>>,
 	isPartial: P = false as P,
-): Promise<P extends true ? Partial<Row<S>> : Row<S>> => {
+): Promise<P extends true ? Partial<Row<T>> : Row<T>> => {
 	return new Promise((resolve, reject) => {
 		for (const key in isPartial ? data : serialize) {
 			if (!(key in data)) {
@@ -243,12 +243,12 @@ export const serializeDataForSet = <S extends Serialize, P extends boolean = fal
 	});
 };
 
-export const serializeDataForGet = <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(
-	serialize: SerializeDataType<S>,
+export const serializeDataForGet = <T extends TableType, D extends Partial<Row<T>> | Array<Partial<Row<T>>>>(
+	serialize: SerializeDataType<T>,
 	data: D,
-): Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>> => {
+): Promise<D extends Array<Partial<Row<T>>> ? Array<Row<T>> : Row<T>> => {
 	return new Promise((resolve, reject) => {
-		const list: Array<Partial<Row<S>>> = ((Array.isArray(data) ? data : [data]) as Array<Partial<Row<S>>>).map((data) => {
+		const list: Array<Partial<Row<T>>> = ((Array.isArray(data) ? data : [data]) as Array<Partial<Row<T>>>).map((data) => {
 			for (const key in serialize) {
 				if (!(key in data)) {
 					if (serialize[key].default !== undefined) {

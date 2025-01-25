@@ -56,12 +56,12 @@ const parseQuery = (query?: Database.QueryOptions) => {
 
 	Array.isArray(query.wheres) && query.wheres.length > 0 ? query.wheres.map((w) => `${w.column} ${w.operator} ${typeof w.compare === "string" ? `'${w.compare}'` : w.compare}`).join(" AND ") : "";
 
-	const columnClause = Array.isArray(query.wheres) && query.columns.length > 0 ? query.columns.join(", ") : "*";
+	const columnClause = Array.isArray(query.columns) && query.columns.length > 0 ? query.columns.filter((c) => c !== "rowid").join(", ") : "*";
 
 	const orderClause = Array.isArray(query.order) && query.order.length > 0 ? query.order.map(({ column, ascending }) => `${String(column)} ${ascending ? "ASC" : "DESC"}`).join(", ") : "";
 
 	return {
-		columns: columnClause,
+		columns: columnClause === "*" ? "rowid, *" : `rowid, ${columnClause}`,
 		where: whereClause.join(" AND ").trim() === "" ? "" : `WHERE ${whereClause.join(" AND ").trim()}`,
 		order: orderClause.trim() === "" ? "" : `ORDER BY ${orderClause.trim()}`,
 		limit: query.take ? `LIMIT ${query.take}` : "",
@@ -155,6 +155,7 @@ export class SQLite extends Database.Custom<sqlite3.Database> {
 	insert(table: string, data: Database.Row): Promise<Database.Row> {
 		return this.ready(async (db) => {
 			return new Promise((resolve, reject) => {
+				delete (data as any).rowid;
 				const columns = Object.keys(data).join(", ");
 				const values = Object.keys(data)
 					.map(() => `?`)
@@ -165,7 +166,7 @@ export class SQLite extends Database.Custom<sqlite3.Database> {
 				stmt.run(Object.values(data), function (err) {
 					if (err) return reject(err);
 					const lastRowID = this.lastID;
-					db.get<Database.Row>(`SELECT rowid, * FROM ${table} WHERE rowid = ?`, [lastRowID], function (err, { rowid, ...row }) {
+					db.get<Database.Row>(`SELECT rowid, * FROM ${table} WHERE rowid = ?`, [lastRowID], function (err, row) {
 						if (err) return reject(err);
 						resolve(row);
 					});
@@ -179,6 +180,7 @@ export class SQLite extends Database.Custom<sqlite3.Database> {
 	update(table: string, data: Partial<Database.Row>, query: Database.QueryOptions): Promise<void> {
 		return this.ready(async (db) => {
 			return new Promise((resolve, reject) => {
+				delete (data as any).rowid;
 				const setClause = Object.keys(data)
 					.map((column) => `${column} = ?`)
 					.join(", ");

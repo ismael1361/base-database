@@ -4,6 +4,8 @@ import { App, AppSettings } from "./App";
 import { _apps, _servers, DEFAULT_ENTRY_NAME } from "./internal";
 import { Server, ServerSettings } from "./Server";
 
+export { DEFAULT_ENTRY_NAME } from "./internal";
+
 function appendNewApp<T extends App | Server>(app: T): T {
 	const existingApp = (app.isServer ? _servers : _apps).get(app.name);
 	if (existingApp) {

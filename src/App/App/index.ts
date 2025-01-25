@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { DEFAULT_ENTRY_NAME } from "../internal";
 
-export type { AppSettings, DatabaseSettings, Tables } from "./browser";
+export type { AppSettings, DatabaseSettings } from "./browser";
 
 export class App extends Browser.App {
 	constructor(settings: Browser.AppSettings, initialize: boolean = true) {
@@ -39,21 +39,21 @@ export class App extends Browser.App {
 				}
 			}
 
-			const globalTypingPath = path.join(process.cwd(), "database.d.ts");
+			// 			const globalTypingPath = path.join(process.cwd(), "database.d.ts");
 
-			const resultContent = `interface DatabaseTyping{
-    ${Object.keys(tableTyping).map((table) => {
-		return `"${table}": {
-        ${Object.keys(tableTyping[table]).map((key) => {
-			return `"${key}": {
-            ${Object.entries(tableTyping[table][key])
-				.map(([k, v]) => `"${k}": ${v}`)
-				.join("; \n            ")};
-        }`;
-		})}
-    }`;
-	})}
-}`;
+			// 			const resultContent = `interface DatabaseTyping{
+			//     ${Object.keys(tableTyping).map((table) => {
+			// 		return `"${table}": {
+			//         ${Object.keys(tableTyping[table]).map((key) => {
+			// 			return `"${key}": {
+			//             ${Object.entries(tableTyping[table][key])
+			// 				.map(([k, v]) => `"${k}": ${v}`)
+			// 				.join("; \n            ")};
+			//         }`;
+			// 		})}
+			//     }`;
+			// 	})}
+			// }`;
 			// const currentContent = fs.existsSync(globalTypingPath) ? fs.readFileSync(globalTypingPath, { encoding: "utf-8" }) : "";
 
 			// if (currentContent.trim().replace(/([\n\t\s]+)/gi, "") != resultContent.trim().replace(/([\n\t\s]+)/gi, "")) {

@@ -1,17 +1,21 @@
 type ScriptCallback = { name: string; args: any[] };
 
-type ScriptLine =
+type ScriptLine = (
 	| {
-			isAsync?: boolean;
 			type: "line";
-			content: ScriptCallback[];
 	  }
 	| {
-			isAsync?: boolean;
 			type: "const" | "let" | "var";
 			variable: string;
-			content: ScriptCallback[];
-	  };
+	  }
+) & {
+	isAsync?: boolean;
+	content: ScriptCallback[];
+	sql: {
+		type: "create" | "select" | "insert" | "update" | "delete";
+		props: Record<string, any>;
+	};
+};
 
 export class ScriptsHelper {
 	private scripts: ScriptLine[] = [];
@@ -104,6 +108,10 @@ export class ScriptsHelper {
 			type: "const",
 			variable: "table",
 			content: [{ name: "db.table", args: [tableName] }],
+			sql: {
+				type: "create",
+				props: {},
+			},
 		});
 		this.emitScript([this.scripts[this.scripts.length - 1]]);
 	}

@@ -1,6 +1,6 @@
 import BasicEventEmitter from "basic-event-emitter";
 import * as Database from "../../Database/Database";
-import type { DatabaseTables } from "../../Database";
+import type { DatabaseTables, DatabaseTyping } from "../../Database";
 import { DEFAULT_ENTRY_NAME } from "../internal";
 import { _database, _serialize } from "../../Database/internal";
 
@@ -8,12 +8,12 @@ export interface AppSettings {
 	name?: string;
 }
 
-export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<PropertyKey, Database.Serialize>> = {
-	[K in keyof T]: T[K];
-};
+// export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<PropertyKey, Database.Serialize>> = {
+// 	[K in keyof T]: T[K];
+// };
 
-type SimplifyTableTypes<T extends Database.Serialize> = {
-	[K in keyof T]: Omit<T[K], "type"> & { type: T[K]["type"] extends string ? string : T[K]["type"] };
+type SimplifyTableTypes<T extends Database.TableType, S extends Database.Serialize<T> = Database.Serialize<T>> = {
+	[K in keyof S]: Omit<S[K], "type"> & { type: S[K]["type"] extends string ? string : S[K]["type"] };
 };
 
 type SimplifyTablesTypes<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> = {

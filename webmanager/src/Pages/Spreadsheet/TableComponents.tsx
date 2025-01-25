@@ -23,60 +23,24 @@ import { DataContext, getCellValue } from ".";
 
 const ContextTable = React.createContext<{
 	selection: Selection;
-}>({ selection: new EmptySelection() });
+	columnsSizes: number[];
+	setColumnSize(column: number, size: number): void;
+}>({ selection: new EmptySelection(), columnsSizes: [], setColumnSize: () => {} });
 
-export const TableComponent: React.FC<TableProps> = ({ columns, children, hideColumnIndicators }) => {
-	const { data, onColumnSize } = React.useContext(DataContext);
+export const TableComponent: React.FC<TableProps> = ({ children, hideColumnIndicators }) => {
+	const { columnsSizes } = React.useContext(ContextTable);
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
-	const columnsSizes = React.useRef<number[]>(new Array(columns + 1).fill(0).map((_, i) => (i === 0 ? 50 : data.columns[i - 1].width ?? 200)));
-
-	const updateColumnsSizes = React.useCallback(() => {
-		const root = rootRef.current;
-		if (root) {
-			const rows = root.querySelectorAll<HTMLDivElement>(`div.${styles.tr}`);
-
-			root.querySelectorAll<HTMLDivElement>(`div.${styles["row-indicator"]}`).forEach((column) => {
-				column.style.width = column.style.minWidth = "";
-				columnsSizes.current[0] = Math.max(columnsSizes.current[0], column.offsetWidth);
-			});
-
-			const columnWidth: number[] = columnsSizes.current;
-
-			rows.forEach((row, i) => {
-				const columns = row.querySelectorAll<HTMLDivElement>(`div.${styles.td}, div.${styles.th}`);
-				columns.forEach((column, j) => {
-					column.style.width = column.style.minWidth = `${columnWidth[j]}px`;
-				});
-			});
-
-			root.style.width = `${columnWidth.reduce((a, b) => a + b, 0)}px`;
-		}
-	}, []);
 
 	React.useLayoutEffect(() => {
-		let time: NodeJS.Timeout;
-
-		const callback = onColumnSize((i, w) => {
-			clearTimeout(time);
-			time = setTimeout(() => {
-				updateColumnsSizes();
-			}, 100);
-		});
-
-		const onResize = () => {
-			callback(0, 0);
-		};
-
-		window.addEventListener("resize", onResize);
-
-		updateColumnsSizes();
-
-		return () => {
-			window.removeEventListener("resize", onResize);
-			clearTimeout(time);
-			onColumnSize(() => {});
-		};
-	}, [columns, children]);
+		const root = rootRef.current;
+		if (root) {
+			const columnWidth: number[] = columnsSizes.map((width, i) => {
+				root.style.setProperty(`--column-${i}-width`, `${width}px`);
+				return width;
+			});
+			root.style.width = `${columnWidth.reduce((a, b) => a + b, 0)}px`;
+		}
+	}, [columnsSizes]);
 
 	return (
 		<div
@@ -191,6 +155,11 @@ export const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataV
 			onMouseDown={handleMouseDown}
 			role="cell"
 			tabIndex={0}
+			style={{
+				width: `var(--column-${column + 1}-width)`,
+				minWidth: `var(--column-${column + 1}-width)`,
+				maxWidth: `var(--column-${column + 1}-width)`,
+			}}
 		>
 			<DataViewer
 				row={row}
@@ -234,7 +203,10 @@ export const RowComponent: React.FC<RowProps> = ({ row, children }) => {
 };
 
 export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ column, onSelect, selected, label }) => {
-	const { selection } = useContext(ContextTable);
+	const { selection, columnsSizes, setColumnSize } = useContext(ContextTable);
+	const isResizing = React.useRef<boolean>(false);
+	const startX = React.useRef(0);
+	const startWidth = React.useRef(0);
 
 	const handleClick = React.useCallback(
 		(event: React.MouseEvent) => {
@@ -242,6 +214,36 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 		},
 		[onSelect, column],
 	);
+
+	const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
+		if (isResizing.current) {
+			const newWidth = startWidth.current + (e.clientX - startX.current);
+			setColumnSize(column, newWidth);
+		}
+	}, []);
+
+	const handleMouseUp = React.useCallback(() => {
+		isResizing.current = false;
+	}, []);
+
+	const handleMouseDown = React.useCallback(
+		(e: React.MouseEvent) => {
+			isResizing.current = true;
+			startX.current = e.clientX;
+			startWidth.current = columnsSizes[column + 1];
+		},
+		[columnsSizes],
+	);
+
+	React.useEffect(() => {
+		document.addEventListener("mousemove", handleMouseMove as any);
+		document.addEventListener("mouseup", handleMouseUp);
+
+		return () => {
+			document.removeEventListener("mousemove", handleMouseMove as any);
+			document.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, []);
 
 	const isSelected = selected || (selection instanceof RangeSelection && selection.range.start.column <= column && selection.range.end.column >= column);
 
@@ -251,8 +253,17 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 			role="columnheader"
 			onClick={handleClick}
 			tabIndex={0}
+			style={{
+				width: `var(--column-${column + 1}-width)`,
+				minWidth: `var(--column-${column + 1}-width)`,
+				maxWidth: `var(--column-${column + 1}-width)`,
+			}}
 		>
 			<span>{label !== undefined ? label : columnIndexToLabel(column)}</span>
+			<div
+				className={styles.resizer}
+				onMouseDown={handleMouseDown}
+			/>
 		</div>
 	);
 };
@@ -275,6 +286,11 @@ export const RowIndicatorComponent: React.FC<RowIndicatorProps> = ({ onSelect, r
 			role="columnheader"
 			onClick={handleClick}
 			tabIndex={0}
+			style={{
+				width: `var(--column-0-width)`,
+				minWidth: `var(--column-0-width)`,
+				maxWidth: `var(--column-0-width)`,
+			}}
 		>
 			<span>{label !== undefined ? label : row + 1}</span>
 		</div>
@@ -291,6 +307,11 @@ export const CornerIndicatorComponent: React.FC<CornerIndicatorProps> = ({ onSel
 			role="columnheader"
 			onClick={handleClick}
 			tabIndex={0}
+			style={{
+				width: `var(--column-0-width)`,
+				minWidth: `var(--column-0-width)`,
+				maxWidth: `var(--column-0-width)`,
+			}}
 		></div>
 	);
 };
@@ -298,9 +319,15 @@ export const CornerIndicatorComponent: React.FC<CornerIndicatorProps> = ({ onSel
 export const Table: React.FC<{
 	onSelect?: (selection: Selection) => void;
 }> = ({ onSelect }) => {
-	const { data, setColumnSize, updateData } = React.useContext(DataContext);
+	const { data, updateData } = React.useContext(DataContext);
 	const modeChangeRef = React.useRef<Mode>("view");
 	const [selection, setSelection] = React.useState<Selection>(new EmptySelection());
+
+	const [_columnsSizes, setColumnsSizes] = React.useState<number[]>(new Array(data.columns.length + 1).fill(0).map((_, i) => (i === 0 ? 50 : Math.max(70, data.columns[i - 1].width ?? 200))));
+
+	const columnsSizes = React.useMemo(() => {
+		return _columnsSizes;
+	}, [_columnsSizes]);
 
 	const columnLabels = React.useMemo(() => {
 		return data.columns.map(({ key, info = "" }, i) => {
@@ -328,7 +355,14 @@ export const Table: React.FC<{
 	return (
 		<ContextTable.Provider
 			value={{
+				columnsSizes,
 				selection,
+				setColumnSize(column, size) {
+					setColumnsSizes((sizes) => {
+						sizes[column + 1] = Math.min(900, Math.max(70, parseFloat(size.toFixed(2))));
+						return [...sizes];
+					});
+				},
 			}}
 		>
 			<SpreadsheetComponent
@@ -336,7 +370,6 @@ export const Table: React.FC<{
 				darkMode={true}
 				data={cells}
 				onChange={(d) => {
-					setColumnSize(0, 50);
 					if (modeChangeRef.current === "view") {
 						d.forEach((row, j) => {
 							row.forEach((cell, i) => {

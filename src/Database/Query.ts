@@ -1,4 +1,4 @@
-import { Operator, QueryOptions, Row, RowDeserialize, RowSerialize, Serialize, WheresCompareType } from "./Types";
+import { Operator, QueryOptions, Row, RowDeserialize, RowSerialize, Serialize, TableType, WheresCompareType } from "./Types";
 import { Table } from "./Table";
 import { cloneObject } from "./Utils";
 
@@ -11,8 +11,8 @@ type ResolveNever<T, K> = IsNever<K> extends true ? T : K;
 /**
  * Query class
  */
-export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
-	private [__private__]: QueryOptions<S> = {
+export class Query<T extends TableType, O = Row<T>, K extends keyof T = never> {
+	private [__private__]: QueryOptions<T> = {
 		wheres: [],
 		order: [],
 		columns: [],
@@ -22,9 +22,9 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * Create a query
 	 * @param table The table for consuming the query
 	 */
-	constructor(private readonly table: Promise<Table<S, O>>) {}
+	constructor(private readonly table: Promise<Table<T, O>>) {}
 
-	insertQuery<C extends keyof S>(query: Query<S, O, C>): Query<S, O, K | C> {
+	insertQuery<C extends keyof T>(query: Query<T, O, C>): Query<T, O, K | C> {
 		this[__private__].wheres = this[__private__].wheres.concat(query.options.wheres);
 		this[__private__].order = this[__private__].order.concat(query.options.order);
 		this[__private__].columns = this[__private__].columns.concat(query.options.columns);
@@ -34,7 +34,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	/**
 	 * Get the query options
 	 */
-	get options(): QueryOptions<S> {
+	get options(): QueryOptions<T> {
 		return cloneObject(this[__private__]);
 	}
 
@@ -50,7 +50,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.where("active", Database.Operators.EQUAL, true);
 	 * query.where("price", Database.Operators.LESS_THAN, 100);
 	 */
-	where<C extends keyof S, T extends Operator>(column: C, operator: T, compare: WheresCompareType<S[C]["type"], T>): Query<S, O, K> {
+	where<C extends keyof T, Op extends Operator>(column: C, operator: Op, compare: WheresCompareType<T[C], Op>): Query<T, O, K> {
 		this[__private__].wheres.push({ column, operator, compare } as any);
 		return this as any;
 	}
@@ -67,8 +67,24 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.filter("active", Database.Operators.EQUAL, true);
 	 * query.filter("price", Database.Operators.LESS_THAN, 100);
 	 */
-	filter<C extends keyof S, T extends Operator>(column: C, operator: T, compare: WheresCompareType<S[C]["type"], T>): Query<S, O, K> {
+	filter<C extends keyof T, Op extends Operator>(column: C, operator: Op, compare: WheresCompareType<T[C], Op>): Query<T, O, K> {
 		return this.where(column, operator as any, compare);
+	}
+
+	/**
+	 * Find clause for the query
+	 * @param ids The ids to find
+	 * @example
+	 * query.find(1);
+	 * query.find(1, 2, 3);
+	 */
+	rowid(...ids: number[]) {
+		if (ids.length === 1) {
+			this.where("rowid", "=", ids[0] as any);
+		} else {
+			this.where("rowid", "IN", ids as any);
+		}
+		return this;
 	}
 
 	/**
@@ -77,7 +93,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.take(10);
 	 */
-	take(take: number): Query<S, O, K> {
+	take(take: number): Query<T, O, K> {
 		this[__private__].take = take;
 		return this;
 	}
@@ -88,7 +104,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.skip(10);
 	 */
-	skip(skip: number): Query<S, O, K> {
+	skip(skip: number): Query<T, O, K> {
 		this[__private__].skip = skip;
 		return this;
 	}
@@ -100,7 +116,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.sort("name");
 	 * query.sort("name", false);
 	 */
-	sort(column: keyof S, ascending: boolean = true): Query<S, O, K> {
+	sort(column: keyof T, ascending: boolean = true): Query<T, O, K> {
 		this[__private__].order.push({ column, ascending });
 		return this;
 	}
@@ -112,7 +128,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * query.order("name");
 	 * query.order("name", false);
 	 */
-	order(column: keyof S, ascending: boolean = true): Query<S, O, K> {
+	order(column: keyof T, ascending: boolean = true): Query<T, O, K> {
 		return this.sort(column, ascending);
 	}
 
@@ -122,7 +138,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.columns("id", "name");
 	 */
-	columns<C extends keyof S>(...columns: C[]): Query<S, O, K | C> {
+	columns<C extends keyof T>(...columns: C[]): Query<T, O, K | C> {
 		this[__private__].columns = [...this[__private__].columns, ...columns];
 		return this as any;
 	}
@@ -133,7 +149,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.get("id", "name");
 	 */
-	async get<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<Array<RowDeserialize<S, O, K | C>>> {
+	async get<C extends keyof T = ResolveNever<keyof T, K>>(...columns: Array<C>): Promise<Array<RowDeserialize<T, O, K | C>>> {
 		this.columns(...columns);
 		return (await this.table.then((t) => t.selectAll(this))) as any;
 	}
@@ -144,7 +160,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.first("id", "name");
 	 */
-	async first<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<RowDeserialize<S, O, K | C> | null> {
+	async first<C extends keyof T = ResolveNever<keyof T, K>>(...columns: Array<C>): Promise<RowDeserialize<T, O, K | C> | null> {
 		this.columns(...columns);
 		return (await this.table.then((t) => t.selectFirst(this))) as any;
 	}
@@ -155,7 +171,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.last("id", "name");
 	 */
-	async last<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<RowDeserialize<S, O, K | C> | null> {
+	async last<C extends keyof T = ResolveNever<keyof T, K>>(...columns: Array<C>): Promise<RowDeserialize<T, O, K | C> | null> {
 		this.columns(...columns);
 		return (await this.table.then((t) => t.selectLast(this))) as any;
 	}
@@ -166,7 +182,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.one("id", "name");
 	 */
-	async one<C extends keyof S = ResolveNever<keyof S, K>>(...columns: Array<C>): Promise<RowDeserialize<S, O, K | C> | null> {
+	async one<C extends keyof T = ResolveNever<keyof T, K>>(...columns: Array<C>): Promise<RowDeserialize<T, O, K | C> | null> {
 		this.columns(...columns);
 		return (await this.table.then((t) => t.selectOne(this))) as any;
 	}
@@ -195,7 +211,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.set({ id: 123, name: "hello" });
 	 */
-	async set(data: RowSerialize<S, O>): Promise<void> {
+	async set(data: RowSerialize<T, O>): Promise<void> {
 		await this.table.then((t) => t.update(data, this));
 	}
 
@@ -205,7 +221,7 @@ export class Query<S extends Serialize, O = Row<S>, K extends keyof S = never> {
 	 * @example
 	 * query.update({ name: "world" });
 	 */
-	async update(data: RowSerialize<S, O>): Promise<Array<RowDeserialize<S, O>>> {
+	async update(data: RowSerialize<T, O>): Promise<Array<RowDeserialize<T, O>>> {
 		return await this.table.then((t) => t.update(data, this));
 	}
 

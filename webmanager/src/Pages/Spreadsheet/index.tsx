@@ -35,18 +35,12 @@ export interface Data {
 export const DataContext = React.createContext<{
 	data: Data;
 	updateData(data: Data): void;
-	onColumnSize(calback: (i: number, w: number) => void): (i: number, w: number) => void;
-	setColumnSize(i: number, w: number): void;
 }>({
 	data: {
 		columns: [],
 		rows: [],
 	},
 	updateData(data: Data) {},
-	onColumnSize(calback: (i: number, w: number) => void) {
-		return calback;
-	},
-	setColumnSize(i: number, w: number) {},
 });
 
 const tableData: Data = {
@@ -151,7 +145,6 @@ export const Spreadsheet: React.FC = () => {
 
 	const [isEditing, setIsEditing] = React.useState<boolean>(false);
 	const [rowsSelection, setRowsSelection] = React.useState<[number, number] | null>(null);
-	const callbackColumnSize = React.useRef<(i: number, w: number) => void>(() => {});
 
 	React.useEffect(() => {
 		const root = rootRef.current;
@@ -207,13 +200,6 @@ export const Spreadsheet: React.FC = () => {
 				updateData(current: Data) {
 					set(current);
 				},
-				onColumnSize(callback) {
-					callbackColumnSize.current = callback;
-					return callback;
-				},
-				setColumnSize(i, w) {
-					callbackColumnSize.current(i, w);
-				},
 			}}
 		>
 			<div
@@ -240,6 +226,12 @@ export const Spreadsheet: React.FC = () => {
 								{ name: "rowid", args: rows },
 								{ name: "delete", args: [] },
 							],
+							sql: {
+								type: "delete",
+								props: {
+									rowid: rows,
+								},
+							},
 						});
 					}}
 				/>

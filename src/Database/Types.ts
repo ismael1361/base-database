@@ -4,13 +4,13 @@ export type IsLiteral<T> = T extends object ? (T extends Function | Date | Array
 
 export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "NOT BETWEEN" | "LIKE" | "NOT LIKE" | "IN" | "NOT IN";
 
-export type WheresItem<C extends Serialize, K extends keyof C> = {
+export type WheresItem<T extends TableType, K extends keyof T> = {
 	column: K;
 	operator: Operator;
-	compare: C[K]["type"];
+	compare: T[K];
 };
 
-export type Wheres<C extends Serialize = any, K extends keyof C = never> = Array<WheresItem<C, K>>;
+export type Wheres<T extends TableType = any, K extends keyof T = never> = Array<WheresItem<T, K>>;
 
 export type WheresCompareType<T extends SerializeValueType, O extends Operator> = O extends "=" | "!=" | ">" | "<" | ">=" | "<="
 	? T
@@ -22,7 +22,7 @@ export type WheresCompareType<T extends SerializeValueType, O extends Operator> 
 	? Array<T>
 	: never;
 
-export interface QueryOptions<S extends Serialize = any> {
+export interface QueryOptions<S extends TableType = any> {
 	wheres: Wheres<S, any>;
 	skip?: number;
 	take?: number;
@@ -34,8 +34,14 @@ export type OptionsDataType = "TEXT" | "INTEGER" | "FLOAT" | "BOOLEAN" | "DATETI
 
 export type SerializeValueType = null | string | bigint | number | boolean | Date;
 
-export type Row<C extends Serialize = any, K extends keyof C = keyof C> = {
-	[k in K]: C[k]["options"] extends Array<infer O> ? O : C[k]["type"];
+export interface TableType {
+	[key: PropertyKey]: SerializeValueType;
+}
+
+export type Row<T extends TableType = any, K extends keyof T = keyof T> = {
+	[k in K]: T[k];
+} & {
+	rowid: number;
 };
 
 export type DataType<T extends SerializeValueType> = T extends null
@@ -99,60 +105,60 @@ export type SerializeItemAny<T> = T extends SerializeItemProperties<infer V>
 
 export type SerializeItem<T extends SerializeValueType = SerializeValueType> = SerializeItemAny<T>;
 
-export type Serialize<T extends Record<PropertyKey, SerializeItem<SerializeValueType>> = Record<PropertyKey, SerializeItem<SerializeValueType>>> = {
-	[k in keyof T]: TypedOptions<SerializeItem<T[k]["type"]>>;
+export type Serialize<T extends TableType> = {
+	[k in keyof T]: TypedOptions<SerializeItem<T[k]>>;
 };
 
 export type SerializeDataTypeItem<V extends SerializeValueType, T extends OptionsDataType = DataType<V>> = SerializeItemAny<T>;
 
-export type SerializeDataType<S extends Serialize = never> = {
-	[k in keyof S]: TypedOptions<SerializeDataTypeItem<S[k]["type"]>>;
+export type SerializeDataType<T extends TableType = never> = {
+	[k in keyof T]: TypedOptions<SerializeDataTypeItem<T[k]>>;
 };
 
-export type NormalizeSerialize<S extends Serialize> = {
-	[k in keyof S]: TypedOptions<S[k]>;
+export type NormalizeSerialize<T extends TableType> = {
+	[k in keyof T]: TypedOptions<T[k]>;
 };
 
-export type CreatorFunction<S extends Serialize, O = Row<S>> = (row: Row<S>) => O extends SerializableClassType<S> ? InstanceType<O> : Row<S>;
-export type SerializerFunction<S extends Serialize> = (obj: any) => Partial<Row<S>>;
+export type CreatorFunction<T extends TableType, O = Row<T>> = (row: Row<T>) => O extends SerializableClassType<T> ? InstanceType<O> : Row<T>;
+export type SerializerFunction<T extends TableType> = (obj: any) => Partial<Row<T>>;
 
-export type SerializableClassType<S extends Serialize> = {
+export type SerializableClassType<T extends TableType> = {
 	new (...args: any): any;
-	create?(snap: Row<S>): any;
+	create?(snap: Row<T>): any;
 };
 
-export interface TypeSchemaOptions<S extends Serialize, O = Row<S>> {
-	serializer?: string | SerializerFunction<S>;
-	creator?: string | CreatorFunction<S, O>;
+export interface TypeSchemaOptions<T extends TableType, O = Row<T>> {
+	serializer?: string | SerializerFunction<T>;
+	creator?: string | CreatorFunction<T, O>;
 }
 
-export interface TableSchema<S extends Serialize, O = Row<S>> {
+export interface TableSchema<T extends TableType, O = Row<T>> {
 	schema: O;
-	creator: CreatorFunction<S, O>;
-	serializer: SerializerFunction<S>;
-	deserialize<K extends keyof S>(row: Row<S>): RowDeserialize<S, O, K>;
-	serialize(obj: any): Partial<Row<S>>;
+	creator: CreatorFunction<T, O>;
+	serializer: SerializerFunction<T>;
+	deserialize<K extends keyof T>(row: Row<T>): RowDeserialize<T, O, K>;
+	serialize(obj: any): Partial<Row<T>>;
 }
 
-export type RowDeserialize<S extends Serialize, O = Row<S>, K extends keyof S = keyof S> = O extends SerializableClassType<S> ? InstanceType<O> : Row<S, K> & Record<K, unknown>;
+export type RowDeserialize<T extends TableType, O = Row<T>, K extends keyof T = keyof T> = O extends SerializableClassType<T> ? InstanceType<O> : Row<T, K> & Record<K, unknown>;
 
-export type RowSerialize<S extends Serialize, O = Row<S>> = O extends SerializableClassType<S> ? InstanceType<O> : Partial<Row<S> & Record<keyof S, unknown>>;
+export type RowSerialize<T extends TableType, O = Row<T>> = O extends SerializableClassType<T> ? InstanceType<O> : Partial<Row<T> & Record<keyof T, unknown>>;
 
-export interface TableReady<S extends Serialize, O = Row<S>> {
-	table: Promise<Table<S, O>>;
-	ready<T = void>(callback: (table: Table<S, O>) => T | Promise<T>): Promise<T>;
-	query(): ReturnType<Table<S, O>["query"]>;
-	insert: Table<S, O>["insert"];
-	selectAll(): ReturnType<Table<S, O>["selectAll"]>;
-	selectOne(): ReturnType<Table<S, O>["selectOne"]>;
-	selectFirst(): ReturnType<Table<S, O>["selectFirst"]>;
-	selectLast(): ReturnType<Table<S, O>["selectLast"]>;
-	length(): ReturnType<Table<S, O>["length"]>;
-	on: Table<S, O>["on"];
-	once: Table<S, O>["once"];
-	off(...args: Parameters<Table<S, O>["off"]>): void;
-	offOnce(...args: Parameters<Table<S, O>["offOnce"]>): void;
-	schema<O extends SerializableClassType<S>>(schema: O, options?: TypeSchemaOptions<S, O>): TableReady<S, O>;
+export interface TableReady<T extends TableType, O = Row<T>> {
+	table: Promise<Table<T, O>>;
+	ready<R = void>(callback: (table: Table<T, O>) => R | Promise<R>): Promise<R>;
+	query(): ReturnType<Table<T, O>["query"]>;
+	insert: Table<T, O>["insert"];
+	selectAll(): ReturnType<Table<T, O>["selectAll"]>;
+	selectOne(): ReturnType<Table<T, O>["selectOne"]>;
+	selectFirst(): ReturnType<Table<T, O>["selectFirst"]>;
+	selectLast(): ReturnType<Table<T, O>["selectLast"]>;
+	length(): ReturnType<Table<T, O>["length"]>;
+	on: Table<T, O>["on"];
+	once: Table<T, O>["once"];
+	off(...args: Parameters<Table<T, O>["off"]>): void;
+	offOnce(...args: Parameters<Table<T, O>["offOnce"]>): void;
+	schema<O extends SerializableClassType<T>>(schema: O, options?: TypeSchemaOptions<T, O>): TableReady<T, O>;
 }
 
 export type ExtractTableRow<T extends TableReady<any, any> | Table<any, any> | Promise<Table<any, any>> | Promise<Table<any, any> | undefined> | Row<any> | Serialize<any>> = T extends TableReady<

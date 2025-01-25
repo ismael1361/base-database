@@ -1,14 +1,14 @@
 import BasicEventEmitter, { BasicEventHandler, EventsListeners } from "basic-event-emitter";
-import { CreatorFunction, DataType, Row, RowDeserialize, RowSerialize, SerializableClassType, Serialize, SerializeDataType, TableSchema, TypeSchemaOptions } from "./Types";
+import { CreatorFunction, DataType, Row, RowDeserialize, RowSerialize, SerializableClassType, Serialize, SerializeDataType, TableSchema, TableType, TypeSchemaOptions } from "./Types";
 import { getDatatype, serializeDataForGet, serializeDataForSet } from "./Utils";
 import { Custom } from "./Custom";
 import { Query } from "./Query";
 import { ERROR_FACTORY, Errors } from "../Error";
 
-type TableEvents<S extends Serialize, O = Row<S>> = EventsListeners<{
-	insert: (inserted: RowDeserialize<S, O>) => void;
-	update: (updated: Array<RowDeserialize<S, O>>, previous: Array<RowDeserialize<S, O>>) => void;
-	delete: (removed: Array<RowDeserialize<S, O>>) => void;
+type TableEvents<T extends TableType, O = Row<T>> = EventsListeners<{
+	insert: (inserted: RowDeserialize<T, O>) => void;
+	update: (updated: Array<RowDeserialize<T, O>>, previous: Array<RowDeserialize<T, O>>) => void;
+	delete: (removed: Array<RowDeserialize<T, O>>) => void;
 }>;
 
 const eventsEmitters = new Map<string, BasicEventEmitter<TableEvents<any, Row<any>>>>();
@@ -16,7 +16,7 @@ const eventsEmitters = new Map<string, BasicEventEmitter<TableEvents<any, Row<an
 /**
  * Table class
  */
-export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<TableEvents<S, O>> {
+export class Table<T extends TableType, O = Row<T>> extends BasicEventEmitter<TableEvents<T, O>> {
 	/**
 	 * If the table is disconnected
 	 */
@@ -24,21 +24,21 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	/**
 	 * The serialize datatype
 	 */
-	private readonly serialize: SerializeDataType<S>;
+	private readonly serialize: SerializeDataType<T>;
 	/**
 	 * The initial promise
 	 */
 	private readonly initialPromise: Promise<void>;
 
-	schema: TableSchema<S, O> = {
+	schema: TableSchema<T, O> = {
 		schema: {} as any,
-		creator: (row: Row<S>) => row as any,
+		creator: (row: Row<T>) => row as any,
 		serializer: (obj: any) => obj as any,
-		deserialize: (row: Row<S>) => row as any,
+		deserialize: (row: Row<T>) => row as any,
 		serialize: (obj: any) => obj as any,
 	};
 
-	private _events = new BasicEventEmitter<TableEvents<S, Row<any>>>();
+	private _events = new BasicEventEmitter<TableEvents<T, Row<any>>>();
 	private _clearEvents: Array<BasicEventHandler> = [];
 
 	/**
@@ -57,7 +57,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * table.update({ name: "world" }, [{ column: "id", operator: "=", value: 123 }]);
 	 * table.delete([{ column: "id", operator: "=", value: 123 }]);
 	 */
-	constructor(readonly custom: Custom<any>, readonly name: string, columns: S) {
+	constructor(readonly custom: Custom<any>, readonly name: string, columns: Serialize<T>) {
 		super();
 
 		this.serialize = Object.keys(columns).reduce((acc, key) => {
@@ -93,7 +93,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 
 		this._clearEvents.push(
 			eventEmitter.on("insert", (row) => {
-				this.emit("insert", this.schema.deserialize(row));
+				this.emit("insert", this.schema.deserialize(row as Row<T>));
 			}),
 		);
 
@@ -101,8 +101,8 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			eventEmitter.on("update", (rows, previous) => {
 				this.emit(
 					"update",
-					rows.map((row) => this.schema.deserialize(row)),
-					previous.map((row) => this.schema.deserialize(row)),
+					rows.map((row) => this.schema.deserialize(row as Row<T>)),
+					previous.map((row) => this.schema.deserialize(row as Row<T>)),
 				);
 			}),
 		);
@@ -111,12 +111,12 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			eventEmitter.on("delete", (rows) => {
 				this.emit(
 					"delete",
-					rows.map((row) => this.schema.deserialize(row)),
+					rows.map((row) => this.schema.deserialize(row as Row<T>)),
 				);
 			}),
 		);
 
-		this._events = eventEmitter as BasicEventEmitter<TableEvents<S>>;
+		this._events = eventEmitter as BasicEventEmitter<TableEvents<T>>;
 	}
 
 	/**
@@ -136,7 +136,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 *    // Code here will run when the table is ready
 	 * });
 	 */
-	async ready<R = never>(callback?: (table: Table<S, O>) => R | Promise<R>): Promise<R> {
+	async ready<R = never>(callback?: (table: Table<T, O>) => R | Promise<R>): Promise<R> {
 		if (this._disconnected) throw ERROR_FACTORY.create("Table.ready", Errors.DB_DISCONNECTED, { dbName: this.custom.databaseName });
 		await this.initialPromise;
 		return callback ? await callback(this) : (undefined as any);
@@ -149,7 +149,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * table.getColumnType("id"); // "INTEGER"
 	 */
-	getColumnType<C extends keyof S>(key: C): DataType<S[C]["type"]> {
+	getColumnType<C extends keyof T>(key: C): DataType<T[C]> {
 		return this.serialize[key].type as any;
 	}
 
@@ -159,7 +159,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * table.getColumns();
 	 */
-	getColumns(): SerializeDataType<S> {
+	getColumns(): SerializeDataType<T> {
 		return this.serialize;
 	}
 
@@ -173,7 +173,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 *  .take(10)
 	 *  .get("id", "name");
 	 */
-	query(): Query<S, O> {
+	query(): Query<T, O> {
 		return new Query(Promise.resolve(this));
 	}
 
@@ -193,7 +193,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 *
 	 * const schema = table.bindSchema(MyClass, { serializer: "serialize", creator: "create" });
 	 */
-	bindSchema<O extends SerializableClassType<S>>(schema: O, options: TypeSchemaOptions<S, O> = {}): Table<S, O> {
+	bindSchema<O extends SerializableClassType<T>>(schema: O, options: TypeSchemaOptions<T, O> = {}): Table<T, O> {
 		if (typeof schema !== "function") {
 			throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: "constructor must be a function" });
 		}
@@ -218,7 +218,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			}
 		} else if (typeof options.creator === "string") {
 			if (typeof (schema as any)[options.creator] === "function") {
-				options.creator = (schema as any)[options.creator] as CreatorFunction<S, O>;
+				options.creator = (schema as any)[options.creator] as CreatorFunction<T, O>;
 			} else {
 				throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: `${schema.name}.${options.creator} is not a function, cannot use it as creator` });
 			}
@@ -226,7 +226,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 			throw ERROR_FACTORY.create("Table.bindSchema", Errors.INVALID_ARGUMENT, { message: `creator for class ${schema.name} must be a function, or the name of a static method` });
 		}
 
-		const prepare: TableSchema<S, O> = {
+		const prepare: TableSchema<T, O> = {
 			schema: schema as any,
 			creator: options.creator as any,
 			serializer: options.serializer as any,
@@ -261,12 +261,12 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.selectAll(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	async selectAll<K extends keyof S>(query?: Query<S, O, K>): Promise<Array<RowDeserialize<S, O, K>>> {
+	async selectAll<K extends keyof T>(query?: Query<T, O, K>): Promise<Array<RowDeserialize<T, O, K>>> {
 		try {
 			return await this.ready(async () => {
 				const data = await this.custom.selectAll(this.name, query?.options);
-				const rows = await serializeDataForGet(this.serialize, data);
-				return rows.map((row) => this.schema.deserialize<K>(row));
+				const rows = await serializeDataForGet(this.serialize, data as any);
+				return (Array.isArray(rows) ? rows : [rows]).map((row) => this.schema.deserialize<K>(row));
 			});
 		} catch (e: any) {
 			throw ERROR_FACTORY.create("Table.selectAll", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
@@ -280,12 +280,12 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.selectOne(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name"));
 	 */
-	async selectOne<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null> {
+	async selectOne<K extends keyof T>(query?: Query<T, O, K>): Promise<RowDeserialize<T, O, K> | null> {
 		try {
 			return await this.ready(async () => {
 				const data = await this.custom.selectOne(this.name, query?.options);
-				const row = data ? await serializeDataForGet(this.serialize, data) : null;
-				return row ? this.schema.deserialize<K>(row) : null;
+				const row = data ? await serializeDataForGet(this.serialize, data as any) : null;
+				return row ? this.schema.deserialize<K>((Array.isArray(row) ? row : [row])[0]) : null;
 			});
 		} catch (e: any) {
 			throw ERROR_FACTORY.create("Table.selectOne", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
@@ -299,12 +299,12 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.selectFirst(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	async selectFirst<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null> {
+	async selectFirst<K extends keyof T>(query?: Query<T, O, K>): Promise<RowDeserialize<T, O, K> | null> {
 		try {
 			return await this.ready(async () => {
 				const data = await this.custom.selectFirst(this.name, query?.options);
-				const row = data ? await serializeDataForGet(this.serialize, data) : null;
-				return row ? this.schema.deserialize<K>(row) : null;
+				const row = data ? await serializeDataForGet(this.serialize, data as any) : null;
+				return row ? this.schema.deserialize<K>((Array.isArray(row) ? row : [row])[0]) : null;
 			});
 		} catch (e: any) {
 			throw ERROR_FACTORY.create("Table.selectFirst", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
@@ -318,12 +318,12 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.selectLast(table.query.where("id", Database.Operators.EQUAL, 123 }).columns("id", "name").sort("id"));
 	 */
-	async selectLast<K extends keyof S>(query?: Query<S, O, K>): Promise<RowDeserialize<S, O, K> | null> {
+	async selectLast<K extends keyof T>(query?: Query<T, O, K>): Promise<RowDeserialize<T, O, K> | null> {
 		try {
 			return await this.ready(async () => {
 				const data = await this.custom.selectLast(this.name, query?.options);
-				const row = data ? await serializeDataForGet(this.serialize, data) : null;
-				return row ? this.schema.deserialize<K>(row) : null;
+				const row = data ? await serializeDataForGet(this.serialize, data as any) : null;
+				return row ? this.schema.deserialize<K>((Array.isArray(row) ? row : [row])[0]) : null;
 			});
 		} catch (e: any) {
 			throw ERROR_FACTORY.create("Table.selectLast", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
@@ -337,7 +337,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.exists(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	exists(query: Query<S, O, any>): Promise<boolean> {
+	exists(query: Query<T, O, any>): Promise<boolean> {
 		try {
 			return this.ready(async () => {
 				const data = await this.custom.selectOne(this.name, query.options);
@@ -358,7 +358,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.insert({ id: 123, name: "hello" });
 	 */
-	async insert<D extends RowSerialize<S, O> | Array<RowSerialize<S, O>>>(data: D): Promise<D extends Array<any> ? Array<RowDeserialize<S, O>> : RowDeserialize<S, O>> {
+	async insert<D extends RowSerialize<T, O> | Array<RowSerialize<T, O>>>(data: D): Promise<D extends Array<any> ? Array<RowDeserialize<T, O>> : RowDeserialize<T, O>> {
 		if (Array.isArray(data)) {
 			return (await Promise.all(data.map(async (row) => await this.insert(row)))) as any;
 		}
@@ -366,11 +366,11 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 		try {
 			let value = this.schema.serialize(data);
 			value = await serializeDataForSet(this.serialize, value);
-			return (await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
-				row = await serializeDataForGet(this.serialize, row);
+			return (await this.ready(() => this.custom.insert(this.name, value as any)).then(async (row) => {
+				row = (await serializeDataForGet(this.serialize, row as any)) as any;
 				this._events.emit("insert", row as any);
 				// this.emit("insert", this.schema.deserialize(row));
-				return Promise.resolve(this.schema.deserialize(row));
+				return Promise.resolve(this.schema.deserialize(row as any) as any);
 			})) as any;
 		} catch (e: any) {
 			throw ERROR_FACTORY.create("Table.insert", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
@@ -387,7 +387,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.update({ name: "world" }, table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async update<D extends RowSerialize<S, O>>(data: D, query: Query<S, O, any>): Promise<Array<RowDeserialize<S, O>>> {
+	async update<D extends RowSerialize<T, O>>(data: D, query: Query<T, O, any>): Promise<Array<RowDeserialize<T, O>>> {
 		try {
 			let value = this.schema.serialize(data);
 			value = await serializeDataForSet(this.serialize, value, true);
@@ -416,7 +416,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * @example
 	 * await table.delete(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 */
-	async delete(query: Query<S, O, any>): Promise<void> {
+	async delete(query: Query<T, O, any>): Promise<void> {
 		try {
 			const removed = await this.selectAll(query);
 			return await this.ready(() => this.custom.delete(this.name, query.options)).then(() => {
@@ -440,7 +440,7 @@ export class Table<S extends Serialize, O = Row<S>> extends BasicEventEmitter<Ta
 	 * await table.length(table.query.where("id", Database.Operators.EQUAL, 123 }));
 	 * await table.length();
 	 */
-	length(query?: Query<S, O, any>): Promise<number> {
+	length(query?: Query<T, O, any>): Promise<number> {
 		try {
 			return this.ready(() => this.custom.length(this.name, query?.options));
 		} catch (e: any) {

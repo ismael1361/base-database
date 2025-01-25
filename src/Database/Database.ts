@@ -1,5 +1,5 @@
 import BasicEventEmitter, { BasicEventHandler } from "basic-event-emitter";
-import { Row, Serialize, TableReady } from "./Types";
+import { Row, Serialize, TableReady, TableType } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
@@ -88,7 +88,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *    date: { type: Database.Types.DATETIME },
 	 * });
 	 */
-	async forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>> {
+	async forTable<T extends TableType, O = Row<T>>(name: string, columns: Serialize<T>): Promise<Table<T, O>> {
 		try {
 			return await this.ready(() => {
 				if (this.custom.disconnected) throw ERROR_FACTORY.create("Database.forTable", Errors.DB_DISCONNECTED, { dbName: this.database });
@@ -99,7 +99,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 					this.tables.set(name, table);
 					this.tablesNames = this.tablesNames.concat([name]).filter((value, index, self) => self.indexOf(value) === index);
 				}
-				return Promise.resolve(table as Table<S, O>);
+				return Promise.resolve(table as Table<T, O>);
 			});
 		} catch (e: any) {
 			throw ERROR_FACTORY.create("Database.forTable", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) });
@@ -132,14 +132,14 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *   // Code here will run when the table is ready
 	 * });
 	 */
-	readyTable<S extends Serialize, O = Row<S>>(table: Promise<Table<S, O>>): TableReady<S, O>;
-	readyTable<S extends Serialize, O = Row<S>>(name: string, columns: S): TableReady<S, O>;
-	readyTable<S extends Serialize, O = Row<S>>(name: string | Promise<Table<S, O>>, columns?: S): TableReady<S, O> {
+	readyTable<T extends TableType, O = Row<T>>(table: Promise<Table<T, O>>): TableReady<T, O>;
+	readyTable<T extends TableType, O = Row<T>>(name: string, columns: Serialize<T>): TableReady<T, O>;
+	readyTable<T extends TableType, O = Row<T>>(name: string | Promise<Table<T, O>>, columns?: Serialize<T>): TableReady<T, O> {
 		const table: any =
 			typeof name === "string" && this.tables.has(name)
-				? Promise.resolve(this.tables.get(name) as Table<S, O>)
+				? Promise.resolve(this.tables.get(name) as Table<T, O>)
 				: typeof name === "string" && columns
-				? this.forTable<S, O>(name, columns!)
+				? this.forTable<T, O>(name, columns!)
 				: name instanceof Promise
 				? name
 				: Promise.reject(
@@ -241,7 +241,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 *
 	 * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
 	 */
-	table<S extends Serialize>(name: string, columns: S): TableReady<S> {
+	table<T extends TableType>(name: string, columns: Serialize<T>): TableReady<T> {
 		return this.readyTable(name, columns);
 	}
 

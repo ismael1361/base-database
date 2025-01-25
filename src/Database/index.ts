@@ -1,15 +1,21 @@
 import { appExists, getApp, getServer } from "../App";
-import { Tables, App, DatabaseSettings } from "../App/App";
+import { App, DatabaseSettings } from "../App/App";
 import { Server } from "../App/Server";
 import { DEFAULT_ENTRY_NAME } from "../App/internal";
 import { Database } from "./";
 import { _database, _serialize, _tables } from "./internal";
 import { Errors, ERROR_FACTORY } from "../Error";
-import { Row, RowDeserialize } from "./Types";
+import { Row, RowDeserialize, TableType } from "./Types";
 import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 
 export * as Database from "./Database";
 export * as SQLiteRegex from "./SQLiteRegex";
+
+export type DatabaseTyping = {
+	[DB: PropertyKey]: {
+		[T: PropertyKey]: TableType;
+	};
+};
 
 type TableEvents<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> = EventsListeners<{
 	insert<N extends keyof T>(table: N, inserted: RowDeserialize<T[N], Row<T[N]>>): void;
@@ -17,19 +23,7 @@ type TableEvents<D extends DatabaseTyping, DB extends keyof D, T extends Databas
 	delete<N extends keyof T>(table: N, removed: Array<RowDeserialize<T[N], Row<T[N]>>>): void;
 }>;
 
-type RemoveNullable<T> = T extends null | undefined ? null : T extends Database.SerializeValueType ? T : null;
-
-type RemoveNullableFromObject<T> = {
-	[K in keyof T]: RemoveNullable<T[K]>;
-};
-
-type DatabaseTable<D extends DatabaseTyping, DB extends keyof D, T extends D[DB], N extends keyof T, C extends RemoveNullableFromObject<T[N]> = RemoveNullableFromObject<T[N]>> = Database.Serialize<{
-	[K in keyof C]: Database.SerializeItemAny<C[K]>;
-}>;
-
-export type DatabaseTables<D extends DatabaseTyping, DB extends keyof D, T extends D[DB] = D[DB]> = {
-	[K in keyof T]: DatabaseTable<D, DB, T, K>;
-};
+export type DatabaseTables<D extends DatabaseTyping, DB extends keyof D, T extends D[DB] = D[DB]> = T;
 
 interface DataBase<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> {
 	ready<R = void>(callback?: (db: DataBase<D, DB, T>) => Promise<R>): Promise<R>;
@@ -137,7 +131,7 @@ export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeo
 				events.emit("delete", name as any, removed);
 			});
 
-			return table;
+			return table as any;
 		},
 		async deleteTable(name) {
 			await database.deleteTable(String(name));

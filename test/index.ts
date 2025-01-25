@@ -1,4 +1,4 @@
-import { Database, initializeApp, getDatabase, initializeServer } from "../src";
+import { Database, initializeApp, getDatabase, initializeServer, DEFAULT_ENTRY_NAME } from "../src";
 import { ModelDatabase } from "./DB";
 import { SQLite } from "./SQLite";
 
@@ -9,6 +9,17 @@ const server = app.createServer();
 server.listen(3000, () => {
 	console.log("Server running on http://localhost:3000 🚀");
 });
+
+type DatabaseTyping = {
+	[DEFAULT_ENTRY_NAME]: {
+		myTable: {
+			name: string;
+			createdAt: Date;
+			gender: "Female" | "Male" | "Other";
+			amount: number;
+		};
+	};
+};
 
 const db = app.createDatabase<DatabaseTyping>({
 	database: ":memory:",
