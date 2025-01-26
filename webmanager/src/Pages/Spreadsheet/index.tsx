@@ -5,6 +5,7 @@ import { GridHeader } from "./GridHeader";
 import { Table } from "./TableComponents";
 import { EntireRowsSelection, Selection } from "react-spreadsheet";
 import { ScriptsHelper } from "Helpers";
+import { Icon } from "Components";
 
 interface DataRowsItem {
 	value?: string | number | boolean | null;
@@ -46,11 +47,11 @@ export const DataContext = React.createContext<{
 const tableData: Data = {
 	columns: [
 		{ key: "flavour", info: "TEXT", width: 200, align: "center" },
-		{ key: "food", width: 200, align: "center" },
-		{ key: "none", width: 100, align: "center", options: ["auto", "default"] },
-		{ key: "date", width: 200, align: "center", type: "datetime" },
-		{ key: "amount", width: 100, align: "center", type: "integer" },
-		{ key: "valido", width: 100, align: "center", type: "boolean" },
+		{ key: "food", info: "TEXT", width: 200, align: "center" },
+		{ key: "none", info: "OPTION", width: 100, align: "center", options: ["auto", "default"] },
+		{ key: "date", info: "DATETIME", width: 200, align: "center", type: "datetime" },
+		{ key: "amount", info: "INTEGER", width: 100, align: "center", type: "integer" },
+		{ key: "valido", info: "BOOLEAN", width: 100, align: "center", type: "boolean" },
 	],
 	rows: [
 		{
@@ -208,7 +209,11 @@ export const Spreadsheet: React.FC = () => {
 			>
 				<GridHeader
 					isEditing={isEditing}
+					isUndo={currentIndex <= 0}
+					isRedo={currentIndex >= length}
 					selected={rowsSelection !== null}
+					onUndo={undo}
+					onRedo={redo}
 					onCancel={() => {
 						clear();
 					}}
@@ -236,6 +241,22 @@ export const Spreadsheet: React.FC = () => {
 					}}
 				/>
 				<Table onSelect={onSelect} />
+				<div className={styles["tabs-bar"]}>
+					<div className={styles["actions"]}>
+						<button onClick={() => {}}>
+							<Icon
+								name="mdiPlus"
+								title="Novo"
+							/>
+						</button>
+						<button onClick={() => {}}>
+							<Icon
+								name="mdiMenu"
+								title="Tabelas"
+							/>
+						</button>
+					</div>
+				</div>
 			</div>
 		</DataContext.Provider>
 	);

@@ -134,14 +134,6 @@ export const CellComponent: React.FC<CellComponentProps> = ({ row, column, DataV
 		}
 	}, [offsetRect, setCellDimensions, selected, active, mode, point, data]);
 
-	// useSizeEffect(
-	// 	rootRef,
-	// 	() => {
-	// 		updateCellDimensions();
-	// 	},
-	// 	[updateCellDimensions],
-	// );
-
 	if (data && data.DataViewer) {
 		// @ts-ignore
 		DataViewer = data.DataViewer;
@@ -217,6 +209,7 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 
 	const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
 		if (isResizing.current) {
+			e.preventDefault();
 			const newWidth = startWidth.current + (e.clientX - startX.current);
 			setColumnSize(column, newWidth);
 		}
@@ -228,6 +221,7 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 
 	const handleMouseDown = React.useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			isResizing.current = true;
 			startX.current = e.clientX;
 			startWidth.current = columnsSizes[column + 1];
@@ -247,6 +241,8 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 
 	const isSelected = selected || (selection instanceof RangeSelection && selection.range.start.column <= column && selection.range.end.column >= column);
 
+	const title = label !== undefined ? label : columnIndexToLabel(column);
+
 	return (
 		<div
 			className={clsx(styles.th, isSelected && styles.selected)}
@@ -258,8 +254,9 @@ export const ColumnIndicatorComponent: React.FC<ColumnIndicatorProps> = ({ colum
 				minWidth: `var(--column-${column + 1}-width)`,
 				maxWidth: `var(--column-${column + 1}-width)`,
 			}}
+			title={typeof title === "string" ? title : undefined}
 		>
-			<span>{label !== undefined ? label : columnIndexToLabel(column)}</span>
+			<span>{title}</span>
 			<div
 				className={styles.resizer}
 				onMouseDown={handleMouseDown}
