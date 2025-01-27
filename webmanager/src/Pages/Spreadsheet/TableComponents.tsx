@@ -20,15 +20,17 @@ import styles from "./styles.module.scss";
 import { clsx, columnIndexToLabel, getOffsetRect } from "Utils";
 import { DataEditor } from "./DataEditor";
 import { DataContext, getCellValue } from ".";
+import { CircularProgress } from "@mui/material";
 
 const ContextTable = React.createContext<{
 	selection: Selection;
 	columnsSizes: number[];
 	setColumnSize(column: number, size: number): void;
-}>({ selection: new EmptySelection(), columnsSizes: [], setColumnSize: () => {} });
+	loading: boolean;
+}>({ loading: false, selection: new EmptySelection(), columnsSizes: [], setColumnSize: () => {} });
 
 export const TableComponent: React.FC<TableProps> = ({ children, hideColumnIndicators }) => {
-	const { columnsSizes } = React.useContext(ContextTable);
+	const { loading, columnsSizes } = React.useContext(ContextTable);
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
 
 	React.useLayoutEffect(() => {
@@ -43,12 +45,25 @@ export const TableComponent: React.FC<TableProps> = ({ children, hideColumnIndic
 	}, [columnsSizes]);
 
 	return (
-		<div
-			ref={rootRef}
-			className={styles.table}
-		>
-			{children}
-		</div>
+		<>
+			{loading && (
+				<CircularProgress
+					color="inherit"
+					sx={{
+						position: "absolute",
+						left: "50%",
+						top: "50%",
+						transform: "translate(-50%, -50%)",
+					}}
+				/>
+			)}
+			<div
+				ref={rootRef}
+				className={styles.table}
+			>
+				{children}
+			</div>
+		</>
 	);
 };
 
@@ -314,8 +329,9 @@ export const CornerIndicatorComponent: React.FC<CornerIndicatorProps> = ({ onSel
 };
 
 export const Table: React.FC<{
+	loading?: boolean;
 	onSelect?: (selection: Selection) => void;
-}> = ({ onSelect }) => {
+}> = ({ loading, onSelect }) => {
 	const { data, updateData } = React.useContext(DataContext);
 	const modeChangeRef = React.useRef<Mode>("view");
 	const [selection, setSelection] = React.useState<Selection>(new EmptySelection());
@@ -360,10 +376,11 @@ export const Table: React.FC<{
 						return [...sizes];
 					});
 				},
+				loading: loading ?? false,
 			}}
 		>
 			<SpreadsheetComponent
-				className={styles["table-root"]}
+				className={clsx(styles["table-root"], loading && styles.loading)}
 				darkMode={true}
 				data={cells}
 				onChange={(d) => {

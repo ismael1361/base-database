@@ -6,6 +6,7 @@ import { Table } from "./TableComponents";
 import { EntireRowsSelection, Selection } from "react-spreadsheet";
 import { ScriptsHelper } from "Helpers";
 import { Icon } from "Components";
+import { TabsBar } from "./TabsBar";
 
 interface DataRowsItem {
 	value?: string | number | boolean | null;
@@ -140,6 +141,7 @@ export const getCellValue = (cell: DataRowsItem) => {
 };
 
 export const Spreadsheet: React.FC = () => {
+	const [loading, setLoading] = React.useState<boolean>(false);
 	const scripts = React.useRef<ScriptsHelper>(new ScriptsHelper());
 	const { state, set, redo, undo, clear, length, currentIndex } = useHistory(prepareData(tableData));
 	const rootRef = React.useRef<HTMLDivElement | null>(null);
@@ -162,12 +164,12 @@ export const Spreadsheet: React.FC = () => {
 
 		root?.addEventListener("keydown", handleKeyDown);
 
-		const event = scripts.current.onScript((lines) => {
-			console.log(ScriptsHelper.renderScript(scripts.current.initialScript, lines));
+		const event = scripts.current.onScript((scripts) => {
+			console.log(scripts);
 		});
 
 		if (!scripts.current.isInitialized) {
-			scripts.current.initialize("table");
+			scripts.current.select("table");
 		}
 
 		return () => {
@@ -208,6 +210,7 @@ export const Spreadsheet: React.FC = () => {
 				className={styles["grid-root"]}
 			>
 				<GridHeader
+					loading={loading}
 					isEditing={isEditing}
 					isUndo={currentIndex <= 0}
 					isRedo={currentIndex >= length}
@@ -222,41 +225,44 @@ export const Spreadsheet: React.FC = () => {
 							return;
 						}
 						const [start, end] = rowsSelection;
-						const rows = state.rows.slice(start, end + 1).map(({ rowid }) => rowid);
+						const rows = state.rows.slice(start, end + 1).map(({ rowid }) => parseInt(rowid));
 						scripts.current.push({
-							isAsync: true,
-							type: "line",
-							content: [
-								{ name: "table.query", args: [] },
-								{ name: "rowid", args: rows },
-								{ name: "delete", args: [] },
-							],
-							sql: {
-								type: "delete",
-								props: {
-									rowid: rows,
-								},
-							},
+							type: "delete",
+							rowid: rows,
+						});
+					}}
+					onUpdate={() => {
+						const rows = Object.fromEntries(
+							state.rows
+								.filter(({ columns }) => {
+									return Object.values(columns).some((cell) => {
+										const { value, current } = getCellValue(cell);
+										return value !== current;
+									});
+								})
+								.map(({ rowid, columns }) => {
+									return [
+										parseInt(rowid),
+										Object.entries(columns).reduce((acc, [key, cell]) => {
+											const { value, current } = getCellValue(cell);
+											if (value !== current) acc[key] = current;
+											return acc;
+										}, {} as any),
+									];
+								}),
+						);
+
+						scripts.current.push({
+							type: "update",
+							rows,
 						});
 					}}
 				/>
-				<Table onSelect={onSelect} />
-				<div className={styles["tabs-bar"]}>
-					<div className={styles["actions"]}>
-						<button onClick={() => {}}>
-							<Icon
-								name="mdiPlus"
-								title="Novo"
-							/>
-						</button>
-						<button onClick={() => {}}>
-							<Icon
-								name="mdiMenu"
-								title="Tabelas"
-							/>
-						</button>
-					</div>
-				</div>
+				<Table
+					loading={loading}
+					onSelect={onSelect}
+				/>
+				<TabsBar loading={loading} />
 			</div>
 		</DataContext.Provider>
 	);

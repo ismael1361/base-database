@@ -2,6 +2,7 @@ import { Icon } from "Components";
 import styles from "./styles.module.scss";
 
 export const GridHeader: React.FC<{
+	loading?: boolean;
 	isEditing: boolean;
 	isUndo?: boolean;
 	isRedo?: boolean;
@@ -12,11 +13,14 @@ export const GridHeader: React.FC<{
 	onDelete?: () => void;
 	onUndo?: () => void;
 	onRedo?: () => void;
-}> = ({ isEditing, isUndo, isRedo, selected, onAdd, onUpdate, onCancel, onDelete, onUndo, onRedo }) => {
+}> = ({ loading, isEditing, isUndo, isRedo, selected, onAdd, onUpdate, onCancel, onDelete, onUndo, onRedo }) => {
 	return (
 		<>
 			<div className={styles["grid-toolbar"]}>
-				<button onClick={onAdd}>
+				<button
+					onClick={onAdd}
+					disabled={loading}
+				>
 					<Icon
 						name="mdiPlus"
 						title="Adicionar"
@@ -24,7 +28,7 @@ export const GridHeader: React.FC<{
 				</button>
 				<div className={styles["divider"]}></div>
 				<button
-					disabled={!selected}
+					disabled={loading || !selected}
 					onClick={onDelete}
 				>
 					<Icon
@@ -33,7 +37,7 @@ export const GridHeader: React.FC<{
 					/>
 				</button>
 				<button
-					disabled={!isEditing}
+					disabled={loading || !isEditing}
 					onClick={onUpdate}
 				>
 					<Icon
@@ -42,7 +46,7 @@ export const GridHeader: React.FC<{
 					/>
 				</button>
 				<button
-					disabled={!isEditing}
+					disabled={loading || !isEditing}
 					onClick={onCancel}
 				>
 					<Icon
@@ -52,7 +56,7 @@ export const GridHeader: React.FC<{
 				</button>
 				<div className={styles["divider"]}></div>
 				<button
-					disabled={isUndo}
+					disabled={loading || isUndo}
 					onClick={onUndo}
 				>
 					<Icon
@@ -61,7 +65,7 @@ export const GridHeader: React.FC<{
 					/>
 				</button>
 				<button
-					disabled={isRedo}
+					disabled={loading || isRedo}
 					onClick={onRedo}
 				>
 					<Icon
@@ -70,7 +74,10 @@ export const GridHeader: React.FC<{
 					/>
 				</button>
 				<div className={styles["divider"]}></div>
-				<button onClick={() => {}}>
+				<button
+					disabled={loading}
+					onClick={() => {}}
+				>
 					<Icon
 						name="mdiReload"
 						title="Recarregar"

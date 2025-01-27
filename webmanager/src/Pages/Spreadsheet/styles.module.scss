@@ -59,7 +59,8 @@
         overflow: auto;
         overscroll-behavior: none;
         background-color: transparent;
-        border-top: 1px solid var(--lightgray);
+        border: 1px solid var(--lightgray);
+        box-sizing: border-box;
 
         --lightgray: var(--gray4);
         --thead-background: var(--gray6);
@@ -80,6 +81,11 @@
 
         * {
             cursor: auto !important;
+        }
+
+        &.loading {
+            pointer-events: none;
+            opacity: .5;
         }
 
         >.table {
@@ -156,10 +162,6 @@
                     max-width: 400px;
                     user-select: none;
                     box-sizing: border-box;
-
-                    &:first-child {
-                        border-left: 1px solid var(--lightgray);
-                    }
 
                     &::after {
                         content: '';
@@ -355,7 +357,6 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        border-top: 1px solid var(--gray4);
         min-height: 40px;
         padding: 0px 10px;
 
