@@ -1,5 +1,6 @@
 import React from "react";
 import { Spreadsheet } from "./Spreadsheet";
+import { ScriptEditor } from "./ScriptEditor";
 import { Navigator } from "Components";
 
 export const Main: React.FC = () => {
@@ -15,7 +16,9 @@ export const Main: React.FC = () => {
 				<Navigator.Page
 					name="script"
 					title="Script"
-				/>
+				>
+					<ScriptEditor />
+				</Navigator.Page>
 			</Navigator>
 		</>
 	);

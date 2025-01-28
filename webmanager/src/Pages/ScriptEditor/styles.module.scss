@@ -1,0 +1,10 @@
+.script-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    >section.monaco-editor,
+    >section {
+        flex: 1;
+    }
+}

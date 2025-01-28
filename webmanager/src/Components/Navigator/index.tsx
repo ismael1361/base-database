@@ -20,23 +20,20 @@ export const Navigator: React.FC<{
 	Page: typeof Page;
 } = ({ children }) => {
 	const [currentPage, setCurrentPage] = React.useState<string | null>(null);
-	const [pages, setPages] = React.useState<{ index: number; name: string; title?: string }[]>([]);
+
+	const pages = React.useMemo(() => {
+		return children
+			? React.Children.map(children, ({ props }, index) => {
+					return { index, name: (props as any).name, title: (props as any).title } as { index: number; name: string; title?: string };
+			  }).filter((v) => typeof v.name === "string")
+			: [];
+	}, [children]);
 
 	React.useEffect(() => {
 		if (!pages.includes(currentPage as any) && pages.length > 0) {
 			setCurrentPage(pages[0].name);
 		}
 	}, [pages]);
-
-	React.useEffect(() => {
-		setPages(
-			children
-				? React.Children.map(children, ({ props }, index) => {
-						return { index, name: (props as any).name, title: (props as any).title } as { index: number; name: string; title?: string };
-				  }).filter((v) => typeof v.name === "string")
-				: [],
-		);
-	}, [children]);
 
 	return (
 		<div className={styles["navigator"]}>
