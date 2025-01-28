@@ -1,4 +1,4 @@
-import { Icon } from "Components";
+import { HeaderToolbar, Icon } from "Components";
 import styles from "./styles.module.scss";
 
 export const GridHeader: React.FC<{
@@ -16,74 +16,53 @@ export const GridHeader: React.FC<{
 }> = ({ loading, isEditing, isUndo, isRedo, selected, onAdd, onUpdate, onCancel, onDelete, onUndo, onRedo }) => {
 	return (
 		<>
-			<div className={styles["grid-toolbar"]}>
-				<button
+			<HeaderToolbar>
+				<HeaderToolbar.Option
+					icon="mdiPlus"
+					title="Adicionar"
 					onClick={onAdd}
 					disabled={loading}
-				>
-					<Icon
-						name="mdiPlus"
-						title="Adicionar"
-					/>
-				</button>
-				<div className={styles["divider"]}></div>
-				<button
-					disabled={loading || !selected}
+				/>
+				<HeaderToolbar.Divider />
+				<HeaderToolbar.Option
+					icon="mdiDelete"
+					title="Deletar"
 					onClick={onDelete}
-				>
-					<Icon
-						name="mdiDelete"
-						title="Deletar"
-					/>
-				</button>
-				<button
+					disabled={loading || !selected}
+				/>
+				<HeaderToolbar.Option
+					icon="mdiCheck"
+					title="Atualizar"
 					disabled={loading || !isEditing}
 					onClick={onUpdate}
-				>
-					<Icon
-						name="mdiCheck"
-						title="Atualizar"
-					/>
-				</button>
-				<button
+				/>
+				<HeaderToolbar.Option
+					icon="mdiClose"
+					title="Cancelar"
 					disabled={loading || !isEditing}
 					onClick={onCancel}
-				>
-					<Icon
-						name="mdiClose"
-						title="Cancelar"
-					/>
-				</button>
-				<div className={styles["divider"]}></div>
-				<button
+				/>
+				<HeaderToolbar.Divider />
+				<HeaderToolbar.Option
+					icon="mdiUndo"
+					title="Desfazer"
 					disabled={loading || isUndo}
 					onClick={onUndo}
-				>
-					<Icon
-						name="mdiUndo"
-						title="Desfazer"
-					/>
-				</button>
-				<button
+				/>
+				<HeaderToolbar.Option
+					icon="mdiRedo"
+					title="Refazer"
 					disabled={loading || isRedo}
 					onClick={onRedo}
-				>
-					<Icon
-						name="mdiRedo"
-						title="Refazer"
-					/>
-				</button>
-				<div className={styles["divider"]}></div>
-				<button
+				/>
+				<HeaderToolbar.Divider />
+				<HeaderToolbar.Option
+					icon="mdiReload"
+					title="Recarregar"
 					disabled={loading}
 					onClick={() => {}}
-				>
-					<Icon
-						name="mdiReload"
-						title="Recarregar"
-					/>
-				</button>
-			</div>
+				/>
+			</HeaderToolbar>
 		</>
 	);
 };

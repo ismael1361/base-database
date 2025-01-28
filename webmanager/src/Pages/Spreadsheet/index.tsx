@@ -164,8 +164,8 @@ export const Spreadsheet: React.FC = () => {
 
 		root?.addEventListener("keydown", handleKeyDown);
 
-		const event = scripts.current.onScript((scripts) => {
-			console.log(scripts);
+		const event = scripts.current.on("script", (table, scripts) => {
+			console.log(table, scripts);
 		});
 
 		if (!scripts.current.isInitialized) {

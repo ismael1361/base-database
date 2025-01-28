@@ -1,12 +1,9 @@
 import React from "react";
 import * as icons from "@mdi/js";
 
-export const Icon: React.FC<{ name: keyof typeof icons; title?: string; className?: string; style?: Partial<CSSStyleDeclaration>; size?: string | number }> = ({
-	name,
-	title,
-	className,
-	size = 25,
-}) => {
+export type IconName = keyof typeof icons;
+
+export const Icon: React.FC<{ name: IconName; title?: string; className?: string; style?: Partial<CSSStyleDeclaration>; size?: string | number }> = ({ name, title, className, size = 25 }) => {
 	size = typeof size === "number" ? `${size}px` : size;
 
 	return React.createElement(
