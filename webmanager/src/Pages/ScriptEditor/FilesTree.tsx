@@ -99,19 +99,21 @@ const Tree: React.FC<{ currentPath?: string; dir: string; files: Files; onFileOp
 					/>
 				);
 			})}
-			{parsedFiles.files.map(({ path, createDate, modifiedDate }) => {
-				return (
-					<File
-						key={path}
-						dir={dir}
-						currentPath={currentPath}
-						name={path}
-						createDate={createDate}
-						modifiedDate={modifiedDate}
-						onClick={onFileOpen}
-					/>
-				);
-			})}
+			{parsedFiles.files
+				.sort((a, b) => (a.path.startsWith("index") ? 1 : b.path.startsWith("index") ? -1 : a.path.localeCompare(b.path)))
+				.map(({ path, createDate, modifiedDate }) => {
+					return (
+						<File
+							key={path}
+							dir={dir}
+							currentPath={currentPath}
+							name={path}
+							createDate={createDate}
+							modifiedDate={modifiedDate}
+							onClick={onFileOpen}
+						/>
+					);
+				})}
 		</div>
 	);
 };

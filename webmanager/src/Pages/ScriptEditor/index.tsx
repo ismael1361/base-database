@@ -19,22 +19,11 @@ export const ScriptEditor: React.FC = () => {
 	const [filesList, setFilesList] = useState<Files>([]);
 
 	const files = useRef<Record<string, Omit<Files[number], "path"> & { source: string }>>({
-		"file:///src/Routers/dashboard/index.ts": {
+		"file:///src/Routers/dashboard.ts": {
 			createDate: new Date(),
 			modifiedDate: new Date(),
 			source: `import { Router } from "utils";
 
-export default Router([], (router)=>{
-    router.get("/", [], (req)=>{
-
-    });
-});`,
-		},
-		"file:///src/Routers/dashboard/user/index.ts": {
-			createDate: new Date(),
-			modifiedDate: new Date(),
-			source: `import { Router } from "utils";
-        
 export default Router([], (router)=>{
     router.get("/", [], (req)=>{
 
@@ -50,6 +39,17 @@ import { Auth, Wallet } from "Middlewares";
 export default Router([Auth.middleware, Wallet.middleware], (router)=>{
     router.get("/", [], (req)=>{
         const { user, wallet } = req;
+    });
+});`,
+		},
+		"file:///src/Routers/users.ts": {
+			createDate: new Date(),
+			modifiedDate: new Date(),
+			source: `import { Router } from "utils";
+
+export default Router([], (router)=>{
+    router.get("/", [], (req)=>{
+
     });
 });`,
 		},
