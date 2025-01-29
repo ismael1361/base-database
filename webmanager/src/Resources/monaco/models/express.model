@@ -37,6 +37,9 @@ declare module "express" {
 		[key: string]: undefined | string | string[] | Query | Query[];
 	}
 
+	/**
+	 * The next function.
+	 */
 	interface NextFunction {
 		(err?: any): void;
 		/**
@@ -275,6 +278,9 @@ declare module "express" {
 		mountpath: string | string[];
 	}
 
+	/**
+	 * The request object.
+	 */
 	interface Request<P = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = Query, Locals extends Record<string, any> = Record<string, any>> extends http.IncomingMessage {
 		get(name: "set-cookie"): string[] | undefined;
 		get(name: string): string | undefined;
@@ -399,6 +405,9 @@ declare module "express" {
 		partitioned?: boolean | undefined;
 	}
 
+	/**
+	 * The response object.
+	 */
 	interface Response<ResBody = any, LocalsObj extends Record<string, any> = Record<string, any>, StatusCode extends number = number> extends http.ServerResponse {
 		status(code: StatusCode): this;
 

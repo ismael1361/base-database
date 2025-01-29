@@ -1,55 +1,40 @@
-declare class HandleError extends Error {
-	readonly message: string;
-	readonly name: string;
-	readonly cause?: any | undefined;
-	constructor(message: string, name?: string, cause?: any | undefined);
-}
+declare module "utils" {
+	export class HandleError extends Error {
+		readonly message: string;
+		readonly name: string;
+		readonly cause?: any | undefined;
+		constructor(message: string, name?: string, cause?: any | undefined);
+	}
 
-declare module "router" {
-	import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction as ExpressNextFunction, Router as ExpressRouter, ParamsDictionary, Query } from "express";
+	import type { Request, Response, NextFunction, Router as ExpressRouter } from "express";
 
-	/**
-	 * The request object.
-	 */
-	export type Request<P = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = Query, Locals extends Record<string, any> = Record<string, any>> = ExpressRequest<
-		P,
-		ResBody,
-		ReqBody,
-		ReqQuery,
-		Locals
-	>;
+	export { Request, Response, NextFunction };
 
 	/**
-	 * The response object.
-	 */
-	export type Response<ResBody = any, LocalsObj extends Record<string, any> = Record<string, any>, StatusCode extends number = number> = ExpressResponse<ResBody, LocalsObj, StatusCode>;
-
-	/**
-	 * The next function.
-	 */
-	export type NextFunction = ExpressNextFunction;
-
-	/**
-	 * The handler function that will be called when a route is matched.
+	 * The middleware function that will be called when a route is matched.
 	 * @param req The request object.
 	 * @param res The response object.
 	 * @param next The next function.
 	 * @example
 	 * ```ts
-	 * import { Handler } from "router";
+	 * import { Middleware } from "router";
 	 *
-	 * const handler: Handler = (req, res, next) => {
+	 * const middleware: Middleware = (req, res, next) => {
 	 *    res.send("Hello, World!");
 	 * };
 	 * ```
 	 */
-	export type Handler<Req extends Request = Request, Res extends Response = Response> = (req: Req, res: Res, next: NextFunction) => void;
+	export type Middleware<Req extends Request = Request, Res extends Response = Response> = (req: Req, res: Res, next: NextFunction) => void;
 
-	export type Middleware<Req extends Request, Res extends Response> = (req: Req, res: Res, next: NextFunction) => void;
+	export type MiddlewaresBase<T extends Record<PropertyKey, Middleware<any, any>>> = {
+		[K in keyof T]: T[K];
+	};
 
 	type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
-	type CombinedRequest<Mw extends Middleware<any, any>[]> = Mw[number] extends Middleware<infer Req, any> ? UnionToIntersection<Req> : never;
+	type MiddlewareRequestType<T> = T extends Middleware<infer Req, any> ? (Req extends Request ? Req : never) : never;
+
+	type CombinedRequest<Mw extends Middleware<any, any>[]> = UnionToIntersection<MiddlewareRequestType<Mw[number]>> extends infer Result ? (Result extends never ? Request : Result & Request) : never;
 
 	type HandlerType<Mw extends Middleware<any, any>[], Res extends Response> = Middleware<CombinedRequest<Mw>, Res> | InRouter<Res, Mw>;
 
@@ -82,7 +67,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		get<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		get<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers a POST route.
@@ -96,7 +81,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		post<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		post<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers a PUT route.
@@ -110,7 +95,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		put<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		put<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers a DELETE route.
@@ -124,7 +109,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		delete<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		delete<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers a PATCH route.
@@ -138,7 +123,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		patch<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		patch<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers an OPTIONS route.
@@ -152,7 +137,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		options<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		options<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers a HEAD route.
@@ -166,7 +151,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		head<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, handler: HandlerType<[...Mw, ...C], Res>): any;
+		head<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
 
 		/**
 		 * Registers a route with multiple methods.
@@ -180,7 +165,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		use<Mw extends Middleware<any, any>[]>(path: string, middlewares: Mw, ...handlers: HandlerType<[...Mw, ...C], Res>[]): any;
+		use<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], ...handlers: HandlerType<[...Mw, ...C], Res>[]): any;
 
 		/**
 		 * Registers a middleware.
@@ -193,7 +178,7 @@ declare module "router" {
 		 * });
 		 * ```
 		 */
-		use<Mw extends Middleware<any, any>[]>(middlewares: Mw, ...handlers: HandlerType<[...Mw, ...C], Res>[]): any;
+		use<Mw extends Middleware<any, any>[]>(middlewares: [...Mw], ...handlers: HandlerType<[...Mw, ...C], Res>[]): any;
 	}
 
 	/**
@@ -212,7 +197,5 @@ declare module "router" {
 	 * });
 	 * ```
 	 */
-	export const Router: <Mw extends Middleware<any, any>[], Res extends Response = Response>(callback: (router: InRouter<Res, Mw>) => void, ...middlewares: Mw) => ExpressRouter;
-
-	export default Router;
+	export const Router: <Mw extends Middleware<any, any>[], Res extends Response = Response>(middlewares: [...Mw], callback: (router: InRouter<Res, Mw>) => void) => ExpressRouter;
 }
