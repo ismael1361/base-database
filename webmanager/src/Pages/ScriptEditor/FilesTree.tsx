@@ -3,12 +3,21 @@ import styles from "./styles.module.scss";
 import { useState } from "react";
 import { clsx } from "Utils";
 
-const File: React.FC<{ currentPath?: string; dir: string; name: string; onClick?: (path: string) => void }> = ({ currentPath, dir, name, onClick }) => {
+export type Files = Array<{ path: string; createDate: Date; modifiedDate: Date }>;
+
+const File: React.FC<{ currentPath?: string; dir: string; name: string; createDate: Date; modifiedDate: Date; onClick?: (path: string) => void }> = ({
+	currentPath,
+	dir,
+	name,
+	createDate,
+	modifiedDate,
+	onClick,
+}) => {
 	const path = [dir, name].join("/");
 
 	return (
 		<div
-			className={clsx(styles["file"], path === currentPath && styles["active"])}
+			className={clsx(styles["file"], path === currentPath && styles["active"], createDate.getTime() !== modifiedDate.getTime() && styles["modified"])}
 			onClick={
 				path === currentPath
 					? undefined
@@ -26,13 +35,15 @@ const File: React.FC<{ currentPath?: string; dir: string; name: string; onClick?
 	);
 };
 
-const Folder: React.FC<{ currentPath?: string; dir: string; title: string; files: string[]; onFileOpen?: (path: string) => void }> = ({ currentPath, dir, title, files, onFileOpen }) => {
+const Folder: React.FC<{ currentPath?: string; dir: string; title: string; files: Files; onFileOpen?: (path: string) => void }> = ({ currentPath, dir, title, files, onFileOpen }) => {
 	const [open, setOpen] = useState(false);
+
+	const isHasModified = files.some(({ createDate, modifiedDate }) => createDate.getTime() !== modifiedDate.getTime());
 
 	return (
 		<div className={styles["folder"]}>
 			<div
-				className={styles["title"]}
+				className={clsx(styles["title"], isHasModified && styles["modified"])}
 				onClick={() => setOpen(!open)}
 			>
 				<Icon name={open ? "mdiChevronDown" : "mdiChevronRight"} />
@@ -56,22 +67,22 @@ const Folder: React.FC<{ currentPath?: string; dir: string; title: string; files
 	);
 };
 
-const Tree: React.FC<{ currentPath?: string; dir: string; files: string[]; onFileOpen?: (path: string) => void }> = ({ dir, currentPath, files, onFileOpen }) => {
+const Tree: React.FC<{ currentPath?: string; dir: string; files: Files; onFileOpen?: (path: string) => void }> = ({ dir, currentPath, files, onFileOpen }) => {
 	const parsedFiles = files.reduce(
 		(acc, file) => {
-			if (file.includes("/")) {
-				const [folder, ...rest] = file.split("/");
+			if (file.path.includes("/")) {
+				const [folder, ...rest] = file.path.split("/");
 				if (!acc.folders[folder]) {
 					acc.folders[folder] = [];
 				}
-				acc.folders[folder].push(rest.join("/"));
+				acc.folders[folder].push({ ...file, path: rest.join("/") });
 				return acc;
 			} else {
 				acc.files.push(file);
 			}
 			return acc;
 		},
-		{ folders: {}, files: [] } as { folders: Record<string, string[]>; files: string[] },
+		{ folders: {}, files: [] } as { folders: Record<string, Files>; files: Files },
 	);
 
 	return (
@@ -88,13 +99,15 @@ const Tree: React.FC<{ currentPath?: string; dir: string; files: string[]; onFil
 					/>
 				);
 			})}
-			{parsedFiles.files.map((name) => {
+			{parsedFiles.files.map(({ path, createDate, modifiedDate }) => {
 				return (
 					<File
-						key={name}
+						key={path}
 						dir={dir}
 						currentPath={currentPath}
-						name={name}
+						name={path}
+						createDate={createDate}
+						modifiedDate={modifiedDate}
 						onClick={onFileOpen}
 					/>
 				);
@@ -103,7 +116,7 @@ const Tree: React.FC<{ currentPath?: string; dir: string; files: string[]; onFil
 	);
 };
 
-const Group: React.FC<{ currentPath?: string; icon: IconName; title: string; files: string[]; onFileOpen?: (path: string) => void }> = ({ currentPath, icon, title, files, onFileOpen }) => {
+const Group: React.FC<{ currentPath?: string; icon: IconName; title: string; files: Files; onFileOpen?: (path: string) => void }> = ({ currentPath, icon, title, files, onFileOpen }) => {
 	const [open, setOpen] = useState(true);
 
 	return (
@@ -120,7 +133,10 @@ const Group: React.FC<{ currentPath?: string; icon: IconName; title: string; fil
 				<Tree
 					currentPath={currentPath}
 					dir={`/${title}`}
-					files={files.map((s) => s.replace(new RegExp(`/?${title}/`, "gi"), ""))}
+					files={files.map(({ path, ...p }) => {
+						path = path.replace(new RegExp(`/?${title}/`, "gi"), "");
+						return { path, ...p };
+					})}
 					onFileOpen={onFileOpen}
 				/>
 			)}
@@ -130,7 +146,7 @@ const Group: React.FC<{ currentPath?: string; icon: IconName; title: string; fil
 
 export const FilesTree: React.FC<{
 	currentPath?: string;
-	files: { routers: string[]; middlewares: string[]; scripts: string[] };
+	files: { routers: Files; middlewares: Files; scripts: Files };
 	onFileOpen?: (path: string) => void;
 }> = ({ currentPath, files, onFileOpen }) => {
 	return (

@@ -1,13 +1,13 @@
 import Editor, { BeforeMount, OnChange, OnMount } from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import styles from "./styles.module.scss";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import expressModel from "Resources/monaco/models/express.model";
 import routerModel from "Resources/monaco/models/router.model";
 import { useDebouncedCallback } from "UseHooks";
 import { Header } from "./Header";
-import { FilesTree } from "./FilesTree";
+import { Files, FilesTree } from "./FilesTree";
 
 const libSources: Record<string, string> = {
 	"ts:filename/express.d.ts": expressModel,
@@ -16,24 +16,35 @@ const libSources: Record<string, string> = {
 
 export const ScriptEditor: React.FC = () => {
 	const [currentFile, setCurrentFile] = useState<string>("file:///src/Routers/index.ts");
-	const [filesList, setFilesList] = useState<string[]>([]);
+	const [filesList, setFilesList] = useState<Files>([]);
 
-	const files = useRef<Record<string, string>>({
-		"file:///src/Routers/dashboard/index.ts": `import { Router } from "utils";
+	const files = useRef<Record<string, Omit<Files[number], "path"> & { source: string }>>({
+		"file:///src/Routers/dashboard/index.ts": {
+			createDate: new Date(),
+			modifiedDate: new Date(),
+			source: `import { Router } from "utils";
 
 export default Router([], (router)=>{
     router.get("/", [], (req)=>{
 
     });
 });`,
-		"file:///src/Routers/dashboard/user/index.ts": `import { Router } from "utils";
+		},
+		"file:///src/Routers/dashboard/user/index.ts": {
+			createDate: new Date(),
+			modifiedDate: new Date(),
+			source: `import { Router } from "utils";
         
 export default Router([], (router)=>{
     router.get("/", [], (req)=>{
 
     });
 });`,
-		"file:///src/Routers/index.ts": `import { Router } from "utils";
+		},
+		"file:///src/Routers/index.ts": {
+			createDate: new Date(),
+			modifiedDate: new Date(),
+			source: `import { Router } from "utils";
 import { Auth, Wallet } from "Middlewares";
 
 export default Router([Auth.middleware, Wallet.middleware], (router)=>{
@@ -41,7 +52,11 @@ export default Router([Auth.middleware, Wallet.middleware], (router)=>{
         const { user, wallet } = req;
     });
 });`,
-		"file:///src/Middlewares/index.ts": `import { Request, MiddlewaresBase, Middleware } from "utils";
+		},
+		"file:///src/Middlewares/index.ts": {
+			createDate: new Date(),
+			modifiedDate: new Date(),
+			source: `import { Request, MiddlewaresBase, Middleware } from "utils";
 
 type UserAccessToken = {
     access_token: string;
@@ -75,11 +90,16 @@ export const Wallet:MiddlewaresBase<{
 }> = {
     middleware(req, res, next){}
 }`,
-		"file:///src/Scripts/index.ts": `export const promiseIsPending = async <T = any>(p: Promise<T>): Promise<boolean> => {
+		},
+		"file:///src/Scripts/index.ts": {
+			createDate: new Date(),
+			modifiedDate: new Date(),
+			source: `export const promiseIsPending = async <T = any>(p: Promise<T>): Promise<boolean> => {
     const PENDING = Symbol.for("PENDING");
     const result = await Promise.race([p, Promise.resolve(PENDING)]);
     return result === PENDING;
 };`,
+		},
 	});
 
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -98,7 +118,7 @@ export const Wallet:MiddlewaresBase<{
 		for (const file in files.current) {
 			const modelUri = monaco.Uri.parse(file);
 			monaco.editor.getModel(modelUri)?.dispose();
-			monaco.editor.createModel(files.current[file], "typescript", modelUri);
+			monaco.editor.createModel(files.current[file].source, "typescript", modelUri);
 		}
 
 		monacoRef.current = monaco;
@@ -140,15 +160,28 @@ export const Wallet:MiddlewaresBase<{
 		});
 
 		setFilesList(
-			Object.keys(files.current)
-				.map((file) => monaco.Uri.parse(file).path.replace(/^\/src\//, "/") ?? null)
-				.filter((file) => file !== null) as string[],
+			Object.entries(files.current)
+				.map(([path, file]) => {
+					path = monaco.Uri.parse(path).path.replace(/^\/src\//, "/") ?? (null as any);
+					return { ...file, path };
+				})
+				.filter((file) => file.path !== null) as Files,
 		);
 	};
 
 	const updateCurrentFile = useDebouncedCallback((file: string, value: string) => {
-		files.current[file] = value;
-	}, 100);
+		files.current[file].source = value;
+		files.current[file].modifiedDate = new Date();
+
+		setFilesList(
+			Object.entries(files.current)
+				.map(([path, file]) => {
+					path = monacoRef.current?.Uri.parse(path).path.replace(/^\/src\//, "/") ?? (null as any);
+					return { ...file, path };
+				})
+				.filter((file) => file.path !== null) as Files,
+		);
+	}, 300);
 
 	const handleEditorChange =
 		(currentFile: string): OnChange =>
@@ -167,10 +200,18 @@ export const Wallet:MiddlewaresBase<{
 			if (monacoRef.current) {
 				const modelUri = monacoRef.current.Uri.parse(file);
 				monacoRef.current.editor.getModel(modelUri)?.dispose();
-				monacoRef.current.editor.createModel(files.current[file], "typescript", modelUri);
+				monacoRef.current.editor.createModel(files.current[file].source, "typescript", modelUri);
 			}
 		}
 	}, 100);
+
+	const filesTree = useMemo(() => {
+		return {
+			routers: filesList.filter((file) => file.path?.startsWith("/Routers")),
+			middlewares: filesList.filter((file) => file.path?.startsWith("/Middlewares")),
+			scripts: filesList.filter((file) => file.path?.startsWith("/Scripts")),
+		};
+	}, [filesList]);
 
 	return (
 		<div className={styles["script-editor"]}>
@@ -178,11 +219,7 @@ export const Wallet:MiddlewaresBase<{
 			<div className={styles["workspace"]}>
 				<FilesTree
 					currentPath={monacoRef.current?.Uri.parse(currentFile).path.replace(/^\/src\//, "/")}
-					files={{
-						routers: filesList.filter((file) => file?.startsWith("/Routers")),
-						middlewares: filesList.filter((file) => file?.startsWith("/Middlewares")),
-						scripts: filesList.filter((file) => file?.startsWith("/Scripts")),
-					}}
+					files={filesTree}
 					onFileOpen={handleOpenFile}
 				/>
 				<Editor
@@ -191,7 +228,7 @@ export const Wallet:MiddlewaresBase<{
 					height="auto"
 					path={currentFile}
 					defaultLanguage="typescript"
-					defaultValue={files.current[currentFile]}
+					defaultValue={files.current[currentFile].source}
 					onChange={handleEditorChange(currentFile)}
 					options={{
 						minimap: { enabled: false },

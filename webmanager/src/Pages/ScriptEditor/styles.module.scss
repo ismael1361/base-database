@@ -66,11 +66,35 @@
                         margin-left: -25px;
 
                         >.title {
+                            position: relative;
                             display: flex;
                             flex-direction: row;
                             align-items: center;
                             gap: 5px;
                             overflow: hidden;
+
+                            &.modified {
+                                &::after {
+                                    content: "";
+                                    position: absolute;
+                                    top: 50%;
+                                    right: 0px;
+                                    transform: translateY(-50%);
+                                    width: 8px;
+                                    height: 8px;
+                                    background-color: var(--prettify-orange-2);
+                                    border-radius: 50%;
+                                    opacity: .5;
+                                }
+
+                                >span {
+                                    color: var(--prettify-orange-2);
+                                }
+                            }
+
+                            >.icon {
+                                fill: var(--prettify-silver);
+                            }
                         }
 
                         >.children {
@@ -83,6 +107,7 @@
                     }
 
                     >.file {
+                        position: relative;
                         display: flex;
                         flex-direction: row;
                         align-items: center;
@@ -97,6 +122,25 @@
                         &.active {
                             background-color: var(--gray6);
                             border-color: var(--gray2);
+                        }
+
+                        &.modified {
+                            color: var(--prettify-orange-2);
+
+                            &::after {
+                                content: "M";
+                                position: absolute;
+                                top: 50%;
+                                right: 0px;
+                                transform: translateY(-50%);
+                                color: var(--prettify-orange-2);
+                                border-radius: 50%;
+                                opacity: .7;
+                            }
+                        }
+
+                        >.icon {
+                            fill: var(--prettify-blue);
                         }
                     }
 
