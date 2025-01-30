@@ -8,6 +8,7 @@ import routerModel from "Resources/monaco/models/router.model";
 import { useDebouncedCallback } from "UseHooks";
 import { Header } from "./Header";
 import { Files, FilesTree } from "./FilesTree";
+import { LocalFiles, localFiles } from "./localFiles";
 
 const libSources: Record<string, string> = {
 	"ts:filename/express.d.ts": expressModel,
@@ -18,89 +19,7 @@ export const ScriptEditor: React.FC = () => {
 	const [currentFile, setCurrentFile] = useState<string>("file:///src/Routers/index.ts");
 	const [filesList, setFilesList] = useState<Files>([]);
 
-	const files = useRef<Record<string, Omit<Files[number], "path"> & { source: string }>>({
-		"file:///src/Routers/dashboard.ts": {
-			createDate: new Date(),
-			modifiedDate: new Date(),
-			source: `import { Router } from "utils";
-
-export default Router([], (router)=>{
-    router.get("/", [], (req)=>{
-
-    });
-});`,
-		},
-		"file:///src/Routers/index.ts": {
-			createDate: new Date(),
-			modifiedDate: new Date(),
-			source: `import { Router } from "utils";
-import { Auth, Wallet } from "Middlewares";
-
-export default Router([Auth.middleware, Wallet.middleware], (router)=>{
-    router.get("/", [], (req)=>{
-        const { user, wallet } = req;
-    });
-});`,
-		},
-		"file:///src/Routers/users.ts": {
-			createDate: new Date(),
-			modifiedDate: new Date(),
-			source: `import { Router } from "utils";
-
-export default Router([], (router)=>{
-    router.get("/", [], (req)=>{
-
-    });
-});`,
-		},
-		"file:///src/Middlewares/index.ts": {
-			createDate: new Date(),
-			modifiedDate: new Date(),
-			source: `import { Request, MiddlewaresBase, Middleware } from "utils";
-
-type UserAccessToken = {
-    access_token: string;
-    database: string;
-    uid: string;
-    created: number;
-    ip: string;
-};
-
-interface AuthRequest extends Request {
-    user: UserAccessToken;
-}
-
-export const Auth:MiddlewaresBase<{
-    middleware: Middleware<AuthRequest>;
-}> = {
-    middleware(req, res, next){}
-}
-
-interface WalletRequest extends AuthRequest {
-    wallet: {
-        uid: string;
-        address: string;
-        walletAddress: string;
-        privateKey: string;
-    };
-}
-
-export const Wallet:MiddlewaresBase<{
-    middleware: Middleware<WalletRequest>;
-}> = {
-    middleware(req, res, next){}
-}`,
-		},
-		"file:///src/Scripts/index.ts": {
-			createDate: new Date(),
-			modifiedDate: new Date(),
-			source: `export const promiseIsPending = async <T = any>(p: Promise<T>): Promise<boolean> => {
-    const PENDING = Symbol.for("PENDING");
-    const result = await Promise.race([p, Promise.resolve(PENDING)]);
-    return result === PENDING;
-};`,
-		},
-	});
+	const files = useRef<LocalFiles>(localFiles);
 
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
 	const monacoRef = useRef<typeof Monaco | null>(null);
