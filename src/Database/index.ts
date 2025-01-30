@@ -90,7 +90,6 @@ export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeo
 	return {
 		tablesNames: [...database.tablesNames] as Array<keyof DatabaseTables<T, DB>>,
 		async ready(callback) {
-			await super.ready();
 			return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined as any));
 		},
 		async disconnect() {

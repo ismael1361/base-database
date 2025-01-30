@@ -31,7 +31,7 @@ const PATTERN = /\{\$([^}]+)}/g;
 
 function replaceTemplate(template: string, data: ErrorData): string {
 	return template.replace(PATTERN, (_, key) => {
-		const value = data[key];
+		const value: any = (data as any)[key];
 		return value != null ? String(value) : `<${key}?>`;
 	});
 }

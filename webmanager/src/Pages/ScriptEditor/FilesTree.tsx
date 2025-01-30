@@ -31,6 +31,14 @@ const File: React.FC<{ currentPath?: string; dir: string; name: string; createDa
 				className={styles["icon"]}
 			/>
 			<span>{name}</span>
+			<button
+				className={styles["action"]}
+				onClick={(e) => {
+					e.stopPropagation();
+				}}
+			>
+				<Icon name={"mdiDotsVertical"} />
+			</button>
 		</div>
 	);
 };
@@ -130,6 +138,14 @@ const Group: React.FC<{ currentPath?: string; icon: IconName; title: string; fil
 				<Icon name={open ? "mdiChevronDown" : "mdiChevronRight"} />
 				<Icon name={icon} />
 				<span>{title}</span>
+				<button
+					className={styles["action"]}
+					onClick={(e) => {
+						e.stopPropagation();
+					}}
+				>
+					<Icon name={"mdiPlus"} />
+				</button>
 			</div>
 			{open && (
 				<Tree

@@ -3,6 +3,41 @@
     display: flex;
     flex-direction: column;
 
+    button.action {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        background-color: transparent;
+        transition: all .2s ease;
+        cursor: pointer;
+        box-shadow: none;
+        color: currentColor;
+        border: none;
+        padding: 5px;
+        border-radius: 15px;
+        margin: 0px;
+        height: 30px;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, .2);
+        }
+
+        &:active {
+            background-color: rgba(255, 255, 255, .4);
+        }
+
+        &:disabled {
+            opacity: .5;
+            pointer-events: none;
+        }
+
+        >svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+    }
+
     >.workspace {
         flex: 1;
         display: flex;
@@ -39,6 +74,10 @@
 
                     &:active {
                         background-color: var(--gray4);
+                    }
+
+                    >span {
+                        flex: 1;
                     }
                 }
 
@@ -118,6 +157,7 @@
                         overflow: hidden;
                         word-break: keep-all;
                         white-space: nowrap;
+                        --color: currentColor;
 
                         &.active {
                             background-color: var(--gray6);
@@ -125,22 +165,28 @@
                         }
 
                         &.modified {
-                            color: var(--prettify-orange-2);
+                            --color: var(--prettify-orange-2);
 
                             &::after {
                                 content: "M";
                                 position: absolute;
                                 top: 50%;
-                                right: 5px;
+                                right: 40px;
                                 transform: translateY(-50%);
-                                color: var(--prettify-orange-2);
+                                color: var(--color);
                                 border-radius: 50%;
                                 opacity: .7;
+                                font-size: .6rem;
                             }
                         }
 
                         >.icon {
                             fill: var(--prettify-blue);
+                        }
+
+                        >span {
+                            flex: 1;
+                            color: var(--color);
                         }
                     }
 

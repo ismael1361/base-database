@@ -13,6 +13,9 @@
     }
 
     >button {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         background-color: transparent;
         transition: all .2s ease;
         cursor: pointer;
@@ -20,9 +23,8 @@
         color: currentColor;
         border: none;
         padding: 5px;
-        border-radius: 50%;
+        border-radius: 15px;
         margin: 0px;
-        width: 30px;
         height: 30px;
 
         &:hover {
@@ -42,6 +44,10 @@
             width: 20px;
             height: 20px;
             fill: currentColor;
+        }
+
+        >span {
+            margin: 0px 10px;
         }
     }
 }

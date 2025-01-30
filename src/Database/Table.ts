@@ -360,7 +360,7 @@ export class Table<T extends TableType, O = Row<T>> extends BasicEventEmitter<Ta
 	 */
 	async insert<D extends RowSerialize<T, O> | Array<RowSerialize<T, O>>>(data: D): Promise<D extends Array<any> ? Array<RowDeserialize<T, O>> : RowDeserialize<T, O>> {
 		if (Array.isArray(data)) {
-			return (await Promise.all(data.map(async (row) => await this.insert(row)))) as any;
+			return (await Promise.all(data.map(async (row: any) => await this.insert(row)))) as any;
 		}
 
 		try {

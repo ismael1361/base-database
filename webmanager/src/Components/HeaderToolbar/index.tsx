@@ -1,7 +1,7 @@
 import { Icon, IconName } from "../Icon";
 import styles from "./styles.module.scss";
 
-const Option: React.FC<{ title?: string; icon: IconName; disabled?: boolean; onClick?: () => void }> = ({ icon, title, disabled, onClick }) => {
+const Option: React.FC<{ title?: string; label?: string; icon: IconName; disabled?: boolean; onClick?: () => void }> = ({ icon, title, label, disabled, onClick }) => {
 	return (
 		<button
 			onClick={onClick}
@@ -9,8 +9,9 @@ const Option: React.FC<{ title?: string; icon: IconName; disabled?: boolean; onC
 		>
 			<Icon
 				name={icon}
-				title={title}
+				title={title ?? label}
 			/>
+			{label && <span>{label}</span>}
 		</button>
 	);
 };
