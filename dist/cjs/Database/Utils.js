@@ -58,6 +58,7 @@ const columns = (columns) => {
             default: columns[key].default,
             unique: columns[key].unique ?? false,
             check: columns[key].check,
+            options: columns[key].options,
         };
         return acc;
     }, {});

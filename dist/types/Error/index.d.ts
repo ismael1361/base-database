@@ -10,7 +10,10 @@ export declare const enum Errors {
     DB_TABLE_NOT_FOUND = "db-table-not-found",
     INVALID_ARGUMENT = "invalid-argument",
     NOT_IMPLEMENTED = "not-implemented",
-    INTERNAL_ERROR = "internal-error"
+    INTERNAL_ERROR = "internal-error",
+    INVALID_SERVER_INSTANCE = "invalid-server-instance",
+    SERVER_NOT_INITIALIZED = "server-not-initialized",
+    SERVER_NOT_SUPPORTED = "server-not-supported"
 }
 export declare const ERROR_FACTORY: ErrorFactory<{
     readonly "no-app": {
@@ -56,6 +59,15 @@ export declare const ERROR_FACTORY: ErrorFactory<{
     readonly "internal-error": {
         readonly template: "Internal error: {$message}";
         readonly params: ["message"];
+    };
+    readonly "invalid-server-instance": {
+        readonly template: "Invalid server instance.";
+    };
+    readonly "server-not-initialized": {
+        readonly template: "Server not initialized.";
+    };
+    readonly "server-not-supported": {
+        readonly template: "Server not supported.";
     };
 }>;
 //# sourceMappingURL=index.d.ts.map

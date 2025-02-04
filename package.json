@@ -24,6 +24,9 @@
 			"types": "./dist/types/index.d.ts"
 		}
 	},
+	"bin": {
+		"base-database": "./dist/cjs/Server/process.js"
+	},
 	"files": [
 		"dist",
 		"lib"
@@ -33,8 +36,8 @@
 		"./dist/esm/Database/SQLiteRegex/index.js": "./dist/esm/Database/SQLiteRegex/browser.js",
 		"./dist/cjs/App/App/index.js": "./dist/cjs/App/App/browser.js",
 		"./dist/esm/App/App/index.js": "./dist/esm/App/App/browser.js",
-		"./dist/cjs/App/Server/index.js": "./dist/cjs/App/Server/browser.js",
-		"./dist/esm/App/Server/index.js": "./dist/esm/App/Server/browser.js"
+		"./dist/cjs/Server/index.js": "./dist/cjs/Server/browser.js",
+		"./dist/esm/Server/index.js": "./dist/esm/Server/browser.js"
 	},
 	"scripts": {
 		"start": "nodemon",
@@ -80,6 +83,7 @@
 	},
 	"dependencies": {
 		"basic-event-emitter": "^0.1.5",
+		"commander": "^13.1.0",
 		"cors": "^2.8.5",
 		"esm": "^3.2.25",
 		"express": "^4.21.2",

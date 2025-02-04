@@ -1,11 +1,11 @@
 import * as Browser from "./browser";
-import { ERROR_FACTORY, Errors } from "../../Error";
+import { ERROR_FACTORY, Errors } from "../Error";
 import { Server as HttpServer } from "http";
 import { Server as HttpsServer } from "https";
 import express, { Application } from "express";
 import cors from "cors";
-import { createRoutes } from "../../Webmanager";
-import { isInstanceOf } from "../../Utils";
+import { createRoutes } from "../Webmanager";
+import { isInstanceOf } from "../Utils";
 
 export { HttpServerFunction, ServerSettings } from "./browser";
 

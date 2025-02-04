@@ -44,5 +44,14 @@ export const ERROR_FACTORY = new ErrorFactory("base-database", {
         template: "Internal error: {$message}",
         params: ["message"],
     },
+    ["invalid-server-instance" /* Errors.INVALID_SERVER_INSTANCE */]: {
+        template: "Invalid server instance.",
+    },
+    ["server-not-initialized" /* Errors.SERVER_NOT_INITIALIZED */]: {
+        template: "Server not initialized.",
+    },
+    ["server-not-supported" /* Errors.SERVER_NOT_SUPPORTED */]: {
+        template: "Server not supported.",
+    },
 });
 //# sourceMappingURL=index.js.map

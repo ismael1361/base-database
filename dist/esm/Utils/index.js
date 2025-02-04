@@ -29,4 +29,20 @@ export const deepEqual = (a, b) => {
     }
     return true;
 };
+export const dirname = (path) => {
+    const separador = path.includes("\\") ? "\\" : "/";
+    const parts = path.split(separador);
+    parts.pop();
+    return parts.join("/");
+};
+export const getLocalPath = () => {
+    const trace = new Error().stack;
+    return dirname(trace
+        ?.split("\n")[2]
+        .split(" (")[1]
+        .replace(/\:(\d+)\:(\d+)\)$/g, "") ?? "./");
+};
+export const isInstanceOf = (obj, constructor) => {
+    return obj != null && obj.constructor === constructor;
+};
 //# sourceMappingURL=index.js.map

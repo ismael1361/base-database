@@ -2,6 +2,7 @@ import { join, dirname } from "path";
 import { arch, platform } from "process";
 import { statSync } from "fs";
 import { ERROR_FACTORY } from "../../Error";
+import { getLocalPath } from "../../Utils";
 const supportedPlatforms = [
     ["darwin", "x64"],
     ["darwin", "arm64"],
@@ -21,13 +22,6 @@ const extensionSuffix = (platform) => {
 const platformPackageName = (platform, arch) => {
     const os = platform === "win32" ? "windows" : platform;
     return `${os}-${arch}`;
-};
-const getLocalPath = () => {
-    const trace = new Error().stack;
-    return dirname(trace
-        ?.split("\n")[2]
-        .split(" (")[1]
-        .replace(/\:(\d+)\:(\d+)\)$/g, "") ?? "./");
 };
 export const implementable = validPlatform(platform, arch);
 export const getLoadablePath = () => {

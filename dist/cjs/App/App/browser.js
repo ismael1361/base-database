@@ -38,9 +38,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.App = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
-const Database = __importStar(require("../Database/Database"));
-const internal_1 = require("./internal");
-const internal_2 = require("../Database/internal");
+const Database = __importStar(require("../../Database/Database"));
+const internal_1 = require("../internal");
+const internal_2 = require("../../Database/internal");
 class App extends basic_event_emitter_1.default {
     settings;
     isServer = false;
@@ -57,17 +57,19 @@ class App extends basic_event_emitter_1.default {
         this.prepared = true;
     }
     createDatabase(name, options) {
-        options = typeof name === "string" ? options : name;
-        name = typeof name === "string" ? name : internal_1.DEFAULT_ENTRY_NAME;
+        options = (typeof name === "string" ? options : name);
+        name = (typeof name === "string" ? name : internal_1.DEFAULT_ENTRY_NAME);
         const { database, storage, tables } = options;
         const db = new Database.Database(storage, database);
+        db.app = this;
         db.tablesNames = Object.keys(tables);
         internal_2._database.set(name, db);
         for (const [key, value] of Object.entries(tables)) {
             internal_2._serialize.set(`${name}_${key}`, value);
         }
+        this.emit("createDatabase", name, options);
         return tables;
     }
 }
 exports.App = App;
-//# sourceMappingURL=App.js.map
+//# sourceMappingURL=browser.js.map

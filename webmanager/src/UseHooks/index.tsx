@@ -3,3 +3,4 @@ export * from "./useSizeEffect";
 export * from "./useDebouncedCallback";
 export * from "./useCallbackRef";
 export * from "./useDebouncedEffect";
+export * from "./useArray";

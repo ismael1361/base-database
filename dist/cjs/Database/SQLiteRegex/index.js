@@ -5,6 +5,7 @@ const path_1 = require("path");
 const process_1 = require("process");
 const fs_1 = require("fs");
 const Error_1 = require("../../Error");
+const Utils_1 = require("../../Utils");
 const supportedPlatforms = [
     ["darwin", "x64"],
     ["darwin", "arm64"],
@@ -25,13 +26,6 @@ const platformPackageName = (platform, arch) => {
     const os = platform === "win32" ? "windows" : platform;
     return `${os}-${arch}`;
 };
-const getLocalPath = () => {
-    const trace = new Error().stack;
-    return (0, path_1.dirname)(trace
-        ?.split("\n")[2]
-        .split(" (")[1]
-        .replace(/\:(\d+)\:(\d+)\)$/g, "") ?? "./");
-};
 exports.implementable = validPlatform(process_1.platform, process_1.arch);
 const getLoadablePath = () => {
     if (!exports.implementable) {
@@ -42,7 +36,7 @@ const getLoadablePath = () => {
         });
     }
     const packageName = platformPackageName(process_1.platform, process_1.arch);
-    let root = getLocalPath();
+    let root = (0, Utils_1.getLocalPath)();
     let loadablePath = (0, path_1.join)(root, "lib", packageName, `regex0.${extensionSuffix(process_1.platform)}`);
     while (root.split(/[\\\/]/).length > 2) {
         if (!(0, fs_1.statSync)(loadablePath, { throwIfNoEntry: false })) {

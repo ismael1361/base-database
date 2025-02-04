@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deepEqual = exports.isObject = void 0;
+exports.isInstanceOf = exports.getLocalPath = exports.dirname = exports.deepEqual = exports.isObject = void 0;
 const isObject = (thing) => {
     return thing !== null && typeof thing === "object";
 };
@@ -34,4 +34,23 @@ const deepEqual = (a, b) => {
     return true;
 };
 exports.deepEqual = deepEqual;
+const dirname = (path) => {
+    const separador = path.includes("\\") ? "\\" : "/";
+    const parts = path.split(separador);
+    parts.pop();
+    return parts.join("/");
+};
+exports.dirname = dirname;
+const getLocalPath = () => {
+    const trace = new Error().stack;
+    return (0, exports.dirname)(trace
+        ?.split("\n")[2]
+        .split(" (")[1]
+        .replace(/\:(\d+)\:(\d+)\)$/g, "") ?? "./");
+};
+exports.getLocalPath = getLocalPath;
+const isInstanceOf = (obj, constructor) => {
+    return obj != null && obj.constructor === constructor;
+};
+exports.isInstanceOf = isInstanceOf;
 //# sourceMappingURL=index.js.map

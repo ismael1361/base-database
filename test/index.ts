@@ -1,8 +1,8 @@
-import { Database, initializeApp, getDatabase, initializeServer, DEFAULT_ENTRY_NAME } from "../src";
+import { Database, initializeApp, getDatabase, Server, DEFAULT_ENTRY_NAME } from "../src";
 import { ModelDatabase } from "./DB";
 import { SQLite } from "./SQLite";
 
-const app = initializeServer();
+const app = new Server({ name: DEFAULT_ENTRY_NAME });
 
 const server = app.createServer();
 

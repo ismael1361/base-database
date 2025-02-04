@@ -40,7 +40,6 @@ exports.SQLiteRegex = exports.Database = void 0;
 exports.getDatabase = getDatabase;
 const App_1 = require("../App");
 const App_2 = require("../App/App");
-const Server_1 = require("../App/Server");
 const internal_1 = require("../App/internal");
 const internal_2 = require("./internal");
 const Error_1 = require("../Error");
@@ -54,7 +53,7 @@ function getDatabase(app, dbname) {
         app = undefined;
     }
     if (typeof app === "object") {
-        if (app instanceof App_2.App || app instanceof Server_1.Server) {
+        if (app instanceof App_2.App) {
             app = app;
             if (typeof dbname === "string") {
                 dbname = dbname;
@@ -64,17 +63,18 @@ function getDatabase(app, dbname) {
             }
         }
         else {
-            app = (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
-            app.createDatabase({ name: internal_1.DEFAULT_ENTRY_NAME, ...app });
+            app = (0, App_1.appExists)() ? (0, App_1.getApp)() : undefined;
+            app?.createDatabase({ name: internal_1.DEFAULT_ENTRY_NAME, ...app });
         }
     }
-    dbname = typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME;
-    app = app instanceof App_2.App || app instanceof Server_1.Server ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
+    dbname = (typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME);
+    app = app instanceof App_2.App ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : undefined;
     if (!internal_2._database.has(dbname)) {
         throw Error_1.ERROR_FACTORY.create("getDatabase", "db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
     }
     database = internal_2._database.get(dbname);
     database.prepared = false;
+    app = app instanceof App_2.App ? app : database.app;
     app?.ready(() => {
         database.prepared = true;
     });
@@ -82,7 +82,6 @@ function getDatabase(app, dbname) {
     return {
         tablesNames: [...database.tablesNames],
         async ready(callback) {
-            await super.ready();
             return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined));
         },
         async disconnect() {

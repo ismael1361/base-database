@@ -31,6 +31,7 @@ __exportStar(require("./Table"), exports);
  */
 class Database extends basic_event_emitter_1.default {
     database;
+    app;
     /**
      * The custom database class
      */

@@ -4,6 +4,7 @@ import { Custom } from "./Custom";
 import { Table } from "./Table";
 import { Query } from "./Query";
 import { Errors, ERROR_FACTORY } from "../Error";
+import type { App } from "../App/App";
 
 export * from "./Utils";
 export * from "./Types";
@@ -24,6 +25,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	disconnect: () => void;
 	delete: () => void;
 }> {
+	public app: App | undefined;
 	/**
 	 * The custom database class
 	 */

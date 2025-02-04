@@ -1,7 +1,8 @@
 import BasicEventEmitter from "basic-event-emitter";
-import { Row, Serialize, TableReady } from "./Types";
+import { Row, Serialize, TableReady, TableType } from "./Types";
 import { Custom } from "./Custom";
 import { Table } from "./Table";
+import type { App } from "../App/App";
 export * from "./Utils";
 export * from "./Types";
 export * from "./Custom";
@@ -20,6 +21,7 @@ export declare class Database<db = never> extends BasicEventEmitter<{
     delete: () => void;
 }> {
     readonly database: string;
+    app: App | undefined;
     /**
      * The custom database class
      */
@@ -68,7 +70,7 @@ export declare class Database<db = never> extends BasicEventEmitter<{
      *    date: { type: Database.Types.DATETIME },
      * });
      */
-    forTable<S extends Serialize, O = Row<S>>(name: string, columns: S): Promise<Table<S, O>>;
+    forTable<T extends TableType, O = Row<T>>(name: string, columns: Serialize<T>): Promise<Table<T, O>>;
     /**
      * Get a ready table
      * @param table The table promise
@@ -95,8 +97,8 @@ export declare class Database<db = never> extends BasicEventEmitter<{
      *   // Code here will run when the table is ready
      * });
      */
-    readyTable<S extends Serialize, O = Row<S>>(table: Promise<Table<S, O>>): TableReady<S, O>;
-    readyTable<S extends Serialize, O = Row<S>>(name: string, columns: S): TableReady<S, O>;
+    readyTable<T extends TableType, O = Row<T>>(table: Promise<Table<T, O>>): TableReady<T, O>;
+    readyTable<T extends TableType, O = Row<T>>(name: string, columns: Serialize<T>): TableReady<T, O>;
     /**
      * Get a table
      * @param name The table name
@@ -115,7 +117,7 @@ export declare class Database<db = never> extends BasicEventEmitter<{
      *
      * table.query().where("id", Database.Operators.EQUAL, 123).get("id", "name");
      */
-    table<S extends Serialize>(name: string, columns: S): TableReady<S>;
+    table<T extends TableType>(name: string, columns: Serialize<T>): TableReady<T>;
     /**
      * Delete a table
      * @param name The table name

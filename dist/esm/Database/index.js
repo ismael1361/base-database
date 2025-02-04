@@ -1,6 +1,5 @@
-import { appExists, getApp, getServer } from "../App";
+import { appExists, getApp } from "../App";
 import { App } from "../App/App";
-import { Server } from "../App/Server";
 import { DEFAULT_ENTRY_NAME } from "../App/internal";
 import { _database, _serialize, _tables } from "./internal";
 import { ERROR_FACTORY } from "../Error";
@@ -14,7 +13,7 @@ export function getDatabase(app, dbname) {
         app = undefined;
     }
     if (typeof app === "object") {
-        if (app instanceof App || app instanceof Server) {
+        if (app instanceof App) {
             app = app;
             if (typeof dbname === "string") {
                 dbname = dbname;
@@ -24,17 +23,18 @@ export function getDatabase(app, dbname) {
             }
         }
         else {
-            app = appExists() ? getApp() : getServer();
-            app.createDatabase({ name: DEFAULT_ENTRY_NAME, ...app });
+            app = appExists() ? getApp() : undefined;
+            app?.createDatabase({ name: DEFAULT_ENTRY_NAME, ...app });
         }
     }
-    dbname = typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME;
-    app = app instanceof App || app instanceof Server ? app : appExists() ? getApp() : getServer();
+    dbname = (typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME);
+    app = app instanceof App ? app : appExists() ? getApp() : undefined;
     if (!_database.has(dbname)) {
         throw ERROR_FACTORY.create("getDatabase", "db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
     }
     database = _database.get(dbname);
     database.prepared = false;
+    app = app instanceof App ? app : database.app;
     app?.ready(() => {
         database.prepared = true;
     });
@@ -42,7 +42,6 @@ export function getDatabase(app, dbname) {
     return {
         tablesNames: [...database.tablesNames],
         async ready(callback) {
-            await super.ready();
             return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined));
         },
         async disconnect() {

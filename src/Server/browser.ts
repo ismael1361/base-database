@@ -1,10 +1,10 @@
-import { AppSettings, App } from "../App";
+import { AppSettings, App } from "../App/App";
 import type { Server as HttpServer } from "http";
 import type { Server as HttpsServer } from "https";
 import type { Application } from "express";
 import BasicEventEmitter from "basic-event-emitter";
 import type { ListenOptions } from "net";
-import { ERROR_FACTORY, Errors } from "../../Error";
+import { ERROR_FACTORY, Errors } from "../Error";
 
 export const serverSupported = false;
 

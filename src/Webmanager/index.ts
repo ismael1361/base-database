@@ -1,5 +1,5 @@
 import { getLocalPath } from "../Utils";
-import type { ServerManager } from "../App/Server";
+import type { ServerManager } from "../Server";
 import path from "path";
 import fs from "fs";
 

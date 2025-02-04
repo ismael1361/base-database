@@ -61,6 +61,22 @@ export class Query {
         return this.where(column, operator, compare);
     }
     /**
+     * Find clause for the query
+     * @param ids The ids to find
+     * @example
+     * query.find(1);
+     * query.find(1, 2, 3);
+     */
+    rowid(...ids) {
+        if (ids.length === 1) {
+            this.where("rowid", "=", ids[0]);
+        }
+        else {
+            this.where("rowid", "IN", ids);
+        }
+        return this;
+    }
+    /**
      * Take clause for the query
      * @param take The number of rows to take
      * @example

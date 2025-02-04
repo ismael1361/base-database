@@ -39,9 +39,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.App = void 0;
 const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
-const Database = __importStar(require("../Database/Database"));
-const internal_1 = require("./internal");
-const internal_2 = require("../Database/internal");
+const Database = __importStar(require("../../Database/Database"));
+const internal_1 = require("../internal");
+const internal_2 = require("../../Database/internal");
 class App extends basic_event_emitter_1.default {
     settings;
     isServer = false;
@@ -58,50 +58,34 @@ class App extends basic_event_emitter_1.default {
         this.prepared = true;
     }
     createDatabase(name, options) {
-        options = typeof name === "string" ? options : name;
-        name = typeof name === "string" ? name : internal_1.DEFAULT_ENTRY_NAME;
+        options = (typeof name === "string" ? options : name);
+        name = (typeof name === "string" ? name : internal_1.DEFAULT_ENTRY_NAME);
         const { database, storage, tables } = options;
         const db = new Database.Database(storage, database);
+        db.app = this;
         db.tablesNames = Object.keys(tables);
         internal_2._database.set(name, db);
         for (const [key, value] of Object.entries(tables)) {
             internal_2._serialize.set(`${name}_${key}`, value);
         }
+        this.emit("createDatabase", name, options);
         return tables;
     }
 }
 exports.App = App;
 
-},{"../Database/Database":6,"../Database/internal":13,"./internal":4,"basic-event-emitter":18}],2:[function(require,module,exports){
+},{"../../Database/Database":5,"../../Database/internal":12,"../internal":3,"basic-event-emitter":18}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Server = void 0;
-const App_1 = require("./App");
-class Server extends App_1.App {
-    settings;
-    isServer = true;
-    constructor(settings) {
-        super(settings, false);
-        this.settings = settings;
-        this.initialize();
-    }
-    initialize() {
-        super.initialize();
-    }
-}
-exports.Server = Server;
-
-},{"./App":1}],3:[function(require,module,exports){
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteServer = exports.deleteApp = exports.getFirstServer = exports.getFirstApp = exports.getServers = exports.getApps = exports.getServer = exports.getApp = exports.serverExists = exports.appExists = exports.initializeServerApp = exports.initializeApp = void 0;
+exports.deleteApp = exports.getFirstApp = exports.getApps = exports.getApp = exports.appExists = exports.initializeApp = exports.DEFAULT_ENTRY_NAME = void 0;
 const Error_1 = require("../Error");
 const Utils_1 = require("../Utils");
 const App_1 = require("./App");
 const internal_1 = require("./internal");
-const Server_1 = require("./Server");
+var internal_2 = require("./internal");
+Object.defineProperty(exports, "DEFAULT_ENTRY_NAME", { enumerable: true, get: function () { return internal_2.DEFAULT_ENTRY_NAME; } });
 function appendNewApp(app) {
-    const existingApp = (app.isServer ? internal_1._servers : internal_1._apps).get(app.name);
+    const existingApp = internal_1._apps.get(app.name);
     if (existingApp) {
         if ((0, Utils_1.deepEqual)(app.settings, existingApp.settings)) {
             return existingApp;
@@ -110,7 +94,7 @@ function appendNewApp(app) {
             throw Error_1.ERROR_FACTORY.create("App", "duplicate-app" /* Errors.DUPLICATE_APP */, { appName: app.name });
         }
     }
-    (app.isServer ? internal_1._servers : internal_1._apps).set(app.name, app);
+    internal_1._apps.set(app.name, app);
     app.initialize();
     return app;
 }
@@ -119,19 +103,10 @@ const initializeApp = (options = {}) => {
     return appendNewApp(newApp);
 };
 exports.initializeApp = initializeApp;
-const initializeServerApp = (options = {}) => {
-    const newApp = new Server_1.Server(options);
-    return appendNewApp(newApp);
-};
-exports.initializeServerApp = initializeServerApp;
 const appExists = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     return typeof name === "string" && internal_1._apps.has(name);
 };
 exports.appExists = appExists;
-const serverExists = (name = internal_1.DEFAULT_ENTRY_NAME) => {
-    return typeof name === "string" && internal_1._servers.has(name);
-};
-exports.serverExists = serverExists;
 const getApp = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     const app = internal_1._apps.get(name);
     if (!app) {
@@ -140,22 +115,10 @@ const getApp = (name = internal_1.DEFAULT_ENTRY_NAME) => {
     return app;
 };
 exports.getApp = getApp;
-const getServer = (name = internal_1.DEFAULT_ENTRY_NAME) => {
-    const server = internal_1._servers.get(name);
-    if (!server) {
-        throw Error_1.ERROR_FACTORY.create("getServer", "no-app" /* Errors.NO_APP */, { appName: name });
-    }
-    return server;
-};
-exports.getServer = getServer;
 const getApps = () => {
     return Array.from(internal_1._apps.values());
 };
 exports.getApps = getApps;
-const getServers = () => {
-    return Array.from(internal_1._servers.values());
-};
-exports.getServers = getServers;
 const getFirstApp = () => {
     let app;
     if (internal_1._apps.has(internal_1.DEFAULT_ENTRY_NAME)) {
@@ -168,18 +131,6 @@ const getFirstApp = () => {
     return app;
 };
 exports.getFirstApp = getFirstApp;
-const getFirstServer = () => {
-    let server;
-    if (internal_1._servers.has(internal_1.DEFAULT_ENTRY_NAME)) {
-        server = internal_1._servers.get(internal_1.DEFAULT_ENTRY_NAME);
-    }
-    server = !server ? (0, exports.getServers)()[0] : server;
-    if (!server) {
-        throw Error_1.ERROR_FACTORY.create("getFirstServer", "no-app" /* Errors.NO_APP */, { appName: internal_1.DEFAULT_ENTRY_NAME });
-    }
-    return server;
-};
-exports.getFirstServer = getFirstServer;
 const deleteApp = (app) => {
     const name = app.name;
     if (internal_1._apps.has(name)) {
@@ -188,24 +139,15 @@ const deleteApp = (app) => {
     }
 };
 exports.deleteApp = deleteApp;
-const deleteServer = (server) => {
-    const name = server.name;
-    if (internal_1._servers.has(name)) {
-        internal_1._servers.delete(name);
-        server.isDeleted = true;
-    }
-};
-exports.deleteServer = deleteServer;
 
-},{"../Error":14,"../Utils":16,"./App":1,"./Server":2,"./internal":4}],4:[function(require,module,exports){
+},{"../Error":13,"../Utils":16,"./App":1,"./internal":3}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports._servers = exports._apps = exports.DEFAULT_ENTRY_NAME = void 0;
+exports._apps = exports.DEFAULT_ENTRY_NAME = void 0;
 exports.DEFAULT_ENTRY_NAME = "[DEFAULT]";
 exports._apps = new Map();
-exports._servers = new Map();
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Custom = void 0;
@@ -273,7 +215,7 @@ class Custom {
 }
 exports.Custom = Custom;
 
-},{"../Error":14}],6:[function(require,module,exports){
+},{"../Error":13}],5:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -307,6 +249,7 @@ __exportStar(require("./Table"), exports);
  */
 class Database extends basic_event_emitter_1.default {
     database;
+    app;
     /**
      * The custom database class
      */
@@ -531,7 +474,7 @@ class Database extends basic_event_emitter_1.default {
 }
 exports.Database = Database;
 
-},{"../Error":14,"./Custom":5,"./Query":7,"./Table":9,"./Types":10,"./Utils":11,"basic-event-emitter":18}],7:[function(require,module,exports){
+},{"../Error":13,"./Custom":4,"./Query":6,"./Table":8,"./Types":9,"./Utils":10,"basic-event-emitter":18}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Query = void 0;
@@ -596,6 +539,22 @@ class Query {
      */
     filter(column, operator, compare) {
         return this.where(column, operator, compare);
+    }
+    /**
+     * Find clause for the query
+     * @param ids The ids to find
+     * @example
+     * query.find(1);
+     * query.find(1, 2, 3);
+     */
+    rowid(...ids) {
+        if (ids.length === 1) {
+            this.where("rowid", "=", ids[0]);
+        }
+        else {
+            this.where("rowid", "IN", ids);
+        }
+        return this;
     }
     /**
      * Take clause for the query
@@ -741,7 +700,7 @@ class Query {
 }
 exports.Query = Query;
 
-},{"./Utils":11}],8:[function(require,module,exports){
+},{"./Utils":10}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getLoadablePath = exports.implementable = void 0;
@@ -754,7 +713,7 @@ const getLoadablePath = () => {
 };
 exports.getLoadablePath = getLoadablePath;
 
-},{"../../Error":14}],9:[function(require,module,exports){
+},{"../../Error":13}],8:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -992,7 +951,7 @@ class Table extends basic_event_emitter_1.default {
             return await this.ready(async () => {
                 const data = await this.custom.selectAll(this.name, query?.options);
                 const rows = await (0, Utils_1.serializeDataForGet)(this.serialize, data);
-                return rows.map((row) => this.schema.deserialize(row));
+                return (Array.isArray(rows) ? rows : [rows]).map((row) => this.schema.deserialize(row));
             });
         }
         catch (e) {
@@ -1011,7 +970,7 @@ class Table extends basic_event_emitter_1.default {
             return await this.ready(async () => {
                 const data = await this.custom.selectOne(this.name, query?.options);
                 const row = data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
-                return row ? this.schema.deserialize(row) : null;
+                return row ? this.schema.deserialize((Array.isArray(row) ? row : [row])[0]) : null;
             });
         }
         catch (e) {
@@ -1030,7 +989,7 @@ class Table extends basic_event_emitter_1.default {
             return await this.ready(async () => {
                 const data = await this.custom.selectFirst(this.name, query?.options);
                 const row = data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
-                return row ? this.schema.deserialize(row) : null;
+                return row ? this.schema.deserialize((Array.isArray(row) ? row : [row])[0]) : null;
             });
         }
         catch (e) {
@@ -1049,7 +1008,7 @@ class Table extends basic_event_emitter_1.default {
             return await this.ready(async () => {
                 const data = await this.custom.selectLast(this.name, query?.options);
                 const row = data ? await (0, Utils_1.serializeDataForGet)(this.serialize, data) : null;
-                return row ? this.schema.deserialize(row) : null;
+                return row ? this.schema.deserialize((Array.isArray(row) ? row : [row])[0]) : null;
             });
         }
         catch (e) {
@@ -1092,7 +1051,7 @@ class Table extends basic_event_emitter_1.default {
             let value = this.schema.serialize(data);
             value = await (0, Utils_1.serializeDataForSet)(this.serialize, value);
             return (await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
-                row = await (0, Utils_1.serializeDataForGet)(this.serialize, row);
+                row = (await (0, Utils_1.serializeDataForGet)(this.serialize, row));
                 this._events.emit("insert", row);
                 // this.emit("insert", this.schema.deserialize(row));
                 return Promise.resolve(this.schema.deserialize(row));
@@ -1168,11 +1127,11 @@ class Table extends basic_event_emitter_1.default {
 }
 exports.Table = Table;
 
-},{"../Error":14,"./Query":7,"./Utils":11,"basic-event-emitter":18}],10:[function(require,module,exports){
+},{"../Error":13,"./Query":6,"./Utils":10,"basic-event-emitter":18}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
-},{}],11:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.serializeDataForGet = exports.serializeDataForSet = exports.verifyDatatype = exports.getDatatype = exports.cloneObject = exports.isLiteralObject = exports.columns = exports.generateUUID = exports.Types = exports.Operators = void 0;
@@ -1233,6 +1192,7 @@ const columns = (columns) => {
             default: columns[key].default,
             unique: columns[key].unique ?? false,
             check: columns[key].check,
+            options: columns[key].options,
         };
         return acc;
     }, {});
@@ -1458,7 +1418,7 @@ const serializeDataForGet = (serialize, data) => {
 };
 exports.serializeDataForGet = serializeDataForGet;
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1501,7 +1461,6 @@ exports.SQLiteRegex = exports.Database = void 0;
 exports.getDatabase = getDatabase;
 const App_1 = require("../App");
 const App_2 = require("../App/App");
-const Server_1 = require("../App/Server");
 const internal_1 = require("../App/internal");
 const internal_2 = require("./internal");
 const Error_1 = require("../Error");
@@ -1515,7 +1474,7 @@ function getDatabase(app, dbname) {
         app = undefined;
     }
     if (typeof app === "object") {
-        if (app instanceof App_2.App || app instanceof Server_1.Server) {
+        if (app instanceof App_2.App) {
             app = app;
             if (typeof dbname === "string") {
                 dbname = dbname;
@@ -1525,17 +1484,18 @@ function getDatabase(app, dbname) {
             }
         }
         else {
-            app = (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
-            app.createDatabase({ name: internal_1.DEFAULT_ENTRY_NAME, ...app });
+            app = (0, App_1.appExists)() ? (0, App_1.getApp)() : undefined;
+            app?.createDatabase({ name: internal_1.DEFAULT_ENTRY_NAME, ...app });
         }
     }
-    dbname = typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME;
-    app = app instanceof App_2.App || app instanceof Server_1.Server ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : (0, App_1.getServer)();
+    dbname = (typeof dbname === "string" ? dbname : internal_1.DEFAULT_ENTRY_NAME);
+    app = app instanceof App_2.App ? app : (0, App_1.appExists)() ? (0, App_1.getApp)() : undefined;
     if (!internal_2._database.has(dbname)) {
         throw Error_1.ERROR_FACTORY.create("getDatabase", "db-not-found" /* Errors.DB_NOT_FOUND */, { dbName: dbname });
     }
     database = internal_2._database.get(dbname);
     database.prepared = false;
+    app = app instanceof App_2.App ? app : database.app;
     app?.ready(() => {
         database.prepared = true;
     });
@@ -1543,7 +1503,6 @@ function getDatabase(app, dbname) {
     return {
         tablesNames: [...database.tablesNames],
         async ready(callback) {
-            await super.ready();
             return await database.ready(() => callback?.(this) ?? Promise.resolve(undefined));
         },
         async disconnect() {
@@ -1599,7 +1558,7 @@ function getDatabase(app, dbname) {
     };
 }
 
-},{"../App":3,"../App/App":1,"../App/Server":2,"../App/internal":4,"../Error":14,"./Database":6,"./SQLiteRegex":8,"./internal":13,"basic-event-emitter":18}],13:[function(require,module,exports){
+},{"../App":2,"../App/App":1,"../App/internal":3,"../Error":13,"./Database":5,"./SQLiteRegex":7,"./internal":12,"basic-event-emitter":18}],12:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports._tables = exports._serialize = exports._database = void 0;
@@ -1607,7 +1566,7 @@ exports._database = new Map();
 exports._serialize = new Map();
 exports._tables = new Map();
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ERROR_FACTORY = void 0;
@@ -1657,9 +1616,18 @@ exports.ERROR_FACTORY = new util_1.ErrorFactory("base-database", {
         template: "Internal error: {$message}",
         params: ["message"],
     },
+    ["invalid-server-instance" /* Errors.INVALID_SERVER_INSTANCE */]: {
+        template: "Invalid server instance.",
+    },
+    ["server-not-initialized" /* Errors.SERVER_NOT_INITIALIZED */]: {
+        template: "Server not initialized.",
+    },
+    ["server-not-supported" /* Errors.SERVER_NOT_SUPPORTED */]: {
+        template: "Server not supported.",
+    },
 });
 
-},{"./util":15}],15:[function(require,module,exports){
+},{"./util":14}],14:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ErrorFactory = exports.MainError = void 0;
@@ -1703,10 +1671,75 @@ class ErrorFactory {
 }
 exports.ErrorFactory = ErrorFactory;
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Server = exports.ServerManager = exports.serverSupported = void 0;
+const App_1 = require("../App/App");
+const basic_event_emitter_1 = __importDefault(require("basic-event-emitter"));
+const Error_1 = require("../Error");
+exports.serverSupported = false;
+class ServerManager extends basic_event_emitter_1.default {
+    server;
+    app;
+    constructor() {
+        super();
+    }
+    async initialize(server, app) {
+        this.server = server;
+        this.app = app;
+        this.setupMiddleware(this.app);
+        this.setupRoutes(this.app);
+        this.prepared = true;
+    }
+    get host() {
+        if (!this.server) {
+            throw Error_1.ERROR_FACTORY.create("ServerManager", "server-not-initialized" /* Errors.SERVER_NOT_INITIALIZED */);
+        }
+        return this.server.address();
+    }
+    get port() {
+        if (!this.server) {
+            throw Error_1.ERROR_FACTORY.create("ServerManager", "server-not-initialized" /* Errors.SERVER_NOT_INITIALIZED */);
+        }
+        return this.server.address();
+    }
+    listen(...args) {
+        this.ready(() => {
+            this.server?.listen.apply(this.server, args);
+        });
+        return this;
+    }
+}
+exports.ServerManager = ServerManager;
+class Server extends App_1.App {
+    settings;
+    isServer = true;
+    serverSupported = false;
+    constructor(settings) {
+        super(settings, false);
+        this.settings = settings;
+        this.initialize();
+    }
+    get server() {
+        throw Error_1.ERROR_FACTORY.create("Server", "server-not-supported" /* Errors.SERVER_NOT_SUPPORTED */);
+    }
+    initialize() {
+        super.initialize();
+    }
+    createServer(server, app) {
+        throw Error_1.ERROR_FACTORY.create("Server", "server-not-supported" /* Errors.SERVER_NOT_SUPPORTED */);
+    }
+}
+exports.Server = Server;
+
+},{"../App/App":1,"../Error":13,"basic-event-emitter":18}],16:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deepEqual = exports.isObject = void 0;
+exports.isInstanceOf = exports.getLocalPath = exports.dirname = exports.deepEqual = exports.isObject = void 0;
 const isObject = (thing) => {
     return thing !== null && typeof thing === "object";
 };
@@ -1740,6 +1773,25 @@ const deepEqual = (a, b) => {
     return true;
 };
 exports.deepEqual = deepEqual;
+const dirname = (path) => {
+    const separador = path.includes("\\") ? "\\" : "/";
+    const parts = path.split(separador);
+    parts.pop();
+    return parts.join("/");
+};
+exports.dirname = dirname;
+const getLocalPath = () => {
+    const trace = new Error().stack;
+    return (0, exports.dirname)(trace
+        ?.split("\n")[2]
+        .split(" (")[1]
+        .replace(/\:(\d+)\:(\d+)\)$/g, "") ?? "./");
+};
+exports.getLocalPath = getLocalPath;
+const isInstanceOf = (obj, constructor) => {
+    return obj != null && obj.constructor === constructor;
+};
+exports.isInstanceOf = isInstanceOf;
 
 },{}],17:[function(require,module,exports){
 "use strict";
@@ -1760,8 +1812,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./App"), exports);
 __exportStar(require("./Database"), exports);
+__exportStar(require("./Server"), exports);
 
-},{"./App":3,"./Database":12}],18:[function(require,module,exports){
+},{"./App":2,"./Database":11,"./Server":15}],18:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasicEventEmitter = void 0;

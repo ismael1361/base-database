@@ -1,4 +1,4 @@
-import { DataType, OptionsDataType, Row, Serialize, SerializeDataType } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType, TableType } from "./Types";
 export declare const Operators: {
     readonly EQUAL: "=";
     readonly NOT_EQUAL: "!=";
@@ -23,7 +23,7 @@ export declare const Types: {
     NULL: null;
 };
 export declare const generateUUID: (separator?: string, version?: "v4" | "v7") => string;
-export declare const columns: <S extends Serialize>(columns: S) => S;
+export declare const columns: <T extends TableType>(columns: Serialize<T>) => Serialize<T>;
 export declare const isLiteralObject: (obj: any) => boolean;
 export declare const cloneObject: <T>(obj: T) => T;
 /**
@@ -73,6 +73,6 @@ export declare const verifyDatatype: <T extends OptionsDataType>(value: any, typ
  *     name: { type: "TEXT", notNull: true },
  * }, { id: 123, name: "hello" }); // Promise<void>
  */
-export declare const serializeDataForSet: <S extends Serialize, P extends boolean = false>(serialize: SerializeDataType<S>, data: Partial<Row<S>>, isPartial?: P) => Promise<P extends true ? Partial<Row<S>> : Row<S>>;
-export declare const serializeDataForGet: <S extends Serialize, D extends Partial<Row<S>> | Array<Partial<Row<S>>>>(serialize: SerializeDataType<S>, data: D) => Promise<D extends Array<Partial<Row<S>>> ? Array<Row<S>> : Row<S>>;
+export declare const serializeDataForSet: <T extends TableType, P extends boolean = false>(serialize: SerializeDataType<T>, data: Partial<Row<T>>, isPartial?: P) => Promise<P extends true ? Partial<Row<T>> : Row<T>>;
+export declare const serializeDataForGet: <T extends TableType, D extends Partial<Row<T>> | Array<Partial<Row<T>>>>(serialize: SerializeDataType<T>, data: D) => Promise<D extends Array<Partial<Row<T>>> ? Array<Row<T>> : Row<T>>;
 //# sourceMappingURL=Utils.d.ts.map

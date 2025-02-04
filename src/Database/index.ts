@@ -1,6 +1,5 @@
-import { appExists, getApp, getServer } from "../App";
+import { appExists, getApp } from "../App";
 import { App, DatabaseSettings } from "../App/App";
-import { Server } from "../App/Server";
 import { DEFAULT_ENTRY_NAME } from "../App/internal";
 import { Database } from "./";
 import { _database, _serialize, _tables } from "./internal";
@@ -40,12 +39,12 @@ interface DataBase<D extends DatabaseTyping, DB extends keyof D, T extends Datab
 
 export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME>(): DataBase<T, DB>;
 export function getDatabase<T extends DatabaseTyping, DB extends keyof T>(dbname: DB): DataBase<T, DB>;
-export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME>(app: App | Server): DataBase<T, DB>;
-export function getDatabase<T extends DatabaseTyping, DB extends keyof T>(app: App | Server, dbname: DB): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME>(app: App): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T>(app: App, dbname: DB): DataBase<T, DB>;
 export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(options: DatabaseSettings<T, DB>): DataBase<T, DB>;
-export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(app: App | Server, options: DatabaseSettings<T, DB>): DataBase<T, DB>;
+export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(app: App, options: DatabaseSettings<T, DB>): DataBase<T, DB>;
 export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeof DEFAULT_ENTRY_NAME, D = never>(
-	app?: App | Server | DatabaseSettings<T, DB> | DB,
+	app?: App | DatabaseSettings<T, DB> | DB,
 	dbname?: DB | DatabaseSettings<T, DB>,
 ): DataBase<T, DB> {
 	let database: Database.Database<any>;
@@ -56,8 +55,8 @@ export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeo
 	}
 
 	if (typeof app === "object") {
-		if (app instanceof App || app instanceof Server) {
-			app = app as App | Server;
+		if (app instanceof App) {
+			app = app as App;
 
 			if (typeof dbname === "string") {
 				dbname = dbname as DB;
@@ -65,13 +64,13 @@ export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeo
 				app.createDatabase({ name: DEFAULT_ENTRY_NAME, ...(dbname as any) });
 			}
 		} else {
-			app = appExists() ? getApp() : getServer();
-			app.createDatabase({ name: DEFAULT_ENTRY_NAME, ...(app as any) });
+			app = appExists() ? getApp() : undefined;
+			app?.createDatabase({ name: DEFAULT_ENTRY_NAME, ...(app as any) });
 		}
 	}
 
 	dbname = (typeof dbname === "string" ? dbname : DEFAULT_ENTRY_NAME) as DB;
-	app = (app as any) instanceof App || (app as any) instanceof Server ? app : appExists() ? getApp() : getServer();
+	app = (app as any) instanceof App ? app : appExists() ? getApp() : undefined;
 
 	if (!_database.has(dbname as any)) {
 		throw ERROR_FACTORY.create("getDatabase", Errors.DB_NOT_FOUND, { dbName: dbname as any });
@@ -80,6 +79,8 @@ export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeo
 	database = _database.get(dbname as any) as Database.Database<any>;
 
 	database.prepared = false;
+
+	app = (app as any) instanceof App ? app : database.app;
 
 	(app as any)?.ready(() => {
 		database.prepared = true;

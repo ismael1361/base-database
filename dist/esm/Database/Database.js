@@ -11,6 +11,7 @@ export * from "./Table";
  */
 export class Database extends BasicEventEmitter {
     database;
+    app;
     /**
      * The custom database class
      */

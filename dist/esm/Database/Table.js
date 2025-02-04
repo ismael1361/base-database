@@ -229,7 +229,7 @@ export class Table extends BasicEventEmitter {
             return await this.ready(async () => {
                 const data = await this.custom.selectAll(this.name, query?.options);
                 const rows = await serializeDataForGet(this.serialize, data);
-                return rows.map((row) => this.schema.deserialize(row));
+                return (Array.isArray(rows) ? rows : [rows]).map((row) => this.schema.deserialize(row));
             });
         }
         catch (e) {
@@ -248,7 +248,7 @@ export class Table extends BasicEventEmitter {
             return await this.ready(async () => {
                 const data = await this.custom.selectOne(this.name, query?.options);
                 const row = data ? await serializeDataForGet(this.serialize, data) : null;
-                return row ? this.schema.deserialize(row) : null;
+                return row ? this.schema.deserialize((Array.isArray(row) ? row : [row])[0]) : null;
             });
         }
         catch (e) {
@@ -267,7 +267,7 @@ export class Table extends BasicEventEmitter {
             return await this.ready(async () => {
                 const data = await this.custom.selectFirst(this.name, query?.options);
                 const row = data ? await serializeDataForGet(this.serialize, data) : null;
-                return row ? this.schema.deserialize(row) : null;
+                return row ? this.schema.deserialize((Array.isArray(row) ? row : [row])[0]) : null;
             });
         }
         catch (e) {
@@ -286,7 +286,7 @@ export class Table extends BasicEventEmitter {
             return await this.ready(async () => {
                 const data = await this.custom.selectLast(this.name, query?.options);
                 const row = data ? await serializeDataForGet(this.serialize, data) : null;
-                return row ? this.schema.deserialize(row) : null;
+                return row ? this.schema.deserialize((Array.isArray(row) ? row : [row])[0]) : null;
             });
         }
         catch (e) {
@@ -329,7 +329,7 @@ export class Table extends BasicEventEmitter {
             let value = this.schema.serialize(data);
             value = await serializeDataForSet(this.serialize, value);
             return (await this.ready(() => this.custom.insert(this.name, value)).then(async (row) => {
-                row = await serializeDataForGet(this.serialize, row);
+                row = (await serializeDataForGet(this.serialize, row));
                 this._events.emit("insert", row);
                 // this.emit("insert", this.schema.deserialize(row));
                 return Promise.resolve(this.schema.deserialize(row));
