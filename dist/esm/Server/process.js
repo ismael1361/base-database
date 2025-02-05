@@ -43,17 +43,11 @@ function stopDaemon() {
         console.log("No daemon is running.");
     }
 }
-function workDaemon(options) {
-    console.log("Daemon is running in the background...");
-    // Código do daemon
-    const interval = setInterval(() => {
-        console.log("Daemon is still running...");
-    }, 5000);
-    // Lidar com o sinal de término (SIGTERM) para encerrar o daemon corretamente
+async function workDaemon(options) {
+    const { Daemon } = await import("./daemon");
+    new Daemon(options.host, parseInt(options.port), options.path);
     process.on("SIGTERM", () => {
-        clearInterval(interval); // Parar o intervalo
-        console.log("Daemon is shutting down...");
-        process.exit(0); // Encerrar o processo
+        process.exit(0);
     });
 }
 function infoDaemon() {
