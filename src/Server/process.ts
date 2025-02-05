@@ -5,6 +5,8 @@ import path from "path";
 import fs from "fs";
 import { program } from "commander";
 
+Error.stackTraceLimit = Infinity;
+
 const PID_FILE = path.join(__dirname, "meu-daemon.pid");
 
 interface StartDaemonOptions {
@@ -65,7 +67,15 @@ function stopDaemon() {
 async function workDaemon(options: StartDaemonOptions) {
 	const { Daemon } = await import("./daemon");
 
-	new Daemon(options.host, parseInt(options.port), options.path);
+	const daemon = new Daemon(options.host, parseInt(options.port), options.path);
+
+	process.on("unhandledRejection", (reason: any, promise) => {
+		daemon.log(String(reason.stack || reason), "error");
+	});
+
+	process.on("uncaughtException", (err) => {
+		daemon.log(String(err.stack || err), "error");
+	});
 
 	process.on("SIGTERM", () => {
 		process.exit(0);
