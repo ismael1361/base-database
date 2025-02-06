@@ -216,6 +216,17 @@
                 --vscode-editor-background: transparent;
                 --vscode-editorGutter-background: transparent;
             }
+
+            .myLineDecoration {
+                background-color: rgba(255, 255, 0, 0.2);
+                /* Fundo amarelo para linhas modificadas */
+            }
+
+            .myMarginDecoration {
+                border-left: 4px solid #558b2f;
+                margin-left: 3px;
+                /* Margem vermelha para linhas modificadas */
+            }
         }
     }
 }

@@ -49,13 +49,18 @@ export abstract class ServerManager extends BasicEventEmitter<{}> {
 	abstract setupMiddleware(app: Application): void;
 	abstract setupRoutes(app: Application): void;
 
-	listen(port?: number, hostname?: string, listeningListener?: () => void): this;
-	listen(port?: number, listeningListener?: () => void): this;
-	listen(path: string, listeningListener?: () => void): this;
-	listen(options: ListenOptions, listeningListener?: () => void): this;
-	listen(...args: [option1?: number | string | ListenOptions, option2?: string | (() => void), option3?: () => void]): this {
-		this.ready(() => {
-			this.server?.listen.apply(this.server, args as any);
+	async listen(port?: number, hostname?: string, listeningListener?: () => void): Promise<this>;
+	async listen(port?: number, listeningListener?: () => void): Promise<this>;
+	async listen(path: string, listeningListener?: () => void): Promise<this>;
+	async listen(options: ListenOptions, listeningListener?: () => void): Promise<this>;
+	async listen(...args: [option1?: number | string | ListenOptions, option2?: string | (() => void), option3?: () => void]): Promise<this> {
+		await this.ready(() => {
+			return new Promise<void>((resolve) => {
+				this.server?.once("listening", () => {
+					resolve();
+				});
+				this.server?.listen.apply(this.server, args as any);
+			});
 		});
 		return this;
 	}

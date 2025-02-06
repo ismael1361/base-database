@@ -47,6 +47,19 @@ export const ScriptEditor: React.FC = () => {
 		editorRef.current = editor;
 		monacoRef.current = monaco;
 
+		editor.deltaDecorations(
+			[],
+			[
+				{
+					range: new monaco.Range(4, 1, 4, 1),
+					options: {
+						stickiness: 1,
+						linesDecorationsClassName: styles["myMarginDecoration"],
+					},
+				},
+			],
+		);
+
 		// monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
 		// 	noSemanticValidation: true,
 		// 	noSyntaxValidation: false,
