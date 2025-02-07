@@ -4,6 +4,7 @@ import { Server } from "./index";
 import { DEFAULT_ENTRY_NAME } from "../App";
 import BasicEventEmitter from "basic-event-emitter";
 import { Types } from "../Database/Utils";
+import * as CustomStorage from "../CustomStorage";
 
 interface DatabaseSettings {
 	[db: string]: {
@@ -22,6 +23,7 @@ interface DatabaseSettings {
 		};
 		storage: {
 			type: "sqlite" | "mysql" | "postgres";
+			config?: any;
 		};
 	};
 }
@@ -95,9 +97,15 @@ export class Daemon extends BasicEventEmitter<{}> {
 		}
 
 		for (const dbName in config) {
+			const findStorage = Object.keys(CustomStorage).find((storage) => storage.toLowerCase() === config[dbName].storage.type);
+
+			if (!findStorage) {
+				continue;
+			}
+
 			this.app.createDatabase<any, any>(dbName, {
 				database: ":memory:",
-				storage: null!,
+				storage: { custom: CustomStorage[findStorage], config: config[dbName].storage.config },
 				tables: Object.fromEntries(
 					Object.entries(config[dbName].tables).map(([tableName, table]) => {
 						return [

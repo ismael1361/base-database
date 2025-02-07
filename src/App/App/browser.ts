@@ -2,7 +2,7 @@ import BasicEventEmitter from "basic-event-emitter";
 import * as Database from "../../Database/Database";
 import type { DatabaseTables, DatabaseTyping } from "../../Database";
 import { DEFAULT_ENTRY_NAME } from "../internal";
-import { _database, _serialize } from "../../Database/internal";
+import { _database, _serialize, _tables } from "../../Database/internal";
 
 export interface AppSettings {
 	name?: string;
@@ -22,7 +22,10 @@ type SimplifyTablesTypes<D extends DatabaseTyping, DB extends keyof D, T extends
 
 export interface DatabaseSettings<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> {
 	database: string;
-	storage: Database.CustomConstructor<any>;
+	storage: {
+		custom: Database.CustomConstructor<any>;
+		config: any;
+	};
 	tables: SimplifyTablesTypes<D, DB, T>;
 }
 
@@ -45,7 +48,7 @@ export class App extends BasicEventEmitter<{
 	}
 
 	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(options: DatabaseSettings<D, DB, T>): T;
-	createDatabase<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(name: DB, options: DatabaseSettings<D, DB, T>): T;
+	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(name: DB, options: DatabaseSettings<D, DB, T>): T;
 	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(
 		name: DB | DatabaseSettings<D, DB, T>,
 		options?: DatabaseSettings<D, DB, T>,
@@ -55,13 +58,24 @@ export class App extends BasicEventEmitter<{
 
 		const { database, storage, tables } = options as DatabaseSettings<D, DB, T>;
 
-		const db = new Database.Database(storage, database);
-		db.app = this;
-		db.tablesNames = Object.keys(tables);
-		_database.set(name as any, db);
+		let db: Database.Database<any>;
+
+		if (_database.has(name as any)) {
+			db = _database.get(name as any)!;
+			db.initialize(storage.custom, database, storage.config);
+		} else {
+			db = new Database.Database(storage.custom, database, storage.config);
+			db.app = this;
+			db.tablesNames = Object.keys(tables);
+			_database.set(name as any, db);
+		}
 
 		for (const [key, value] of Object.entries(tables)) {
 			_serialize.set(`${name as any}_${key}`, value as any);
+			if (_tables.has(`${name as any}_${key}`)) {
+				const table = _tables.get(`${name as any}_${key}`)!;
+				table.table.then((table) => table.initialize(db.custom, value as any));
+			}
 		}
 
 		this.emit("createDatabase", name as any, options as DatabaseSettings<D, DB, T>);

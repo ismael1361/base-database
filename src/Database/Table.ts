@@ -24,11 +24,11 @@ export class Table<T extends TableType, O = Row<T>> extends BasicEventEmitter<Ta
 	/**
 	 * The serialize datatype
 	 */
-	private readonly serialize: SerializeDataType<T>;
+	private serialize: SerializeDataType<T>;
 	/**
 	 * The initial promise
 	 */
-	private readonly initialPromise: Promise<void>;
+	private initialPromise: Promise<void>;
 
 	schema: TableSchema<T, O> = {
 		schema: {} as any,
@@ -57,8 +57,19 @@ export class Table<T extends TableType, O = Row<T>> extends BasicEventEmitter<Ta
 	 * table.update({ name: "world" }, [{ column: "id", operator: "=", value: 123 }]);
 	 * table.delete([{ column: "id", operator: "=", value: 123 }]);
 	 */
-	constructor(readonly custom: Custom<any>, readonly name: string, columns: Serialize<T>) {
+	constructor(private custom: Custom<any>, readonly name: string, private columns: Serialize<T>) {
 		super();
+		this.serialize = null!;
+		this.initialPromise = null!;
+		this.initialize(custom, columns);
+	}
+
+	initialize(custom: Custom<any>, columns?: Serialize<T>) {
+		this.prepared = false;
+
+		this.custom = custom;
+
+		this.columns = columns = columns ?? this.columns;
 
 		this.serialize = Object.keys(columns).reduce((acc, key) => {
 			acc[key] = {
@@ -73,11 +84,13 @@ export class Table<T extends TableType, O = Row<T>> extends BasicEventEmitter<Ta
 			return acc;
 		}, {} as any);
 
-		this.initialPromise = this.custom.createTable(name, this.serialize).catch((e) => {
+		this.initialPromise = this.custom.createTable(this.name, this.serialize).catch((e) => {
 			return Promise.reject(ERROR_FACTORY.create("Table.constructor", Errors.INTERNAL_ERROR, { message: "message" in e ? e.message : String(e) }));
 		});
 
 		this.pipeEvent();
+
+		this.prepared = true;
 	}
 
 	private pipeEvent() {

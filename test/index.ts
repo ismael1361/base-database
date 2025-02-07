@@ -23,7 +23,7 @@ type DatabaseTyping = {
 
 const db = app.createDatabase<DatabaseTyping>({
 	database: ":memory:",
-	storage: SQLite,
+	storage: { custom: SQLite, config: {} },
 	tables: {
 		myTable: {
 			name: {

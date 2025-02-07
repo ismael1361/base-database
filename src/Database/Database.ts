@@ -14,7 +14,7 @@ export * from "./Table";
 /**
  * Define type for custom database constructor
  */
-export type CustomConstructor<db = never> = new (database: string) => Custom<db>;
+export type CustomConstructor<db = never> = new (database: string, config?: any) => Custom<db>;
 
 /**
  * Database class
@@ -29,7 +29,7 @@ export class Database<db = never> extends BasicEventEmitter<{
 	/**
 	 * The custom database class
 	 */
-	readonly custom: Custom<db>;
+	public custom: Custom<db>;
 	/**
 	 * The tables
 	 */
@@ -46,9 +46,21 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * @example
 	 * const database = new Database(CustomDatabase, "my-database");
 	 */
-	constructor(custom: CustomConstructor<db>, readonly database: string) {
+	constructor(custom: CustomConstructor<db>, private database: string, private config: any) {
 		super();
-		this.custom = new custom(database);
+		this.custom = null!;
+		this.initialize(custom, database, config);
+	}
+
+	initialize(custom: CustomConstructor<db>, database: string, config: any) {
+		this.prepared = false;
+
+		this.custom = new custom(database, config);
+
+		this.tables.forEach((table) => {
+			table.initialize(this.custom);
+		});
+
 		this.prepared = true;
 	}
 
@@ -76,6 +88,13 @@ export class Database<db = never> extends BasicEventEmitter<{
 		this.tables.forEach((table) => table.disconnect());
 		this.tables.clear();
 		this.emit("disconnect");
+	}
+
+	restartTable(name: string, columns: Serialize<any>) {
+		if (this.tables.has(name)) {
+			const table = this.tables.get(name)!;
+			table.initialize(this.custom, columns);
+		}
 	}
 
 	/**

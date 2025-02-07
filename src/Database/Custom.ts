@@ -1,10 +1,10 @@
 import { ERROR_FACTORY, Errors } from "../Error";
-import { QueryOptions, Row, SerializeDataType } from "./Types";
+import type { QueryOptions, Row, SerializeDataType } from "./Types";
 
 /**
  * Custom database class
  */
-export abstract class Custom<db = never> {
+export abstract class Custom<db = never, config = any> {
 	/**
 	 * If the database is disconnected
 	 */
@@ -22,7 +22,7 @@ export abstract class Custom<db = never> {
 	 * Create a custom database
 	 * @param database The database name
 	 */
-	constructor(database: string) {
+	constructor(database: string, readonly config?: config) {
 		this._databaseName = database;
 		this.database = this.connect(database);
 	}
