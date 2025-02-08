@@ -8,7 +8,6 @@ import { Row, RowDeserialize, TableType } from "./Types";
 import BasicEventEmitter, { EventsListeners } from "basic-event-emitter";
 
 export * as Database from "./Database";
-export * as SQLiteRegex from "./SQLiteRegex";
 
 export type DatabaseTyping = {
 	[DB: PropertyKey]: {

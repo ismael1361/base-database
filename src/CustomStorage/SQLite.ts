@@ -1,7 +1,7 @@
 import sqlite3 from "sqlite3";
 import type { Database } from "../Database";
 import { Custom } from "../Database/Custom";
-import * as SQLiteRegex from "../Database/SQLiteRegex";
+import * as SQLiteRegex from "./SQLiteRegex";
 
 const formatDateToSQL = (date: Date): string => {
 	const pad = (n: number) => (n < 10 ? "0" + n : n);
@@ -71,13 +71,25 @@ const parseQuery = (query?: Database.QueryOptions) => {
 	};
 };
 
-export class SQLite extends Custom<sqlite3.Database, Partial<{ local: string }>> {
+class SQLiteConfig {
+	local: string;
+
+	constructor(config: Partial<SQLiteConfig>) {
+		this.local = config.local ?? ":memory:";
+	}
+}
+
+export class SQLite extends Custom<sqlite3.Database, SQLiteConfig> {
 	private db: sqlite3.Database | undefined;
+
+	parseConfig(config?: Partial<SQLiteConfig>): SQLiteConfig {
+		return new SQLiteConfig(config ?? {});
+	}
 
 	connect(database: string): Promise<sqlite3.Database> {
 		return new Promise((resolve, reject) => {
 			try {
-				const db = (this.db = new sqlite3.Database(database));
+				const db = (this.db = new sqlite3.Database(this.config.local));
 				if (SQLiteRegex.implementable) db.loadExtension(SQLiteRegex.getLoadablePath());
 				db.serialize(() => {
 					resolve(db);

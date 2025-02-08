@@ -5,28 +5,9 @@ import { DEFAULT_ENTRY_NAME } from "../App";
 import BasicEventEmitter from "basic-event-emitter";
 import { Types } from "../Database/Utils";
 import * as CustomStorage from "../CustomStorage";
-
-interface DatabaseSettings {
-	[db: string]: {
-		tables: {
-			[table: string]: {
-				[column: string]: {
-					type: "TEXT" | "INTEGER" | "FLOAT" | "BOOLEAN" | "DATETIME" | "BIGINT" | "NULL";
-					primaryKey?: true | false;
-					autoIncrement?: true | false;
-					notNull?: true | false;
-					default?: string | number | boolean | null;
-					unique?: true | false;
-					options?: string[];
-				};
-			};
-		};
-		storage: {
-			type: "sqlite" | "mysql" | "postgres";
-			config?: any;
-		};
-	};
-}
+import type { DatabaseSettings } from "./types";
+import { auth_model, default_model } from "./models";
+import { parseJSONVariable } from "Utils";
 
 export class Daemon extends BasicEventEmitter<{}> {
 	app: Server = null!;
@@ -48,46 +29,20 @@ export class Daemon extends BasicEventEmitter<{}> {
 
 		await this.app.ready();
 
+		await this.loadDatabase(true);
+
 		this.prepared = true;
 	}
 
-	async loadDatabase() {
-		await this.ready();
+	async loadDatabase(ready: boolean = false) {
+		if (!ready) await this.ready();
+
 		const configPath = path.resolve(this.rootDir, "db-config.json");
+		const variables = { ROOTDIR: this.rootDir.replace(/([\\\/]+)$/g, "") };
+
 		let config: DatabaseSettings = {
-			[DEFAULT_ENTRY_NAME]: {
-				tables: {
-					users: {
-						id: {
-							type: "INTEGER",
-							primaryKey: true,
-							autoIncrement: true,
-						},
-						username: {
-							type: "TEXT",
-							notNull: true,
-							unique: true,
-						},
-						password: {
-							type: "TEXT",
-							notNull: true,
-						},
-						email: {
-							type: "TEXT",
-							notNull: true,
-							unique: true,
-						},
-						createdAt: {
-							type: "DATETIME",
-							notNull: true,
-							default: "CURRENT_TIMESTAMP",
-						},
-					},
-				},
-				storage: {
-					type: "sqlite",
-				},
-			},
+			[DEFAULT_ENTRY_NAME]: parseJSONVariable(default_model, variables),
+			__AUTH__: parseJSONVariable(auth_model, variables),
 		};
 
 		if (fs.existsSync(configPath)) {
@@ -104,7 +59,6 @@ export class Daemon extends BasicEventEmitter<{}> {
 			}
 
 			this.app.createDatabase<any, any>(dbName, {
-				database: ":memory:",
 				storage: { custom: CustomStorage[findStorage], config: config[dbName].storage.config },
 				tables: Object.fromEntries(
 					Object.entries(config[dbName].tables).map(([tableName, table]) => {

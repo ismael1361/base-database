@@ -1,6 +1,5 @@
-import { Database, initializeApp, getDatabase, Server, DEFAULT_ENTRY_NAME } from "../src";
+import { Database, initializeApp, getDatabase, Server, DEFAULT_ENTRY_NAME, CustomStorage } from "../src";
 import { ModelDatabase } from "./DB";
-import { SQLite } from "./SQLite";
 
 const app = new Server({ name: DEFAULT_ENTRY_NAME });
 
@@ -22,8 +21,7 @@ type DatabaseTyping = {
 };
 
 const db = app.createDatabase<DatabaseTyping>({
-	database: ":memory:",
-	storage: { custom: SQLite, config: {} },
+	storage: { custom: CustomStorage.SQLite, config: { local: ":memory:" } },
 	tables: {
 		myTable: {
 			name: {

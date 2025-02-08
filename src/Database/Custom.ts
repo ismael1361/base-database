@@ -18,14 +18,19 @@ export abstract class Custom<db = never, config = any> {
 	 */
 	private readonly _databaseName: string;
 
+	readonly config: config;
+
 	/**
 	 * Create a custom database
 	 * @param database The database name
 	 */
-	constructor(database: string, readonly config?: config) {
+	constructor(database: string, config?: Partial<config>) {
 		this._databaseName = database;
 		this.database = this.connect(database);
+		this.config = this.parseConfig(config);
 	}
+
+	abstract parseConfig(config?: Partial<config>): config;
 
 	/**
 	 * Get the database name

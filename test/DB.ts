@@ -10,6 +10,10 @@ export class ModelDatabase extends Database.Custom<localDB> {
 		this.db = new Map();
 	}
 
+	parseConfig(config?: Partial<any>): any {
+		return config;
+	}
+
 	connect(database: string): Promise<localDB> {
 		return Promise.resolve(this.db);
 	}

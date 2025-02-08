@@ -21,7 +21,6 @@ type SimplifyTablesTypes<D extends DatabaseTyping, DB extends keyof D, T extends
 };
 
 export interface DatabaseSettings<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> {
-	database: string;
 	storage: {
 		custom: Database.CustomConstructor<any>;
 		config: any;
@@ -56,15 +55,15 @@ export class App extends BasicEventEmitter<{
 		options = (typeof name === "string" ? options : name) as DatabaseSettings<D, DB, T>;
 		name = (typeof name === "string" ? name : DEFAULT_ENTRY_NAME) as DB;
 
-		const { database, storage, tables } = options as DatabaseSettings<D, DB, T>;
+		const { storage, tables } = options as DatabaseSettings<D, DB, T>;
 
 		let db: Database.Database<any>;
 
 		if (_database.has(name as any)) {
 			db = _database.get(name as any)!;
-			db.initialize(storage.custom, database, storage.config);
+			db.initialize(storage.custom, name as any, storage.config);
 		} else {
-			db = new Database.Database(storage.custom, database, storage.config);
+			db = new Database.Database(storage.custom, name as any, storage.config);
 			db.app = this;
 			db.tablesNames = Object.keys(tables);
 			_database.set(name as any, db);
