@@ -1,4 +1,4 @@
-import { DataType, OptionsDataType, Row, Serialize, SerializeDataType, TableType } from "./Types";
+import { DataType, OptionsDataType, Row, Serialize, SerializeDataType, SerializeValueType, TableType } from "./Types";
 
 export const Operators = {
 	EQUAL: "=",
@@ -150,6 +150,45 @@ export const verifyDatatype = <T extends OptionsDataType>(value: any, type: T): 
 	return false;
 };
 
+const processDefaultValue = (defaultValue: SerializeDataType<any>[string]["default"]) => {
+	if (typeof defaultValue === "function") {
+		return defaultValue();
+	} else if (typeof defaultValue === "string") {
+		switch (defaultValue.trim()) {
+			case "CURRENT_TIMESTAMP":
+				return new Date();
+			case "UUID":
+				return generateUUID();
+			default:
+				return defaultValue;
+		}
+	} else {
+		return defaultValue;
+	}
+};
+
+const processValueType = (type: OptionsDataType, value: SerializeValueType, invert: boolean = false) => {
+	switch (type) {
+		case "TEXT":
+			return typeof value === "string" ? value : undefined;
+		case "INTEGER":
+		case "FLOAT":
+			return typeof value === "number" ? value : undefined;
+		case "BOOLEAN":
+			return typeof value === "boolean" ? value : undefined;
+		case "DATETIME":
+			if (invert) return value instanceof Date ? value : typeof value === "number" ? new Date(value) : undefined;
+			if (!invert) return value instanceof Date ? value.getTime() : typeof value === "number" ? value : undefined;
+			break;
+		case "BIGINT":
+			return typeof value === "bigint" ? value : ["string", "number"].includes(typeof value) ? BigInt(value as any) : undefined;
+		case "NULL":
+			return value === null ? value : undefined;
+	}
+
+	return undefined;
+};
+
 /**
  * Serialize data
  * @param serialize The serialize datatype
@@ -174,7 +213,7 @@ export const serializeDataForSet = <T extends TableType, P extends boolean = fal
 		for (const key in isPartial ? data : serialize) {
 			if (!(key in data)) {
 				if (serialize[key].default !== undefined) {
-					(data as any)[key] = typeof serialize[key].default === "function" ? (serialize[key].default as any)() : serialize[key].default;
+					(data as any)[key] = processDefaultValue(serialize[key].default);
 				}
 				// else if (!serialize[key].autoIncrement) {
 				// 	return reject(new Error(`Missing column ${key}`));
@@ -212,27 +251,7 @@ export const serializeDataForSet = <T extends TableType, P extends boolean = fal
 				}
 			}
 
-			switch (getDatatype(serialize[key].type)) {
-				case "TEXT":
-					(data as any)[key] = typeof data[key] === "string" ? data[key] : undefined;
-					break;
-				case "INTEGER":
-				case "FLOAT":
-					(data as any)[key] = typeof data[key] === "number" ? data[key] : undefined;
-					break;
-				case "BOOLEAN":
-					(data as any)[key] = typeof data[key] === "boolean" ? data[key] : undefined;
-					break;
-				case "DATETIME":
-					(data as any)[key] = data[key] instanceof Date ? data[key].getTime() : typeof data[key] === "number" ? data[key] : undefined;
-					break;
-				case "BIGINT":
-					(data as any)[key] = typeof data[key] === "bigint" ? data[key] : ["string", "number"].includes(typeof data[key]) ? BigInt((data as any)[key]) : undefined;
-					break;
-				case "NULL":
-					(data as any)[key] = data[key] === null ? data[key] : undefined;
-					break;
-			}
+			(data as any)[key] = processValueType(getDatatype(serialize[key].type), (data as any)[key]);
 
 			if (data[key] === undefined) {
 				delete data[key];
@@ -252,31 +271,11 @@ export const serializeDataForGet = <T extends TableType, D extends Partial<Row<T
 			for (const key in serialize) {
 				if (!(key in data)) {
 					if (serialize[key].default !== undefined) {
-						(data as any)[key] = typeof serialize[key].default === "function" ? (serialize[key].default as any)() : serialize[key].default;
+						(data as any)[key] = processDefaultValue(serialize[key].default);
 					}
 				}
 
-				switch (getDatatype(serialize[key].type)) {
-					case "TEXT":
-						(data as any)[key] = typeof data[key] === "string" ? data[key] : undefined;
-						break;
-					case "INTEGER":
-					case "FLOAT":
-						(data as any)[key] = typeof data[key] === "number" ? data[key] : undefined;
-						break;
-					case "BOOLEAN":
-						(data as any)[key] = typeof data[key] === "boolean" ? data[key] : undefined;
-						break;
-					case "DATETIME":
-						(data as any)[key] = data[key] instanceof Date ? data[key] : typeof data[key] === "number" ? new Date(data[key]) : undefined;
-						break;
-					case "BIGINT":
-						(data as any)[key] = typeof data[key] === "bigint" ? data[key] : ["string", "number"].includes(typeof data[key]) ? BigInt((data as any)[key]) : undefined;
-						break;
-					case "NULL":
-						data[key] = data[key] !== null ? data[key] : undefined;
-						break;
-				}
+				(data as any)[key] = processValueType(getDatatype(serialize[key].type), (data as any)[key], true);
 
 				if (data[key] !== null && data[key] !== undefined && !verifyDatatype(data[key], getDatatype(serialize[key].type))) {
 					delete data[key];

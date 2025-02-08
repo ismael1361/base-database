@@ -33,30 +33,83 @@ export const default_model: DatabaseSettings[string] = {
 
 export const auth_model: DatabaseSettings[string] = {
 	tables: {
-		users: {
+		security: {
 			id: {
 				type: "INTEGER",
 				primaryKey: true,
 				autoIncrement: true,
+			},
+			token_salt: {
+				type: "TEXT",
+			},
+		},
+		accounts: {
+			id: {
+				type: "TEXT",
+				notNull: true,
+				unique: true,
+				default: "UUID",
 			},
 			username: {
 				type: "TEXT",
 				notNull: true,
 				unique: true,
 			},
-			password: {
-				type: "TEXT",
-				notNull: true,
-			},
 			email: {
 				type: "TEXT",
 				notNull: true,
 				unique: true,
 			},
-			createdAt: {
+			email_verified: {
+				type: "BOOLEAN",
+				notNull: true,
+				default: false,
+			},
+			display_name: {
+				type: "TEXT",
+				notNull: true,
+				default: "User",
+			},
+			password: {
+				type: "TEXT",
+				notNull: true,
+			},
+			password_salt: {
+				type: "TEXT",
+				notNull: true,
+			},
+			created: {
 				type: "DATETIME",
 				notNull: true,
 				default: "CURRENT_TIMESTAMP",
+			},
+			access_token: {
+				type: "TEXT",
+				notNull: true,
+				unique: true,
+			},
+			access_token_created: {
+				type: "DATETIME",
+				notNull: true,
+				default: "CURRENT_TIMESTAMP",
+			},
+			last_signin: {
+				type: "DATETIME",
+			},
+			last_signin_ip: {
+				type: "TEXT",
+			},
+			last_signout: {
+				type: "DATETIME",
+			},
+			last_signout_ip: {
+				type: "TEXT",
+			},
+			prev_signin: {
+				type: "DATETIME",
+			},
+			prev_signin_ip: {
+				type: "TEXT",
 			},
 		},
 	},
