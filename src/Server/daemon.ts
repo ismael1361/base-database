@@ -8,9 +8,11 @@ import * as CustomStorage from "../CustomStorage";
 import type { DatabaseSettings } from "./types";
 import { auth_model, default_model } from "./models";
 import { parseJSONVariable } from "Utils";
+import { Script } from "./script";
 
 export class Daemon extends BasicEventEmitter<{}> {
 	app: Server = null!;
+	script: Script = null!;
 
 	constructor(readonly host: string, readonly port: number, readonly rootDir: string) {
 		super();
@@ -26,6 +28,10 @@ export class Daemon extends BasicEventEmitter<{}> {
 		if (!fs.existsSync(this.rootDir)) {
 			fs.mkdirSync(this.rootDir, { recursive: true });
 		}
+
+		this.script = new Script(this.app);
+
+		await this.loadScript();
 
 		await this.app.ready();
 
@@ -85,6 +91,10 @@ export class Daemon extends BasicEventEmitter<{}> {
 				),
 			});
 		}
+	}
+
+	async loadScript() {
+		await this.script.restart();
 	}
 
 	log(message: string, type: "info" | "warn" | "error" = "info") {
