@@ -1,7 +1,7 @@
 import { Database } from "./";
 
-export const _database: Map<string, Database.Database<any>> = new Map();
+export const _database: Map<PropertyKey, Database.Database<any>> = new Map();
 
-export const _serialize: Map<string, Database.Serialize<any>> = new Map();
+export const _serialize: Map<PropertyKey, Database.Serialize<any>> = new Map();
 
-export const _tables: Map<string, Database.TableReady<any>> = new Map();
+export const _tables: Map<PropertyKey, Database.TableReady<any>> = new Map();

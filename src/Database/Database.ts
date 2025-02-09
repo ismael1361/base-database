@@ -49,13 +49,14 @@ export class Database<db = never> extends BasicEventEmitter<{
 	constructor(custom: CustomConstructor<db>, private database: string, private config: any) {
 		super();
 		this.custom = null!;
-		this.initialize(custom, database, config);
+		this.initialize(custom, this.config);
 	}
 
-	initialize(custom: CustomConstructor<db>, database: string, config: any) {
+	initialize(custom: CustomConstructor<db>, config: any) {
 		this.prepared = false;
+		this.config = config;
 
-		this.custom = new custom(database, config);
+		this.custom = new custom(this.database, this.config);
 
 		this.tables.forEach((table) => {
 			table.initialize(this.custom);

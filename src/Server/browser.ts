@@ -11,7 +11,7 @@ export const serverSupported = false;
 export type HttpServerFunction = (app: Application) => HttpServer | HttpsServer;
 
 export interface ServerSettings extends AppSettings {
-	readonly name?: string;
+	readonly name?: PropertyKey;
 }
 
 export abstract class ServerManager extends BasicEventEmitter<{}> {

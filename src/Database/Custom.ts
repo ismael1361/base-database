@@ -26,8 +26,8 @@ export abstract class Custom<db = never, config = any> {
 	 */
 	constructor(database: string, config?: Partial<config>) {
 		this._databaseName = database;
-		this.database = this.connect(database);
 		this.config = this.parseConfig(config);
+		this.database = this.connect(database);
 	}
 
 	abstract parseConfig(config?: Partial<config>): config;

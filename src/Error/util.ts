@@ -8,7 +8,7 @@ export type ErrorMap<ErrorCode extends PropertyKey> = {
 export type ErrorData<P extends PropertyKey[] = PropertyKey[]> = P extends Array<infer K>
 	? K extends PropertyKey
 		? {
-				[key in K]: string;
+				[key in K]: PropertyKey;
 		  }
 		: {}
 	: {};

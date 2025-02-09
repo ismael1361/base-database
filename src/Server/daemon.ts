@@ -6,7 +6,7 @@ import BasicEventEmitter from "basic-event-emitter";
 import { Types } from "../Database/Utils";
 import * as CustomStorage from "../CustomStorage";
 import type { DatabaseSettings } from "./types";
-import { auth_model, default_model } from "./models";
+import { auth_model, default_model } from "./models/databases";
 import { parseJSONVariable } from "Utils";
 import { Script } from "./script";
 
@@ -29,7 +29,12 @@ export class Daemon extends BasicEventEmitter<{}> {
 			fs.mkdirSync(this.rootDir, { recursive: true });
 		}
 
-		this.script = new Script(this.app);
+		this.script = new Script(this.app, this.rootDir);
+
+		this.app.on("createDatabase", (name, options) => {
+			console.log(name);
+			this.script.createByDatabase(name);
+		});
 
 		await this.loadScript();
 
@@ -44,10 +49,15 @@ export class Daemon extends BasicEventEmitter<{}> {
 		if (!ready) await this.ready();
 
 		const configPath = path.resolve(this.rootDir, "db-config.json");
-		const variables = { ROOTDIR: this.rootDir.replace(/([\\\/]+)$/g, "") };
+		const variables = {
+			ROOTDIR: path
+				.resolve(this.rootDir)
+				.replace(/\\/g, "/")
+				.replace(/([\/]+)$/g, ""),
+		};
 
 		let config: DatabaseSettings = {
-			[DEFAULT_ENTRY_NAME]: parseJSONVariable(default_model, variables),
+			[String(DEFAULT_ENTRY_NAME)]: parseJSONVariable(default_model, variables),
 			__AUTH__: parseJSONVariable(auth_model, variables),
 		};
 

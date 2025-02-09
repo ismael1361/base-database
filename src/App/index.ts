@@ -27,11 +27,11 @@ export const initializeApp = (options: AppSettings = {}): App => {
 	return appendNewApp(newApp);
 };
 
-export const appExists = (name: string = DEFAULT_ENTRY_NAME): boolean => {
+export const appExists = (name: PropertyKey = DEFAULT_ENTRY_NAME): boolean => {
 	return typeof name === "string" && _apps.has(name);
 };
 
-export const getApp = (name: string = DEFAULT_ENTRY_NAME): App => {
+export const getApp = (name: PropertyKey = DEFAULT_ENTRY_NAME): App => {
 	const app = _apps.get(name);
 	if (!app) {
 		throw ERROR_FACTORY.create("getApp", Errors.NO_APP, { appName: name });

@@ -1,59 +1,63 @@
 import { Database, initializeApp, getDatabase, Server, DEFAULT_ENTRY_NAME, CustomStorage } from "../src";
 import { ModelDatabase } from "./DB";
+import { Daemon } from "../src/Server/daemon";
+import path from "path";
 
-const app = new Server({ name: DEFAULT_ENTRY_NAME });
+new Daemon("0.0.0.0", 3030, path.resolve(__dirname, "../db-teste")).initialize();
 
-const server = app.createServer();
+// const app = new Server({ name: DEFAULT_ENTRY_NAME });
 
-server.listen(3000, () => {
-	console.log("Server running on http://localhost:3000 🚀");
-});
+// const server = app.createServer();
 
-type DatabaseTyping = {
-	[DEFAULT_ENTRY_NAME]: {
-		myTable: {
-			name: string;
-			createdAt: Date;
-			gender: "Female" | "Male" | "Other";
-			amount: number;
-		};
-	};
-};
+// server.listen(3000, () => {
+// 	console.log("Server running on http://localhost:3000 🚀");
+// });
 
-const db = app.createDatabase<DatabaseTyping>({
-	storage: { custom: CustomStorage.SQLite, config: { local: ":memory:" } },
-	tables: {
-		myTable: {
-			name: {
-				type: Database.Types.TEXT,
-			},
-			createdAt: {
-				type: Database.Types.DATETIME,
-				default: () => new Date(),
-			},
-			gender: {
-				type: Database.Types.TEXT,
-				options: ["Female", "Male", "Other"] as const,
-			},
-			amount: {
-				type: Database.Types.INTEGER,
-			},
-		},
-	},
-});
+// type DatabaseTyping = {
+// 	[DEFAULT_ENTRY_NAME]: {
+// 		myTable: {
+// 			name: string;
+// 			createdAt: Date;
+// 			gender: "Female" | "Male" | "Other";
+// 			amount: number;
+// 		};
+// 	};
+// };
 
-// type MainDatabase = typeof db;
+// const db = app.createDatabase<DatabaseTyping>({
+// 	storage: { custom: CustomStorage.SQLite, config: { local: ":memory:" } },
+// 	tables: {
+// 		myTable: {
+// 			name: {
+// 				type: Database.Types.TEXT,
+// 			},
+// 			createdAt: {
+// 				type: Database.Types.DATETIME,
+// 				default: () => new Date(),
+// 			},
+// 			gender: {
+// 				type: Database.Types.TEXT,
+// 				options: ["Female", "Male", "Other"] as const,
+// 			},
+// 			amount: {
+// 				type: Database.Types.INTEGER,
+// 			},
+// 		},
+// 	},
+// });
 
-const myTable = getDatabase<DatabaseTyping>().table("myTable");
+// // type MainDatabase = typeof db;
 
-myTable.ready(async (table) => {
-	await table.insert([
-		{ name: "Maria", gender: "Female", createdAt: new Date(), amount: 5 },
-		{ name: "João", gender: "Male" },
-		{ name: "Pedro", gender: "Male" },
-		{ name: "Martha", gender: "Female" },
-	]);
-});
+// const myTable = getDatabase<DatabaseTyping>().table("myTable");
+
+// myTable.ready(async (table) => {
+// 	await table.insert([
+// 		{ name: "Maria", gender: "Female", createdAt: new Date(), amount: 5 },
+// 		{ name: "João", gender: "Male" },
+// 		{ name: "Pedro", gender: "Male" },
+// 		{ name: "Martha", gender: "Female" },
+// 	]);
+// });
 
 // class Test {
 // 	public name: string;

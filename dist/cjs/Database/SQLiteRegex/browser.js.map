@@ -1,1 +1,0 @@
-{"version":3,"file":"browser.js","sourceRoot":"","sources":["../../../../src/Database/SQLiteRegex/browser.ts"],"names":[],"mappings":";;;AAAA,uCAAoD;AAEvC,QAAA,aAAa,GAAG,KAAK,CAAC;AAE5B,MAAM,eAAe,GAAG,GAAG,EAAE;IACnC,MAAM,qBAAa,CAAC,MAAM,CAAC,aAAa,kDAA0B;QACjE,OAAO,EAAE,2HAA2H;KACpI,CAAC,CAAC;AACJ,CAAC,CAAC;AAJW,QAAA,eAAe,mBAI1B"}

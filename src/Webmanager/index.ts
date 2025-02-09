@@ -7,27 +7,27 @@ const webManagerDir = `webmanager`;
 
 export const createRoutes = (app: ServerManager): void => {
 	// Lista todas as tabelas disponíveis no banco de dados.
-	app.router.get("/:dbName/tables", (req, res) => {
+	app.router.get("/database/:dbName/tables", (req, res) => {
 		res.send([]);
 	});
 
 	// Cria uma nova tabela.
-	app.router.post("/:dbName/tables", (req, res) => {
+	app.router.post("/database/:dbName/tables", (req, res) => {
 		res.send({});
 	});
 
 	// Retorna todos os registros de uma tabela.
-	app.router.get("/:dbName/tables/:tableName/records", (req, res) => {
+	app.router.get("/database/:dbName/tables/:tableName/records", (req, res) => {
 		res.send([]);
 	});
 
 	// Adiciona um novo registro a uma tabela.
-	app.router.post("/:dbName/tables/:tableName/records", (req, res) => {
+	app.router.post("/database/:dbName/tables/:tableName/records", (req, res) => {
 		res.send({});
 	});
 
 	// Remove um registro específico de uma tabela.
-	app.router.delete("/:dbName/tables/:tableName/records", (req, res) => {
+	app.router.delete("/database/:dbName/tables/:tableName/records", (req, res) => {
 		res.send({});
 	});
 

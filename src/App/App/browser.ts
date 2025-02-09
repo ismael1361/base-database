@@ -5,7 +5,7 @@ import { DEFAULT_ENTRY_NAME } from "../internal";
 import { _database, _serialize, _tables } from "../../Database/internal";
 
 export interface AppSettings {
-	name?: string;
+	name?: PropertyKey;
 }
 
 // export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<PropertyKey, Database.Serialize>> = {
@@ -32,7 +32,7 @@ export class App extends BasicEventEmitter<{
 	createDatabase(name: string, options: DatabaseSettings<any, any>): void;
 }> {
 	readonly isServer: boolean = false;
-	readonly name: string;
+	readonly name: PropertyKey;
 	public isDeleted: boolean = false;
 
 	constructor(readonly settings: AppSettings, initialize: boolean = true) {
@@ -61,7 +61,7 @@ export class App extends BasicEventEmitter<{
 
 		if (_database.has(name as any)) {
 			db = _database.get(name as any)!;
-			db.initialize(storage.custom, name as any, storage.config);
+			db.initialize(storage.custom, storage.config);
 		} else {
 			db = new Database.Database(storage.custom, name as any, storage.config);
 			db.app = this;
@@ -77,7 +77,7 @@ export class App extends BasicEventEmitter<{
 			}
 		}
 
-		this.emit("createDatabase", name as any, options as DatabaseSettings<D, DB, T>);
+		this.emit("createDatabase", String(name), options as DatabaseSettings<D, DB, T>);
 		return tables as any;
 	}
 }

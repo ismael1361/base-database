@@ -3,3 +3,4 @@ package-lock.json
 *.tgz
 database.d.ts
 dist
+db-teste

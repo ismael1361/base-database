@@ -75,7 +75,7 @@ class SQLiteConfig {
 	local: string;
 
 	constructor(config: Partial<SQLiteConfig>) {
-		this.local = config.local ?? ":memory:";
+		this.local = config?.local ?? ":memory:";
 	}
 }
 

@@ -1,3 +1,5 @@
+export * from "./PathInfo";
+
 export const isObject = (thing: unknown): thing is object => {
 	return thing !== null && typeof thing === "object";
 };

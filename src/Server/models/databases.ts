@@ -1,4 +1,4 @@
-import type { DatabaseSettings } from "./types";
+import type { DatabaseSettings } from "../types";
 
 export const default_model: DatabaseSettings[string] = {
 	tables: {

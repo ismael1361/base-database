@@ -97,12 +97,12 @@ export function getDatabase<T extends DatabaseTyping, DB extends keyof T = typeo
 			database.prepared = false;
 			_database.delete(dbname as any);
 			_serialize.forEach((value, key) => {
-				if (key.startsWith(`${dbname as any}_`)) {
+				if (String(key).startsWith(`${dbname as any}_`)) {
 					_serialize.delete(key);
 				}
 			});
 			_tables.forEach((value, key) => {
-				if (key.startsWith(`${dbname as any}_`)) {
+				if (String(key).startsWith(`${dbname as any}_`)) {
 					_tables.delete(key);
 				}
 			});
