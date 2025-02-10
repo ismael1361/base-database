@@ -1,4 +1,3 @@
-import { _apps } from "./../../../../src/App/internal";
 import { Files } from "./FilesTree";
 
 export type LocalFiles = Record<string, Omit<Files[number], "path"> & { source: string }>;

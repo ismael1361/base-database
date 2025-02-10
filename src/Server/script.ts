@@ -8,6 +8,7 @@ import { PathInfo } from "../Utils";
 import * as colorette from "colorette";
 import { default_scripts } from "./models/scripts";
 import BasicEventEmitter from "basic-event-emitter";
+import { Router } from "express";
 
 const tsCompilerOptions: Record<string, ts.CompilerOptions> = {};
 
@@ -208,6 +209,7 @@ class Modules extends BasicEventEmitter<{
 }> {
 	private cacheModules = new Map<string, any>();
 	private cacheObserveModules = new Map<string, { event?: fs.StatsListener; modules: Record<string, () => void> }>();
+	private logs: Set<{ type: keyof typeof console; message: string[] }> = new Set();
 
 	async getRequire(p: string): Promise<any> {
 		try {
@@ -239,12 +241,40 @@ class Modules extends BasicEventEmitter<{
 		);
 	}
 
+	console() {
+		const consoleAPI = {};
+
+		const formatarMensagem = (...args: any[]) => {
+			return args.map((arg) => {
+				if (typeof arg === "object") {
+					try {
+						return JSON.stringify(arg);
+					} catch (e) {
+						return String(arg);
+					}
+				}
+				return String(arg);
+			});
+		};
+
+		for (const chave in console) {
+			if (typeof console[chave] === "function") {
+				consoleAPI[chave] = (...args: any[]) => {
+					this.logs.add({ type: chave as any, message: formatarMensagem(...args) });
+					console[chave].apply(console, args);
+				};
+			}
+		}
+
+		return consoleAPI as typeof console;
+	}
+
 	getGlobalContext(filePath: string, exports: Record<string, any>, resolve: () => void, onMutateImports?: () => void) {
 		const globalContext = Object.create(global);
 
 		globalContext["__filename"] = filePath;
 		globalContext["__dirname"] = path.dirname(filePath);
-		globalContext.console = console;
+		globalContext.console = this.console();
 		globalContext.setTimeout = setTimeout;
 		globalContext.clearTimeout = clearTimeout;
 		globalContext.setInterval = setInterval;
@@ -399,6 +429,10 @@ function obterPathsRotas(app: any): RouteInfo[] {
 	return rotas;
 }
 
+const isValidRouter = (router: any): router is Router => {
+	return router && router.stack && router.stack.length > 0;
+};
+
 export class Script {
 	private cacheScripts = new Map<string, Modules>();
 
@@ -417,13 +451,15 @@ export class Script {
 
 		this.cacheScripts.set(name, modules);
 
-		const Routers = await modules.importModule(path.resolve(dbPath, "src", "Routers/index.ts"));
+		const Router = await modules.importModule(path.resolve(dbPath, "src", "Routers/index.ts"));
 
-		try {
-			this.app.server.router.use(`/script/${name}`, Routers.default);
-		} catch (e) {}
+		if (isValidRouter(Router.default)) {
+			try {
+				this.app.server.router.use(`/script/${name}`, Router.default);
+			} catch (e) {}
+		}
 
-		console.log(obterPathsRotas(this.app.server));
+		// console.log(obterPathsRotas(this.app.server));
 	}
 
 	async restart() {}

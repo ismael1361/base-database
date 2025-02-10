@@ -6,6 +6,11 @@ module.exports = {
 	},
 	webpack: {
 		configure: (webpackConfig) => {
+			webpackConfig.resolve.fallback = {
+				...(webpackConfig.resolve.fallback ?? {}),
+				path: require.resolve("path-browserify"),
+			};
+
 			webpackConfig.module.rules.push({
 				test: /\.model$/,
 				type: "javascript/auto",

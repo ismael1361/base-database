@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "es2015",
         "lib": [
             "dom",
             "dom.iterable",
@@ -17,9 +17,12 @@
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "isolatedModules": false,
+        "alwaysStrict": true,
+        "noImplicitAny": false,
         "noEmit": true,
+        "downlevelIteration": true,
         "jsx": "react-jsx",
-        // "rootDir": "./src",
+        "rootDir": "./src",
         "baseUrl": "./src",
         "paths": {
             "src/*": [
@@ -28,9 +31,9 @@
         }
     },
     "include": [
-        "src/**/*",
+        "./src/**/*",
     ],
     "exclude": [
-        "node_modules",
+        "node_modules"
     ]
 }

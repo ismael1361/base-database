@@ -1,3 +1,5 @@
+export * from "./AutoTypings";
+
 export const columnIndexToLabel = (column: number): string => {
 	let label = "";
 	let index = column;

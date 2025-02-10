@@ -2,6 +2,7 @@ import Editor, { BeforeMount, OnChange, OnMount } from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import styles from "./styles.module.scss";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AutoTypings, JsDelivrSourceResolver, LocalStorageCache } from "Utils";
 
 import expressModel from "Resources/monaco/models/express.model";
 import routerModel from "Resources/monaco/models/router.model";
@@ -11,9 +12,11 @@ import { Files, FilesTree } from "./FilesTree";
 import { LocalFiles, localFiles } from "./localFiles";
 
 const libSources: Record<string, string> = {
-	"ts:filename/express.d.ts": expressModel,
+	// "ts:filename/express.d.ts": expressModel,
 	"ts:filename/router.d.ts": routerModel,
 };
+
+const sourceCache = new LocalStorageCache();
 
 export const ScriptEditor: React.FC = () => {
 	const [currentFile, setCurrentFile] = useState<string>("file:///src/Routers/index.ts");
@@ -47,18 +50,18 @@ export const ScriptEditor: React.FC = () => {
 		editorRef.current = editor;
 		monacoRef.current = monaco;
 
-		editor.deltaDecorations(
-			[],
-			[
-				{
-					range: new monaco.Range(4, 1, 4, 1),
-					options: {
-						stickiness: 1,
-						linesDecorationsClassName: styles["myMarginDecoration"],
-					},
-				},
-			],
-		);
+		// editor.deltaDecorations(
+		// 	[],
+		// 	[
+		// 		{
+		// 			range: new monaco.Range(4, 1, 4, 1),
+		// 			options: {
+		// 				stickiness: 1,
+		// 				linesDecorationsClassName: styles["myMarginDecoration"],
+		// 			},
+		// 		},
+		// 	],
+		// );
 
 		// monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
 		// 	noSemanticValidation: true,
@@ -84,8 +87,8 @@ export const ScriptEditor: React.FC = () => {
 			allowSyntheticDefaultImports: true,
 			alwaysStrict: true,
 			resolveJsonModule: true,
-			baseUrl: "file:///src/",
-			rootDir: "file:///src/",
+			baseUrl: "file:///src",
+			rootDir: "file:///src",
 			paths: {
 				"*": ["file:///src/*"],
 			},
@@ -99,6 +102,23 @@ export const ScriptEditor: React.FC = () => {
 				})
 				.filter((file) => file.path !== null) as Files,
 		);
+
+		AutoTypings.create(editor, {
+			monaco,
+			fileRootPath: "file:///",
+			sourceCache,
+			dontAdaptEditorOptions: true,
+			sourceResolver: new JsDelivrSourceResolver(),
+			onUpdate(u, t) {
+				// console.log(u, t);
+			},
+			onError(e) {
+				// console.error(e);
+			},
+			onUpdateVersions(versions) {
+				// console.log(versions);
+			},
+		});
 	};
 
 	const updateCurrentFile = useDebouncedCallback((file: string, value: string) => {

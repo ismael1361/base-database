@@ -75,14 +75,14 @@ export const parseJSONVariable = (value: object, variables: Variables): any => {
 
 	parseVariables(variables);
 
-	const parseJSON = (value: object) => {
+	const parseJSON = (value: any) => {
 		const result: any = {};
 
 		for (const k in value) {
 			if (isObject(value[k])) {
 				result[k] = parseJSON(value[k] as object);
 			} else if (typeof value[k] === "string") {
-				result[k] = value[k].replace(/\{\{(.+?)\}\}/g, (match, p1) => {
+				result[k] = value[k].replace(/\{\{(.+?)\}\}/g, (match: any, p1: any) => {
 					return (v[p1.toUpperCase()] ?? "__VALUE_NOT_FOUNT__").toString();
 				});
 			} else {
