@@ -7,8 +7,17 @@ import JSON5 from "json5";
 import { PathInfo } from "../Utils";
 import * as colorette from "colorette";
 import { default_scripts } from "./models/scripts";
+import BasicEventEmitter from "basic-event-emitter";
+
+const tsCompilerOptions: Record<string, ts.CompilerOptions> = {};
 
 const getTSCompilerOptions = (filePath: string): ts.CompilerOptions => {
+	const cachedPath = Object.keys(tsCompilerOptions).find((p) => PathInfo.get(p).isParentOf(filePath.replace(/\\/g, "/")) || PathInfo.get(p).equals(filePath.replace(/\\/g, "/")));
+
+	if (cachedPath) {
+		return tsCompilerOptions[cachedPath];
+	}
+
 	let options: ts.CompilerOptions = {};
 
 	let tsconfigFile = filePath;
@@ -57,10 +66,12 @@ const getTSCompilerOptions = (filePath: string): ts.CompilerOptions => {
 
 	compilerOptions.baseUrl = compilerOptions.baseUrl ?? compilerOptions.rootDir ?? tsconfigFile;
 
+	if (fs.existsSync(path.resolve(tsconfigFile, "tsconfig.json"))) tsCompilerOptions[tsconfigFile.replace(/\\/g, "/")] = compilerOptions;
+
 	return compilerOptions;
 };
 
-const validateTypeScript = (filePath: string): string => {
+const validateTypeScript = (filePath: string, onError?: (error: string) => void): string => {
 	// Ler o conteúdo do arquivo TypeScript
 	const fileContent = fs.readFileSync(filePath, "utf-8");
 
@@ -73,6 +84,8 @@ const validateTypeScript = (filePath: string): string => {
 	// Verificar se há erros no código TypeScript
 	const diagnostics = ts.getPreEmitDiagnostics(program);
 
+	onError = typeof onError === "function" ? onError : console.error;
+
 	if (diagnostics.length > 0) {
 		// Exibir erros de validação
 		diagnostics.forEach((diagnostic) => {
@@ -83,13 +96,13 @@ const validateTypeScript = (filePath: string): string => {
 				const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 				const errorLine = fileContent.split("\n")[line].replace(/\t/g, " ");
 				const errorLength = diagnostic.length || message.length; // Usa o comprimento do erro ou da mensagem
-				console.error(
+				onError(
 					`\n${colorette.cyan(path.relative(process.cwd(), fileName))}:${colorette.yellow(line + 1)}:${colorette.yellow(character + 1)} - ${colorette.red("error")} ${colorette.blue(
 						`TS${diagnostic.code}`,
 					)}: ${message}\n\n${colorette.bgWhite(colorette.black(line + 1))} ${errorLine}\n${colorette.bgWhite(" ")} ${" ".repeat(character)}${colorette.red("~".repeat(errorLength))}\n`,
 				);
 			} else {
-				console.error(`\n${colorette.cyan(path.relative(process.cwd(), fileName))} - ${colorette.red("error")} ${colorette.blue(`TS${diagnostic.code}`)}: ${message}\n`);
+				onError(`\n${colorette.cyan(path.relative(process.cwd(), fileName))} - ${colorette.red("error")} ${colorette.blue(`TS${diagnostic.code}`)}: ${message}\n`);
 			}
 		});
 
@@ -140,9 +153,9 @@ const resolveModule = (specifier: string, actualPath: string, baseUrl?: string, 
 	return specifier;
 };
 
-const compileTypeScript = (filePath: string): string => {
+const compileTypeScript = (filePath: string, onError?: (error: string) => void): string => {
 	try {
-		const fileContent = validateTypeScript(filePath);
+		const fileContent = validateTypeScript(filePath, onError);
 
 		// Opções de compilação do TypeScript
 		const compilerOptions = getTSCompilerOptions(filePath);
@@ -190,7 +203,9 @@ const compileTypeScript = (filePath: string): string => {
 	return "";
 };
 
-class Modules {
+class Modules extends BasicEventEmitter<{
+	error: (mss: string) => void;
+}> {
 	private cacheModules = new Map<string, any>();
 	private cacheObserveModules = new Map<string, { event?: fs.StatsListener; modules: Record<string, () => void> }>();
 
@@ -337,7 +352,9 @@ class Modules {
 			return this.cacheModules.get(filePath)!;
 		}
 
-		const compiledCode = compileTypeScript(filePath);
+		const compiledCode = compileTypeScript(filePath, (error) => {
+			this.emit("error", error);
+		});
 		const exports = {};
 
 		// console.log("compiledCode", compiledCode);
@@ -345,7 +362,6 @@ class Modules {
 		await new Promise<void>((resolve) => {
 			const script = new vm.Script(compiledCode, { filename: filePath });
 			const context = vm.createContext(this.getGlobalContext(filePath, exports, resolve, onMutateImports));
-
 			script.runInContext(context);
 		});
 
