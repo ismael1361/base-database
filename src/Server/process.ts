@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-
+import os from "os";
+import cluster from "cluster";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
@@ -64,22 +65,40 @@ function stopDaemon() {
 	}
 }
 
-async function workDaemon(options: StartDaemonOptions) {
+async function workDaemon(options: StartDaemonOptions, isDev: boolean = false) {
 	const { Daemon } = await import("./daemon");
+	const Memo = await import("ipc-memo-cache");
 
-	const daemon = new Daemon(options.host, parseInt(options.port), options.path);
+	const numCPUs = os.cpus().length;
 
-	process.on("unhandledRejection", (reason: any, promise) => {
-		daemon.log(String(reason.stack || reason), "error");
-	});
-
-	process.on("uncaughtException", (err) => {
-		daemon.log(String(err.stack || err), "error");
-	});
+	Memo.default.defineCluster();
 
 	process.on("SIGTERM", () => {
 		process.exit(0);
 	});
+
+	if (!isDev && cluster.isPrimary) {
+		console.log(`Master process ${process.pid} is running`);
+
+		for (let i = 0; i < numCPUs; i++) {
+			cluster.fork();
+		}
+
+		cluster.on("exit", (worker, code, signal) => {
+			console.log(`Worker process ${worker.process.pid} died. Restarting...`);
+			cluster.fork();
+		});
+	} else {
+		const daemon = new Daemon(options.host, parseInt(options.port), options.path);
+
+		process.on("unhandledRejection", (reason: any, promise) => {
+			daemon.log(String(reason.stack || reason), "error");
+		});
+
+		process.on("uncaughtException", (err) => {
+			daemon.log(String(err.stack || err), "error");
+		});
+	}
 }
 
 function infoDaemon() {
@@ -98,12 +117,13 @@ program
 	.command("start")
 	.description("Start the daemon")
 	.option("--daemon", "Run the process in the background")
+	.option("--dev", "Run the process in development mode")
 	.option("--port <port>", "Port to run the server", "3000")
 	.option("--host <host>", "Host to run the server", "localhost")
 	.option("--path <path>", "Path to setings dir", "/server-db-settings")
 	.action((options) => {
 		if (options.daemon) {
-			workDaemon(options);
+			workDaemon(options, options.dev);
 		} else {
 			startDaemon(options);
 		}

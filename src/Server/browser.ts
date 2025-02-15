@@ -4,6 +4,7 @@ import type { Server as HttpsServer } from "https";
 import type { Application } from "express";
 import BasicEventEmitter from "basic-event-emitter";
 import type { ListenOptions } from "net";
+import type { Server as ServerIO } from "socket.io";
 import { ERROR_FACTORY, Errors } from "../Error";
 
 export const serverSupported = false;
@@ -17,17 +18,35 @@ export interface ServerSettings extends AppSettings {
 export abstract class ServerManager extends BasicEventEmitter<{}> {
 	private server: HttpServer | undefined;
 	private app: Application | undefined;
+	private io: ServerIO | undefined;
 
 	constructor() {
 		super();
 	}
 
-	async initialize(server: HttpServer, app: Application): Promise<void> {
+	async initialize(server: HttpServer, app: Application, io: ServerIO): Promise<void> {
 		this.server = server;
 		this.app = app;
+		this.io = io;
 
 		this.setupMiddleware(this.app);
 		this.setupRoutes(this.app);
+
+		// this.io.on('connection', (socket) => {
+		//     console.log('Um script conectou-se ao servidor via WebSocket:', socket.id);
+
+		//     // Receber mensagens do script (projeto1.js)
+		//     socket.on('registerRoute', (data) => {
+		//         const { path, handler } = data;
+
+		//         // Registrar a rota dinamicamente no Express
+		//         this.app?.get(path, (req, res) => {
+		//             handler(req, res);
+		//         });
+
+		//         console.log(`Rota registrada: ${path}`);
+		//     });
+		// });
 
 		this.prepared = true;
 	}

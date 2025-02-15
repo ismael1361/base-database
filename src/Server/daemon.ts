@@ -9,6 +9,7 @@ import type { DatabaseSettings } from "./types";
 import { auth_model, default_model } from "./models/databases";
 import { parseJSONVariable } from "Utils";
 import { Script } from "./script";
+import Memo from "ipc-memo-cache";
 
 export class Daemon extends BasicEventEmitter<{}> {
 	app: Server = null!;

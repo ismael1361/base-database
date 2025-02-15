@@ -88,7 +88,9 @@
 		"cors": "^2.8.5",
 		"esm": "^3.2.25",
 		"express": "^4.21.2",
+		"ipc-memo-cache": "^1.1.0",
 		"resolve": "^1.22.8",
+		"socket.io": "^4.8.1",
 		"sqlite3": "^5.1.7"
 	}
 }

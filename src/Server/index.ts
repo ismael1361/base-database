@@ -6,6 +6,7 @@ import express, { Application } from "express";
 import cors from "cors";
 import { createRoutes } from "../Webmanager";
 import { isInstanceOf } from "../Utils";
+import { Server as ServerIO } from "socket.io";
 
 export { HttpServerFunction, ServerSettings } from "./browser";
 
@@ -46,7 +47,9 @@ export class ServerManager extends Browser.ServerManager {
 			throw ERROR_FACTORY.create("ServerManager", Errors.INVALID_SERVER_INSTANCE);
 		}
 
-		this.initialize(server, app);
+		const io = new ServerIO(server);
+
+		this.initialize(server, app, io);
 	}
 
 	setupMiddleware(app: Application): void {
