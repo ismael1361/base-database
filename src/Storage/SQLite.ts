@@ -71,6 +71,38 @@ const parseQuery = (query?: Database.QueryOptions) => {
 	};
 };
 
+const columnsClause = (columns: Database.SerializeDataType<any>, initial: boolean = false): Record<PropertyKey, string> => {
+	return Object.fromEntries(
+		Object.entries(columns).map(([column, info]) => {
+			let clause = `${column} ${info.type}`;
+
+			if (info.primaryKey) clause += " PRIMARY KEY";
+			if (info.autoIncrement) clause += " AUTOINCREMENT";
+			if (info.notNull && (initial || (info.default && typeof info.default !== "function"))) clause += " NOT NULL";
+			if (info.default && typeof info.default !== "function") {
+				switch (typeof info.default) {
+					case "string":
+						clause += ` DEFAULT ${JSON.stringify(info.default)}`;
+						break;
+					case "number":
+					case "bigint":
+					case "boolean":
+						clause += ` DEFAULT ${info.default}`;
+						break;
+					case "object":
+						if (info.default instanceof Date) {
+							clause += ` DEFAULT ${info.default.getTime()}`;
+						}
+						break;
+				}
+			}
+			if (info.unique) clause += " UNIQUE";
+
+			return [column, clause];
+		}),
+	);
+};
+
 class SQLiteConfig {
 	local: string;
 
@@ -79,14 +111,17 @@ class SQLiteConfig {
 	}
 }
 
-export class SQLite extends Custom<sqlite3.Database, SQLiteConfig> {
+export class SQLite extends Custom<sqlite3.Database> {
 	private db: sqlite3.Database | undefined;
+	private config: SQLiteConfig;
 
-	parseConfig(config?: Partial<SQLiteConfig>): SQLiteConfig {
-		return new SQLiteConfig(config ?? {});
+	constructor(config?: Partial<SQLiteConfig>) {
+		super();
+
+		this.config = new SQLiteConfig(config ?? {});
 	}
 
-	connect(database: string): Promise<sqlite3.Database> {
+	connect(): Promise<sqlite3.Database> {
 		return new Promise((resolve, reject) => {
 			try {
 				const db = (this.db = new sqlite3.Database(this.config.local));
@@ -246,79 +281,44 @@ export class SQLite extends Custom<sqlite3.Database, SQLiteConfig> {
 		});
 	}
 
+	addColumn(table: string, column: string, options?: Database.ColumnOptions): Promise<void> {
+		return this.ready(async (db) => {
+			return new Promise((resolve, reject) => {
+				const columnClause = columnsClause({ [column]: options } as any);
+
+				db.run(`ALTER TABLE ${table} ADD COLUMN ${columnClause[column]}`, (err) => {
+					if (err) reject(new Error(err.message));
+					else resolve();
+				});
+			});
+		});
+	}
+
+	remomoveColumn(table: string, column: string): Promise<void> {
+		return this.ready(async (db) => {
+			return Promise.resolve();
+		});
+	}
+
 	createTable(table: string, columns: Database.SerializeDataType<any>): Promise<void> {
 		return this.ready(async (db) => {
 			return new Promise((resolve, reject) => {
-				const columnClause = Object.fromEntries(
-					Object.entries(columns).map(([column, info]) => {
-						let clause = `${column} ${info.type}`;
+				const columnClause = columnsClause(columns, true);
 
-						if (info.primaryKey) clause += " PRIMARY KEY";
-						if (info.autoIncrement) clause += " AUTOINCREMENT";
-						if (info.notNull) clause += " NOT NULL";
-						if (info.default && typeof info.default !== "function") {
-							switch (typeof info.default) {
-								case "string":
-									clause += ` DEFAULT ${JSON.stringify(info.default)}`;
-									break;
-								case "number":
-								case "bigint":
-								case "boolean":
-									clause += ` DEFAULT ${info.default}`;
-									break;
-								case "object":
-									if (info.default instanceof Date) {
-										clause += ` DEFAULT ${info.default.getTime()}`;
-									}
-									break;
-							}
-						}
-						if (info.unique) clause += " UNIQUE";
+				const executeAddColumn = async () => {
+					await Promise.all(
+						Object.keys(columns).map((column: string) => {
+							return this.addColumn(table, column, columns[column] as any).catch(() => Promise.resolve());
+						}),
+					);
+				};
 
-						return [column, clause];
-					}),
-				);
-
-				db.all<{
-					cid: number;
-					name: string;
-					type: string;
-					notnull: number;
-					dflt_value: string;
-					pk: number;
-				}>(`PRAGMA table_info(${table});`, (err, rows) => {
+				db.run(`CREATE TABLE IF NOT EXISTS ${table} (${Object.values(columnClause).join(", ")});`, async (err) => {
 					if (err) {
 						return reject(new Error(err.message));
 					}
-
-					const existingColumns = rows.map((row) => row.name); // Nomes das colunas existentes
-
-					// Verifica e cria colunas ausentes
-					const columnDefinitions: string[] = Object.keys(columns)
-						.filter((column) => !existingColumns.includes(column)) // Apenas colunas ausentes
-						.map((column) => {
-							return `ALTER TABLE ${table} ADD COLUMN ${columnClause[column]}`;
-						});
-
-					// Executa as colunas ausentes
-					const executeAddColumn = async () => {
-						for (const query of columnDefinitions) {
-							await new Promise<void>((resolveAdd, rejectAdd) => {
-								db.run(query, (err) => {
-									if (err) rejectAdd(new Error(err.message));
-									else resolveAdd();
-								});
-							});
-						}
-					};
-
-					db.run(`CREATE TABLE IF NOT EXISTS ${table} (${Object.values(columnClause).join(", ")});`, async (err) => {
-						if (err) {
-							return reject(new Error(err.message));
-						}
-						await executeAddColumn().catch(() => Promise.resolve());
-						resolve();
-					});
+					await executeAddColumn();
+					resolve();
 				});
 			});
 		});

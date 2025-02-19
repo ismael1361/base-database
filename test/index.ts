@@ -1,4 +1,4 @@
-import { Database, initializeApp, getDatabase, Server, DEFAULT_ENTRY_NAME, CustomStorage } from "../src";
+import { Database, initializeApp, getDatabase, Server, DEFAULT_ENTRY_NAME, Storage } from "../src";
 import { ModelDatabase } from "./DB";
 import { Daemon } from "../src/Server/daemon";
 import path from "path";
@@ -25,7 +25,7 @@ new Daemon("0.0.0.0", 3030, path.resolve(__dirname, "../db-teste")).initialize()
 // };
 
 // const db = app.createDatabase({
-// 	storage: { custom: CustomStorage.SQLite, config: { local: ":memory:" } },
+// 	storage: new Storage.SQLite({ local: ":memory:" }),
 // 	tables: {
 // 		myTable: {
 // 			name: {

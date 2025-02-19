@@ -9,10 +9,7 @@ export interface AppSettings {
 }
 
 export interface DatabaseSettings {
-	storage: {
-		custom: Database.CustomConstructor<any>;
-		config: any;
-	};
+	storage: Database.Custom<any>;
 	tables: Record<PropertyKey, Database.Serialize<any>>;
 }
 
@@ -46,9 +43,9 @@ export class App extends BasicEventEmitter<{
 
 		if (_database.has(name as any)) {
 			db = _database.get(name as any)!;
-			db.initialize(storage.custom, storage.config);
+			db.initialize(storage);
 		} else {
-			db = new Database.Database(storage.custom, name as any, storage.config);
+			db = new Database.Database(storage, name as any);
 			db.app = this;
 			db.tablesNames = Object.keys(tables);
 			_database.set(name as any, db);

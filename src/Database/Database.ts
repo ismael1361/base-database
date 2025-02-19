@@ -12,11 +12,6 @@ export * from "./Custom";
 export * from "./Table";
 
 /**
- * Define type for custom database constructor
- */
-export type CustomConstructor<db = never> = new (database: string, config?: any) => Custom<db>;
-
-/**
  * Database class
  */
 export class Database<db = never> extends BasicEventEmitter<{
@@ -46,17 +41,17 @@ export class Database<db = never> extends BasicEventEmitter<{
 	 * @example
 	 * const database = new Database(CustomDatabase, "my-database");
 	 */
-	constructor(custom: CustomConstructor<db>, private database: string, private config: any) {
+	constructor(custom: Custom<db>, private database: string) {
 		super();
 		this.custom = null!;
-		this.initialize(custom, this.config);
+		this.initialize(custom);
 	}
 
-	initialize(custom: CustomConstructor<db>, config: any) {
+	initialize(custom: Custom<db>) {
 		this.prepared = false;
-		this.config = config;
 
-		this.custom = new custom(this.database, this.config);
+		this.custom = custom;
+		this.custom.databaseName = this.database;
 
 		this.tables.forEach((table) => {
 			table.initialize(this.custom);

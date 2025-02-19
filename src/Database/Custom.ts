@@ -1,10 +1,10 @@
 import { ERROR_FACTORY, Errors } from "../Error";
-import type { QueryOptions, Row, SerializeDataType } from "./Types";
+import type { ColumnOptions, QueryOptions, Row, SerializeDataType } from "./Types";
 
 /**
  * Custom database class
  */
-export abstract class Custom<db = never, config = any> {
+export abstract class Custom<db = never> {
 	/**
 	 * If the database is disconnected
 	 */
@@ -16,27 +16,28 @@ export abstract class Custom<db = never, config = any> {
 	/**
 	 * The database name
 	 */
-	private readonly _databaseName: string;
-
-	readonly config: config;
+	private _databaseName: string = "";
 
 	/**
 	 * Create a custom database
 	 * @param database The database name
 	 */
-	constructor(database: string, config?: Partial<config>) {
-		this._databaseName = database;
-		this.config = this.parseConfig(config);
-		this.database = this.connect(database);
+	constructor() {
+		this.database = this.connect();
 	}
-
-	abstract parseConfig(config?: Partial<config>): config;
 
 	/**
 	 * Get the database name
 	 */
 	get databaseName(): string {
 		return this._databaseName;
+	}
+
+	/**
+	 * Set the database name
+	 */
+	set databaseName(value: string) {
+		this._databaseName = value;
 	}
 
 	/**
@@ -72,12 +73,11 @@ export abstract class Custom<db = never, config = any> {
 
 	/**
 	 * Connect to the database
-	 * @param database The database name
 	 * @returns The database
 	 * @example
 	 * await custom.connect("my-database");
 	 */
-	abstract connect(database: string): Promise<db>;
+	abstract connect(): Promise<db>;
 
 	/**
 	 * Disconnect from the database
@@ -183,6 +183,30 @@ export abstract class Custom<db = never, config = any> {
 	 * });
 	 */
 	abstract length(table: string, query?: QueryOptions): Promise<number>;
+
+	/**
+	 * Add a column in a table
+	 * @param table The table name
+	 * @param column The column name
+	 * @param options The column options
+	 * @example
+	 * await custom.addColumn("my-table", "my-column", {
+	 *     type: "TEXT",
+	 *     notNull: true,
+	 *     unique: true,
+	 *     default: "hello",
+	 * });
+	 */
+	abstract addColumn(table: string, column: string, options?: ColumnOptions): Promise<void>;
+
+	/**
+	 * Remove a column from a table
+	 * @param table The table name
+	 * @param column The column name
+	 * @example
+	 * await custom.remomoveColumn("my-table", "my-column");
+	 */
+	abstract remomoveColumn(table: string, column: string): Promise<void>;
 
 	/**
 	 * Create a table

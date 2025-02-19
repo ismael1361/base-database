@@ -4,7 +4,7 @@ import { Server } from "./index";
 import { DEFAULT_ENTRY_NAME } from "../App";
 import BasicEventEmitter from "basic-event-emitter";
 import { Types } from "../Database/Utils";
-import * as CustomStorage from "../CustomStorage";
+import * as Storage from "../Storage";
 import type { DatabaseSettings } from "./types";
 import { auth_model, default_model } from "./models/databases";
 import { parseJSONVariable } from "Utils";
@@ -69,14 +69,14 @@ export class Daemon extends BasicEventEmitter<{}> {
 		}
 
 		for (const dbName in config) {
-			const findStorage = Object.keys(CustomStorage).find((storage) => storage.toLowerCase() === config[dbName].storage.type);
+			const findStorage = Object.keys(Storage).find((storage) => storage.toLowerCase() === config[dbName].storage.type);
 
 			if (!findStorage) {
 				continue;
 			}
 
 			this.app.createDatabase(dbName, {
-				storage: { custom: CustomStorage[findStorage], config: config[dbName].storage.config },
+				storage: new Storage[findStorage](config[dbName].storage.config),
 				tables: Object.fromEntries(
 					Object.entries(config[dbName].tables).map(([tableName, table]) => {
 						return [

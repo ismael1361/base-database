@@ -105,6 +105,8 @@ export type SerializeItemAny<T> = T extends SerializeItemProperties<infer V>
 
 export type SerializeItem<T extends SerializeValueType = SerializeValueType> = SerializeItemAny<T>;
 
+export type ColumnOptions = SerializeItemProperties<any>;
+
 export type Serialize<T extends TableType> = {
 	[k in keyof T]: TypedOptions<SerializeItem<T[k]>>;
 };
