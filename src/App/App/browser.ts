@@ -8,28 +8,16 @@ export interface AppSettings {
 	name?: PropertyKey;
 }
 
-// export type Tables<T extends Record<PropertyKey, Database.Serialize> = Record<PropertyKey, Database.Serialize>> = {
-// 	[K in keyof T]: T[K];
-// };
-
-type SimplifyTableTypes<T extends Database.TableType, S extends Database.Serialize<T> = Database.Serialize<T>> = {
-	[K in keyof S]: Omit<S[K], "type"> & { type: S[K]["type"] extends string ? string : S[K]["type"] };
-};
-
-type SimplifyTablesTypes<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> = {
-	[K in keyof T]: SimplifyTableTypes<T[K]>;
-};
-
-export interface DatabaseSettings<D extends DatabaseTyping, DB extends keyof D, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>> {
+export interface DatabaseSettings {
 	storage: {
 		custom: Database.CustomConstructor<any>;
 		config: any;
 	};
-	tables: SimplifyTablesTypes<D, DB, T>;
+	tables: Record<PropertyKey, Database.Serialize<any>>;
 }
 
 export class App extends BasicEventEmitter<{
-	createDatabase(name: string, options: DatabaseSettings<any, any>): void;
+	createDatabase(name: string, options: DatabaseSettings): void;
 }> {
 	readonly isServer: boolean = false;
 	readonly name: PropertyKey;
@@ -46,16 +34,13 @@ export class App extends BasicEventEmitter<{
 		this.prepared = true;
 	}
 
-	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(options: DatabaseSettings<D, DB, T>): T;
-	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(name: DB, options: DatabaseSettings<D, DB, T>): T;
-	createDatabase<D extends DatabaseTyping, DB extends keyof D = typeof DEFAULT_ENTRY_NAME, T extends DatabaseTables<D, DB> = DatabaseTables<D, DB>>(
-		name: DB | DatabaseSettings<D, DB, T>,
-		options?: DatabaseSettings<D, DB, T>,
-	): T {
-		options = (typeof name === "string" ? options : name) as DatabaseSettings<D, DB, T>;
-		name = (typeof name === "string" ? name : DEFAULT_ENTRY_NAME) as DB;
+	createDatabase(options: DatabaseSettings): Record<PropertyKey, Database.Serialize<any>>;
+	createDatabase(name: string, options: DatabaseSettings): Record<PropertyKey, Database.Serialize<any>>;
+	createDatabase(name: string | DatabaseSettings, options?: DatabaseSettings): Record<PropertyKey, Database.Serialize<any>> {
+		options = (typeof name === "string" ? options : name) as DatabaseSettings;
+		name = (typeof name === "string" ? name : DEFAULT_ENTRY_NAME) as string;
 
-		const { storage, tables } = options as DatabaseSettings<D, DB, T>;
+		const { storage, tables } = options as DatabaseSettings;
 
 		let db: Database.Database<any>;
 
@@ -77,7 +62,7 @@ export class App extends BasicEventEmitter<{
 			}
 		}
 
-		this.emit("createDatabase", String(name), options as DatabaseSettings<D, DB, T>);
+		this.emit("createDatabase", String(name), options as DatabaseSettings);
 		return tables as any;
 	}
 }

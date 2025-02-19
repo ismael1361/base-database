@@ -5,7 +5,7 @@ import path from "path";
 
 new Daemon("0.0.0.0", 3030, path.resolve(__dirname, "../db-teste")).initialize();
 
-// const app = new Server({ name: DEFAULT_ENTRY_NAME });
+// const app = initializeApp();
 
 // const server = app.createServer();
 
@@ -24,7 +24,7 @@ new Daemon("0.0.0.0", 3030, path.resolve(__dirname, "../db-teste")).initialize()
 // 	};
 // };
 
-// const db = app.createDatabase<DatabaseTyping>({
+// const db = app.createDatabase({
 // 	storage: { custom: CustomStorage.SQLite, config: { local: ":memory:" } },
 // 	tables: {
 // 		myTable: {
@@ -48,7 +48,12 @@ new Daemon("0.0.0.0", 3030, path.resolve(__dirname, "../db-teste")).initialize()
 
 // // type MainDatabase = typeof db;
 
-// const myTable = getDatabase<DatabaseTyping>().table("myTable");
+// const myTable = getDatabase().table<{
+// 	name: string;
+// 	createdAt: Date;
+// 	gender: "Female" | "Male" | "Other";
+// 	amount: number;
+// }>("myTable");
 
 // myTable.ready(async (table) => {
 // 	await table.insert([

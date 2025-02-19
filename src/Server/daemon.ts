@@ -75,7 +75,7 @@ export class Daemon extends BasicEventEmitter<{}> {
 				continue;
 			}
 
-			this.app.createDatabase<any, any>(dbName, {
+			this.app.createDatabase(dbName, {
 				storage: { custom: CustomStorage[findStorage], config: config[dbName].storage.config },
 				tables: Object.fromEntries(
 					Object.entries(config[dbName].tables).map(([tableName, table]) => {
