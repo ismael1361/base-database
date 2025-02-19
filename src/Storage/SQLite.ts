@@ -154,7 +154,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 			return new Promise((resolve, reject) => {
 				const { columns, where, order, limit, offset } = parseQuery(query);
 
-				db.all<Database.Row>(`SELECT ${columns} FROM ${table} ${where} ${order} ${limit} ${offset}`.trim() + ";", (err, rows) => {
+				db.all<Database.Row>(`SELECT ${columns} FROM '${table}' ${where} ${order} ${limit} ${offset}`.trim() + ";", (err, rows) => {
 					if (err) reject(new Error(err.message));
 					else resolve(rows);
 				});
@@ -167,7 +167,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 			return new Promise((resolve, reject) => {
 				const { columns, where, order } = parseQuery(query);
 
-				db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
+				db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM '${table}' ${where} ${order}`.trim() + ";", (err, row) => {
 					if (err) reject(new Error(err.message));
 					else resolve(row ?? null);
 				});
@@ -180,7 +180,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 			return new Promise((resolve, reject) => {
 				const { columns, where, order } = parseQuery(query);
 
-				db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ";", (err, row) => {
+				db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM '${table}' ${where} ${order}`.trim() + ";", (err, row) => {
 					if (err) reject(new Error(err.message));
 					else resolve(row ?? null);
 				});
@@ -192,8 +192,8 @@ export class SQLite extends Custom<sqlite3.Database> {
 		return this.ready(async (db) => {
 			return new Promise((resolve, reject) => {
 				const { columns, where, order } = parseQuery(query);
-				const offset = `LIMIT 1 OFFSET (SELECT COUNT(*) - 1 FROM ${table} ${where}`.trim() + ")";
-				db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM ${table} ${where} ${order}`.trim() + ` ${offset};`, (err, row) => {
+				const offset = `LIMIT 1 OFFSET (SELECT COUNT(*) - 1 FROM '${table}' ${where}`.trim() + ")";
+				db.get<Database.Row | null | undefined>(`SELECT ${columns} FROM '${table}' ${where} ${order}`.trim() + ` ${offset};`, (err, row) => {
 					if (err) reject(new Error(err.message));
 					else resolve(row ?? null);
 				});
@@ -215,7 +215,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 				stmt.run(Object.values(data), function (err) {
 					if (err) return reject(err);
 					const lastRowID = this.lastID;
-					db.get<Database.Row>(`SELECT rowid, * FROM ${table} WHERE rowid = ?`, [lastRowID], function (err, row) {
+					db.get<Database.Row>(`SELECT rowid, * FROM '${table}' WHERE rowid = ?`, [lastRowID], function (err, row) {
 						if (err) return reject(err);
 						resolve(row);
 					});
@@ -240,7 +240,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 					return;
 				}
 
-				db.run(`UPDATE ${table} SET ${setClause} ${where}`.trim() + ";", Object.values(data), (err) => {
+				db.run(`UPDATE '${table}' SET ${setClause} ${where}`.trim() + ";", Object.values(data), (err) => {
 					if (err) reject(new Error(err.message));
 					else resolve();
 				});
@@ -258,7 +258,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 					return;
 				}
 
-				db.run(`DELETE FROM ${table} ${where}`.trim() + ";", (err) => {
+				db.run(`DELETE FROM '${table}' ${where}`.trim() + ";", (err) => {
 					if (err) reject(new Error(err.message));
 					else resolve();
 				});
@@ -273,7 +273,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 
 				db.get<{
 					count: number;
-				}>(`SELECT COUNT(*) AS count FROM ${table} ${where}`.trim() + ";", (err, row) => {
+				}>(`SELECT COUNT(*) AS count FROM '${table}' ${where}`.trim() + ";", (err, row) => {
 					if (err) reject(new Error(err.message));
 					else resolve(row?.count ?? 0);
 				});
@@ -286,7 +286,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 			return new Promise((resolve, reject) => {
 				const columnClause = columnsClause({ [column]: options } as any);
 
-				db.run(`ALTER TABLE ${table} ADD COLUMN ${columnClause[column]}`, (err) => {
+				db.run(`ALTER TABLE '${table}' ADD COLUMN ${columnClause[column]}`, (err) => {
 					if (err) reject(new Error(err.message));
 					else resolve();
 				});
@@ -313,7 +313,7 @@ export class SQLite extends Custom<sqlite3.Database> {
 					);
 				};
 
-				db.run(`CREATE TABLE IF NOT EXISTS ${table} (${Object.values(columnClause).join(", ")});`, async (err) => {
+				db.run(`CREATE TABLE IF NOT EXISTS '${table}' (${Object.values(columnClause).join(", ")});`, async (err) => {
 					if (err) {
 						return reject(new Error(err.message));
 					}
@@ -324,10 +324,23 @@ export class SQLite extends Custom<sqlite3.Database> {
 		});
 	}
 
+	getTableSql(table: string): Promise<string> {
+		return this.ready(async (db) => {
+			return new Promise((resolve, reject) => {
+				db.get<{
+					sql: string;
+				}>(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?;`, [table], (err, row) => {
+					if (err) reject(new Error(err.message));
+					else resolve(row?.sql ?? "");
+				});
+			});
+		});
+	}
+
 	deleteTable(table: string): Promise<void> {
 		return this.ready(async (db) => {
 			return new Promise((resolve, reject) => {
-				db.run(`DROP TABLE IF EXISTS ${table};`, (err) => {
+				db.run(`DROP TABLE IF EXISTS '${table}';`, (err) => {
 					if (err) reject(new Error(err.message));
 					else resolve();
 				});

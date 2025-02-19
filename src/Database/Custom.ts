@@ -221,6 +221,16 @@ export abstract class Custom<db = never> {
 	abstract createTable(table: string, columns: SerializeDataType<any>): Promise<void>;
 
 	/**
+	 * Get the SQL for a table
+	 * @param table The table name
+	 * @returns The SQL
+	 * @example
+	 * const sql = await custom.getTableSql("my-table");
+	 * console.log(sql); // CREATE TABLE 'my-table' ( ...
+	 */
+	abstract getTableSql(table: string): Promise<string>;
+
+	/**
 	 * Delete a table
 	 * @param table The table name
 	 * @example
