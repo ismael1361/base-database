@@ -1,0 +1,641 @@
+# utils/HandleError.ts
+```ts
+const codes = {
+    100: "Continue",
+    101: "Switching Protocols",
+    102: "Processing",
+    103: "Early Hints",
+    200: "OK",
+    201: "Created",
+    202: "Accepted",
+    203: "Non-Authoritative Information",
+    204: "No Content",
+    205: "Reset Content",
+    206: "Partial Content",
+    207: "Multi-Status",
+    208: "Already Reported",
+    226: "IM Used",
+    300: "Multiple Choices",
+    301: "Moved Permanently",
+    302: "Found",
+    303: "See Other",
+    304: "Not Modified",
+    305: "Use Proxy",
+    307: "Temporary Redirect",
+    308: "Permanent Redirect",
+    400: "Bad Request",
+    401: "Unauthorized",
+    402: "Payment Required",
+    403: "Forbidden",
+    404: "Not Found",
+    405: "Method Not Allowed",
+    406: "Not Acceptable",
+    407: "Proxy Authentication Required",
+    408: "Request Timeout",
+    409: "Conflict",
+    410: "Gone",
+    411: "Length Required",
+    412: "Precondition Failed",
+    413: "Payload Too Large",
+    414: "URI Too Long",
+    415: "Unsupported Media Type",
+    416: "Range Not Satisfiable",
+    417: "Expectation Failed",
+    418: "I'm a Teapot",
+    421: "Misdirected Request",
+    422: "Unprocessable Entity",
+    423: "Locked",
+    424: "Failed Dependency",
+    425: "Too Early",
+    426: "Upgrade Required",
+    428: "Precondition Required",
+    429: "Too Many Requests",
+    431: "Request Header Fields Too Large",
+    451: "Unavailable For Legal Reasons",
+    500: "Internal Server Error",
+    501: "Not Implemented",
+    502: "Bad Gateway",
+    503: "Service Unavailable",
+    504: "Gateway Timeout",
+    505: "HTTP Version Not Supported",
+    506: "Variant Also Negotiates",
+    507: "Insufficient Storage",
+    508: "Loop Detected",
+    510: "Not Extended",
+    511: "Network Authentication Required",
+} as const;
+
+export class HandleError extends Error {
+    constructor(readonly message: string, readonly name: string = "DEFAULT", readonly cause?: keyof typeof codes | HandleError | Error | string | object) {
+        super(message);
+    }
+
+    get code() {
+        return typeof this.cause === "number" ? this.cause : 200;
+    }
+
+    get status() {
+        return {
+            code: this.code,
+            message: codes[this.code],
+        };
+    }
+}
+```
+
+# utils/Router.ts
+```ts
+import { HandleError } from "./HandleError";
+
+import type { Request as ExpressRequest, Response, NextFunction, Router as ExpressRouter } from "express";
+import Express from "express";
+
+export type Request<ReqQuery extends string = any, ReqBody = any, ResBody = any> = ExpressRequest<any, ResBody, ReqBody, Record<ReqQuery, string>>;
+
+export { ExpressRequest, Response, NextFunction };
+
+export const Typed = {
+    Request<ReqQuery extends string = any, ReqBody = any, ResBody = any>(): Middleware<Request<ReqQuery, ReqBody, ResBody>, Response> {
+        return async (req, res, next) => {
+            next();
+        };
+    },
+} as const;
+
+type MiddlewareRequest<Req extends ExpressRequest = ExpressRequest> = Req & {
+    /**
+     * Executes the middleware logic.
+     * @param {boolean} [isOnce=false] - Indicates whether the middleware should only be executed once. If true, the middleware will not be executed again for the same request.
+     */
+    executeOnce(isOnce?: boolean): void;
+};
+
+/**
+ * The middleware function that will be called when a route is matched.
+ * @param req The request object.
+ * @param res The response object.
+ * @param next The next function.
+ * @example
+ * ```ts
+ * import { Router } from "router";
+ *
+ * const middleware: Router.Middleware = (req, res, next) => {
+ *    res.send("Hello, World!");
+ * };
+ * ```
+ */
+export type Middleware<Req extends ExpressRequest = ExpressRequest, Res extends Response = Response> = (req: MiddlewareRequest<Req>, res: Res, next: NextFunction) => any;
+
+export type MiddlewaresBase<T extends Record<PropertyKey, Middleware<any, any>>> = {
+    [K in keyof T]: T[K];
+};
+
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+
+// type MiddlewareRequestType<T> = T extends Middleware<infer Req, any> ? (Req extends ExpressRequest ? Req : never) : never;
+
+type MiddlewareRequestType<T extends Middleware<any, any>[]> = T extends [infer First, ...infer Rest]
+    ? First extends Middleware<infer Req, any>
+        ? Omit<Req, keyof MiddlewareRequestType<Rest extends Middleware<any, any>[] ? Rest : []>> & MiddlewareRequestType<Rest extends Middleware<any, any>[] ? Rest : []>
+        : {}
+    : {};
+
+type CombineRequests<T extends ExpressRequest[]> = T extends [infer First, ...infer Rest] ? First & CombineRequests<Rest extends ExpressRequest[] ? Rest : []> : {};
+
+type CombinedRequest<Mw extends Middleware<any, any>[]> = MiddlewareRequestType<Mw> extends infer Result
+    ? Result extends never
+        ? ExpressRequest
+        : Result extends ExpressRequest
+        ? Result
+        : ExpressRequest
+    : ExpressRequest;
+
+type HandlerType<Mw extends Middleware<any, any>[], Res extends Response> = Middleware<CombinedRequest<Mw>, Res> | InRouter<Res, Mw>;
+
+export const handler = <Req extends ExpressRequest = ExpressRequest, Res extends Response = Response>(handler: Middleware<Req, Res>): Middleware<Req, Res> => handler;
+
+/**
+ * The router instance that will be returned from the `Router` function.
+ * @template Res The response type.
+ * @template C The middlewares that will be applied to all routes.
+ * @example
+ *
+ * ```ts
+ * import { Router } from "utils";
+ *
+ * export default Router.create((router) => {
+ *    router.get("/", [], (req, res) => {
+ *        res.send("Hello, World!");
+ *    });
+ * });
+ * ```
+ */
+interface InRouter<Res extends Response, C extends Middleware<any, any>[] = []> extends Omit<ExpressRouter, "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "use"> {
+    /**
+     * Registers a GET route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.get("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    get(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers a GET route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.get("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    get<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers a POST route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.post("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    post(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers a POST route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.post("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    post<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers a PUT route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.put("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    put(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers a PUT route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.put("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    put<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers a DELETE route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.delete("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    delete(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers a DELETE route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.delete("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    delete<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers a PATCH route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.patch("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    patch(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers a PATCH route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.patch("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    patch<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers an OPTIONS route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.options("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    options(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers an OPTIONS route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.options("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    options<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers a HEAD route.
+     * @param path The path of the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.head("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    head(path: string, handler: HandlerType<[...C], Res>): any;
+
+    /**
+     * Registers a HEAD route.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handler The handler function that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.head("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    head<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], handler: HandlerType<[...Mw, ...C], Res>): any;
+
+    /**
+     * Registers a middleware.
+     * @param path The path of the route.
+     * @param handlers The handler functions that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.use("/", (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    use(path: string, ...handlers: HandlerType<[...C], Res>[]): any;
+
+    /**
+     * Registers a middleware.
+     * @param path The path of the route.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handlers The handler functions that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.use("/", [], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    use<Mw extends Middleware<any, any>[]>(path: string, middlewares: [...Mw], ...handlers: HandlerType<[...Mw, ...C], Res>[]): any;
+
+    /**
+     * Registers a middleware.
+     * @param handlers The handler functions that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.use((req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    use(...handlers: HandlerType<[...C], Res>[]): any;
+
+    /**
+     * Registers a middleware.
+     * @param middlewares The middlewares that will be applied to the route.
+     * @param handlers The handler functions that will be called when the route is matched.
+     * @example
+     * ```ts
+     * router.use([], (req, res) => {
+     *    res.send("Hello, World!");
+     * });
+     * ```
+     */
+    use<Mw extends Middleware<any, any>[]>(middlewares: [...Mw], ...handlers: HandlerType<[...Mw, ...C], Res>[]): any;
+}
+
+export type Handler<Req extends ExpressRequest = ExpressRequest, Res extends Response = Response> = (req: Req, res: Res, next: NextFunction) => void;
+
+const tryHandler = <Mw extends Middleware<any, any>[]>(handler: HandlerType<Mw, any>) =>
+    typeof handler === "function"
+        ? async (req: ExpressRequest, res: Response, next: NextFunction) => {
+              try {
+                  await new Promise((resolve) => setTimeout(resolve, 0));
+                  const response: any = handler(req as any, res, next);
+                  if (response instanceof Promise) await response;
+              } catch (error) {
+                  console.error(error);
+                  const code: number = error instanceof HandleError && typeof error.cause === "number" ? error.code : 400;
+                  const message = error instanceof HandleError || error instanceof Error ? error.message : "Bad ExpressRequest";
+                  res.status(code).json({ message });
+              }
+          }
+        : (handler as any);
+
+const createDynamicMiddleware = <Mw extends Middleware<any, any>[]>(middleware: HandlerType<Mw, any>): Middleware<any, any> => {
+    return (req: any, res: Response, next: NextFunction) => {
+        if (!(req.__executedMiddlewares__ instanceof Set)) req.__executedMiddlewares__ = new Set();
+
+        const executedSet = req.__executedMiddlewares__;
+
+        if (!executedSet.has(middleware)) {
+            req.executeOnce = (isOnce: boolean = true) => {
+                if (isOnce) executedSet.add(middleware);
+                else executedSet.delete(middleware);
+            };
+
+            tryHandler(middleware)(req, res, next);
+        } else {
+            next();
+        }
+    };
+};
+
+type RouterCallback<Mw extends Middleware<any, any>[] = [], Res extends Response = Response> = (router: InRouter<Res, Mw>) => void;
+
+/**
+ * Provides a way to create a router with.
+ * @param callback The callback function that will be called with the router instance.
+ * @returns The router instance.
+ * @example
+ * ```ts
+ * import { Router } from "utils";
+ *
+ * export default Router.create((router) => {
+ *    router.get("/", [], (req, res) => {
+ *        res.send("Hello, World!");
+ *    });
+ * });
+ * ```
+ */
+export function create<Mw extends Middleware<any, any>[] = [], Res extends Response = Response>(callback: RouterCallback<Mw, Res>): ExpressRouter;
+
+/**
+ * Provides a way to create a router with middleware support.
+ * @param middlewares The middlewares that will be applied to all routes.
+ * @param callback The callback function that will be called with the router instance.
+ * @returns The router instance.
+ * @example
+ * ```ts
+ * import { Router } from "utils";
+ *
+ * export default Router.create([], (router) => {
+ *    router.get("/", [], (req, res) => {
+ *        res.send("Hello, World!");
+ *    });
+ * });
+ * ```
+ */
+export function create<Mw extends Middleware<any, any>[] = [], Res extends Response = Response>(middlewares: [...Mw], callback: RouterCallback<Mw, Res>): ExpressRouter;
+
+export function create<Mw extends Middleware<any, any>[] = [], Res extends Response = Response>(middlewares: [...Mw] | RouterCallback<Mw, Res>, callback?: RouterCallback<Mw, Res>): ExpressRouter {
+    const expressRouter = Express.Router();
+    if (Array.isArray(middlewares) && middlewares.length > 0) {
+        for (const middleware of middlewares) {
+            expressRouter.use(typeof middleware === "function" ? createDynamicMiddleware(middleware) : middleware);
+        }
+    }
+
+    callback = typeof middlewares === "function" ? middlewares : callback!;
+
+    const typedRouter: InRouter<Res, Mw> = {
+        ...(expressRouter as any),
+        get(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.get(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        post(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.post(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        put(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.put(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        delete(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.delete(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        patch(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.patch(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        options(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.options(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        head(path, middlewares, handler) {
+            handler = typeof middlewares === "function" ? middlewares : handler;
+            middlewares = typeof middlewares === "function" ? ([] as any) : middlewares;
+            expressRouter.head(path, ...middlewares.map(createDynamicMiddleware), createDynamicMiddleware(handler));
+            return typedRouter;
+        },
+        use(path: any, middlewares: any[], ...handlers: any[]) {
+            middlewares = typeof path === "function" ? ([middlewares] as any) : middlewares;
+            middlewares = Array.isArray(middlewares) ? middlewares : [middlewares];
+            middlewares = middlewares.concat(handlers ?? []);
+            expressRouter.use(typeof path === "function" ? createDynamicMiddleware(path) : path, ...middlewares.map(createDynamicMiddleware));
+            return typedRouter;
+        },
+    };
+
+    callback(typedRouter);
+    return expressRouter;
+}
+```
+
+# utils/index.ts
+```ts
+import { HandleError } from "./HandleError";
+
+export * from "./HandleError";
+export * as Router from "./Router";
+
+export const promiseIsPending = async <T = any>(p: Promise<T>): Promise<boolean> => {
+    const PENDING = Symbol.for("PENDING");
+    const result = await Promise.race([p, Promise.resolve(PENDING)]);
+    return result === PENDING;
+};
+
+export const uuidv4 = (separator: string = "") => {
+    let currentTime = Date.now();
+    return `xxxxxxxx${separator}xxxx${separator}4xxx${separator}yxxx${separator}xxxxxxxxxxxx`.replace(/[xy]/g, function (c) {
+        const r = (currentTime + Math.random() * 16) % 16 | 0;
+        currentTime = Math.floor(currentTime / 16);
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+};
+
+export const safePromise = async <T = any, D = null>(promise: Promise<T>, error?: (e: HandleError) => D): Promise<T | (D extends void ? null : D extends undefined ? null : D)> => {
+    return await promise.catch((e) => {
+        const m = e instanceof HandleError ? e : e instanceof Error ? new HandleError(e.message, e.name, e.stack) : new HandleError(e);
+        if (!error) console.error(m);
+        if (error) return error(m) ?? null;
+        return null as any;
+    });
+};
+```
+
+# Routers/index.ts
+```ts
+import { Router } from "utils";
+import { Auth } from "Middlewares";
+
+export default Router.create([Auth.middleware], (router)=>{
+    router.get("/", [], (req, res)=>{
+        res.send("Hello, World!");
+    });
+});
+```
+
+# Middlewares/index.ts
+```ts
+import { Router } from "utils";
+
+type UserAccessToken = {
+    access_token: string;
+    database: string;
+    uid: string;
+    created: number;
+    ip: string;
+};
+
+interface AuthRequest extends Router.Request {
+    user: UserAccessToken;
+}
+
+export const Auth:Router.MiddlewaresBase<{
+    middleware: Router.Middleware<AuthRequest>;
+}> = {
+    middleware(req, res, next){
+        if(req.headers.authorization){
+            const [type, token] = req.headers.authorization.split(" ");
+            if(type === "Bearer"){
+                req.user = JSON.parse(Buffer.from(token, "base64").toString("utf-8"));
+            }
+        }
+        next();
+    }
+};
+```
+
+# Scripts/index.ts
+```ts
+export const promiseIsPending = async <T = any>(p: Promise<T>): Promise<boolean> => {
+    const PENDING = Symbol.for("PENDING");
+    const result = await Promise.race([p, Promise.resolve(PENDING)]);
+    return result === PENDING;
+};
+```
+

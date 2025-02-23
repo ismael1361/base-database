@@ -49,10 +49,15 @@ export class Daemon extends BasicEventEmitter<{}> {
 	async loadDatabase(ready: boolean = false) {
 		if (!ready) await this.ready();
 
-		const configPath = path.resolve(this.rootDir, "db-config.json");
+		const configPath = path.resolve(this.rootDir, "databases", "db-config.json");
+
+		if (!fs.existsSync(path.dirname(configPath))) {
+			fs.mkdirSync(path.dirname(configPath), { recursive: true });
+		}
+
 		const variables = {
 			ROOTDIR: path
-				.resolve(this.rootDir)
+				.resolve(this.rootDir, "databases")
 				.replace(/\\/g, "/")
 				.replace(/([\/]+)$/g, ""),
 		};

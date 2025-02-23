@@ -53,6 +53,8 @@ export class Database<db = never> extends BasicEventEmitter<{
 		this.custom = custom;
 		this.custom.databaseName = this.database;
 
+		this.custom.initialize();
+
 		this.tables.forEach((table) => {
 			table.initialize(this.custom);
 		});

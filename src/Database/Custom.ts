@@ -12,7 +12,7 @@ export abstract class Custom<db = never> {
 	/**
 	 * The database promise
 	 */
-	readonly database: Promise<db>;
+	public database: Promise<db> = new Promise(() => {});
 	/**
 	 * The database name
 	 */
@@ -22,7 +22,9 @@ export abstract class Custom<db = never> {
 	 * Create a custom database
 	 * @param database The database name
 	 */
-	constructor() {
+	constructor() {}
+
+	initialize() {
 		this.database = this.connect();
 	}
 
